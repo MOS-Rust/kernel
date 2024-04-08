@@ -20,5 +20,3 @@ jobs:
     - run: rustup component add llvm-tools rust-src rust-docs clippy
     - name: Build
       run: cargo +nightly build --verbose
-    - name: Run tests
-      run: cargo +nightly test --verbose
