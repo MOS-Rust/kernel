@@ -8,19 +8,19 @@ SECTIONS
     __start_kernel = .;
     
     __start_text = .;
-    .text: {
+    .text : {
         *(.text .text.*)
     }
     __end_text = .;
     
     __start_data = .;
-    .data: {
+    .data : {
         *(.data .data.*)
     }
     __end_data = .;
     
     __start_bss = .;
-    .bss: {
+    .bss : {
         *(.bss .bss.*)
     }
     __end_bss = .;
