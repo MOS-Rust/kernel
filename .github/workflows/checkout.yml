@@ -1,0 +1,23 @@
+name: Update Main Repository Submodule Reference
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  update-submodule:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          repository: 'MOS-Rust/mos'
+          ref: 'main'
+
+      - name: Update Submodule Reference
+        run: |
+          git submodule update --remote --merge
+          git commit -am "Github: Update submodule reference"
+          git push
+
