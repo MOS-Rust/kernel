@@ -3,5 +3,10 @@
 _entry:
 .set at
 .set reorder
-    j   kernel_init
-    nop
+    /* Disable interrupts */
+    mtc0    $zero, $12
+
+    /* Set up stack pointer */
+    la      $sp, 0x80400000
+    
+    j       kernel_init

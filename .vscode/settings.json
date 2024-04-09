@@ -3,5 +3,8 @@
     "rust-analyzer.check.extraArgs": [
         "--target",
         "mipsel-unknown-none"
+    ],
+    "rust-analyzer.linkedProjects": [
+        "./Cargo.toml"
     ]
 }
