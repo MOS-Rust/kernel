@@ -7,6 +7,7 @@
 #![no_main]
 #![feature(panic_info_message)]
 
+mod export;
 #[path ="platform/qemu/lib.rs"]
 mod platform;
 mod panic;
