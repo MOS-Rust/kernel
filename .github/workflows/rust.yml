@@ -16,13 +16,17 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        path: "kernel"
     - name: Checkout MOS-Rust/tools
       uses: actions/checkout@v4
       with:
         repository: "MOS-Rust/tools"
-        path: "../tools"
+        path: "tools"
         token: ${{ secrets.PAT }} 
     - uses: dtolnay/rust-toolchain@nightly
     - run: rustup component add llvm-tools rust-src clippy
     - name: Build
-      run: cargo +nightly build --verbose
+      run: |
+        cd kernel &&
+        cargo +nightly build --verbose
