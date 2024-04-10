@@ -18,5 +18,12 @@ jobs:
     - uses: actions/checkout@v4
     - uses: dtolnay/rust-toolchain@nightly
     - run: rustup component add llvm-tools rust-src rust-docs clippy
+    # checkout MOS-Rust/tools oin the same folder as the project
+    - name: Checkout MOS-Rust/tools
+      uses: actions/checkout@v4
+      with:
+        repository: "MOS-Rust/tools"
+        path: "tools"
+        token: ${{ secrets.PAT }} 
     - name: Build
       run: cargo +nightly build --verbose
