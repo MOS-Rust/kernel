@@ -16,18 +16,18 @@ fn panic(_info: &core::panic::PanicInfo) -> ! {
 
     unsafe {
         asm!(
-            "move {sp}, $29",
-            "move {ra}, $31",
-            "mfc0 {badva}, $8",
-            "mfc0 {sr}, $12",
-            "mfc0 {cause}, $13",
-            "mfc0 {epc}, $14",
-            sp = out(reg) sp,
-            ra = out(reg) ra,
-            badva = out(reg) badva,
-            sr = out(reg) sr,
-            cause = out(reg) cause,
-            epc = out(reg) epc,
+            "move $8, $29",
+            "move $9, $31",
+            "mfc0 $10, $8",
+            "mfc0 $11, $12",
+            "mfc0 $12, $13",
+            "mfc0 $13, $14",
+            out("$8") sp,
+            out("$9") ra,
+            out("$10") badva,
+            out("$11") sr,
+            out("$12") cause,
+            out("$13") epc,
         )
     }
     println!(
