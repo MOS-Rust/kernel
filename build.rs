@@ -1,8 +1,4 @@
-use std::process::Command;
-
+use preprocessor::preprocess;
 fn main() {
-    Command::new("python")
-        .arg("scripts/asm_replace.py")
-        .status()
-        .expect("Failed to run asm_replace.py");
+    preprocess("src", "asm");
 }
