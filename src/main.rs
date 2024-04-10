@@ -10,18 +10,18 @@
 #[path ="platform/qemu/lib.rs"]
 mod platform;
 mod panic;
+mod console;
 
 use core::{arch::global_asm, include_str, ptr::{addr_of_mut, write_bytes}};
-use platform::{print_char, halt};
+use platform::halt;
+
 global_asm!(include_str!("init/entry.S"));
 
 /// Entry point for the kernel, called by _entry() in init/entry.S
 #[no_mangle]
 pub fn kernel_init() -> ! {
     clear_bss();
-    for c in "MOS-Rust started!\n".chars() {
-        print_char(c);
-    }
+    println!("MOS-Rust started!");
     halt()
 }
 
