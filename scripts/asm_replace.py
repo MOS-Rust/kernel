@@ -16,11 +16,13 @@ def walk_dir(dir, callback):
             walk_dir(dir, callback)
     
 def replace(root, file):
-    if file.endswith('.asm'):
-        asm_file = os.path.join(root, file)
-        S_file = os.path.join(root.replace('asm', ''), file.replace('.asm', '.S'))
-        source = read_file(asm_file)
-        write_file(S_file, source)
+    if file.endswith('.S'):
+        source_file = os.path.join(root, file)
+        target_file = os.path.join(root.replace('src', 'asm'), file)
+        if not os.path.exists(os.path.dirname(target_file)):
+            os.makedirs(os.path.dirname(target_file))
+        source = read_file(source_file)
+        write_file(target_file, source)
         
 
 if __name__ == '__main__':

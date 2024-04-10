@@ -14,7 +14,7 @@ mod panic;
 
 use core::{arch::global_asm, include_str, ptr::{addr_of_mut, write_bytes}};
 use platform::{print_char, halt};
-global_asm!(include_str!("init/entry.S"));
+global_asm!(include_str!("../asm/init/entry.S"));
 
 /// Entry point for the kernel, called by _entry() in init/entry.S
 #[no_mangle]
