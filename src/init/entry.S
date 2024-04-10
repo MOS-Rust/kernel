@@ -3,5 +3,10 @@
 _entry:
 .set at
 .set reorder
-    j   kernel_init
-    nop
+    /* Disable interrupts */
+    mtc0    ZERO, CP0_STATUS
+
+    /* Set up stack pointer */
+    la      SP, KSTACKTOP
+    
+    j       kernel_init
