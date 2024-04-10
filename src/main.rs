@@ -7,6 +7,7 @@
 #![no_main]
 #![feature(panic_info_message)]
 
+mod export;
 #[path ="platform/qemu/lib.rs"]
 mod platform;
 mod panic;
@@ -15,7 +16,7 @@ mod console;
 use core::{arch::global_asm, include_str, ptr::{addr_of_mut, write_bytes}};
 use platform::halt;
 
-global_asm!(include_str!("init/entry.S"));
+global_asm!(include_str!("../asm/init/entry.S"));
 
 /// Entry point for the kernel, called by _entry() in init/entry.S
 #[no_mangle]

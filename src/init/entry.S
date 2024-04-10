@@ -4,9 +4,9 @@ _entry:
 .set at
 .set reorder
     /* Disable interrupts */
-    mtc0    $zero, $12
+    mtc0    ZERO, CP0_STATUS
 
     /* Set up stack pointer */
-    la      $sp, 0x80400000
+    la      SP, KSTACKTOP
     
     j       kernel_init
