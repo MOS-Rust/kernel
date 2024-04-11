@@ -1,4 +1,4 @@
-#![allow(dead_code)] // Temporary until all platform functions are used
+#![allow(dead_code)] // TODO: Remove this
 
 pub mod reg;
 pub mod cp0reg;

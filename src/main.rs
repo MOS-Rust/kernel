@@ -13,6 +13,7 @@ mod export;
 mod platform;
 mod panic;
 mod console;
+mod error;
 mod mm;
 
 use core::{arch::global_asm, include_str, ptr::{addr_of_mut, write_bytes}};
