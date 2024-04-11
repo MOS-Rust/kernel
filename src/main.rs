@@ -26,11 +26,10 @@ global_asm!(include_str!("../asm/init/entry.S"));
 
 /// Entry point for the kernel, called by _entry() in init/entry.S
 #[no_mangle]
-#[allow(unused_variables)]
 pub fn kernel_init(
-    argc: usize,
-    argv: *const *const char,
-    envp: *const *const char,
+    _argc: usize,
+    _argv: *const *const char,
+    _envp: *const *const char,
     ram_size: usize,
 ) -> ! {
     clear_bss();
