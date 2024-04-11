@@ -9,10 +9,11 @@
 
 mod export;
 #[cfg(target_arch = "mips")]
-#[path ="platform/qemu/lib.rs"]
+#[path ="platform/qemu/mod.rs"]
 mod platform;
 mod panic;
 mod console;
+mod mm;
 
 use core::{arch::global_asm, include_str, ptr::{addr_of_mut, write_bytes}};
 
