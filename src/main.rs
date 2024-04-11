@@ -7,6 +7,9 @@
 #![no_main]
 #![feature(panic_info_message)]
 
+/// TODO: Implement global allocator
+// extern crate alloc;
+
 mod export;
 #[cfg(target_arch = "mips")]
 #[path ="platform/qemu/mod.rs"]
@@ -23,9 +26,17 @@ global_asm!(include_str!("../asm/init/entry.S"));
 
 /// Entry point for the kernel, called by _entry() in init/entry.S
 #[no_mangle]
-pub fn kernel_init() -> ! {
+#[allow(unused_variables)]
+pub fn kernel_init(
+    argc: usize,
+    argv: *const *const char,
+    envp: *const *const char,
+    ram_size: usize,
+) -> ! {
     clear_bss();
     println!("MOS-Rust started!");
+    println!("RAM size: {} MB", ram_size / 1024 / 1024);
+
     panic!()
 }
 
