@@ -5,6 +5,7 @@ authors = ["Qin-Shihuang <0.0@owo.li>", "FyVoid <mythstudiofyvoid@outlook.com>"]
 edition = "2021"
 
 [dependencies]
+alloc = { version = "0.1.0", path = "../alloc" }
 
 [build-dependencies]
 preprocessor = { version = "0.1.0", path = "../tools/preprocessor" }

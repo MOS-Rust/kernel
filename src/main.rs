@@ -6,6 +6,7 @@
 #![no_std]
 #![no_main]
 #![feature(panic_info_message)]
+#![feature(alloc_error_handler)]
 
 /// TODO: Implement global allocator
 // extern crate alloc;
@@ -35,6 +36,7 @@ pub fn kernel_init(
     clear_bss();
     println!("MOS-Rust started!");
     println!("RAM size: {} MB", ram_size / 1024 / 1024);
+    mm::init(ram_size);
 
     panic!()
 }
