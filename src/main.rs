@@ -1,6 +1,6 @@
 //! Rust entry point for the kernel
 #![deny(missing_docs)]
-// #![deny(warnings)] 
+#![deny(warnings)] 
 
 #![cfg_attr(target_arch = "mips", feature(asm_experimental_arch))]
 #![no_std]
@@ -26,7 +26,7 @@ global_asm!(include_str!("../asm/init/entry.S"));
 
 /// Entry point for the kernel, called by _entry() in init/entry.S
 #[no_mangle]
-pub fn kernel_init(
+pub extern "C" fn kernel_init(
     _argc: usize,
     _argv: *const *const char,
     _envp: *const *const char,
@@ -34,13 +34,13 @@ pub fn kernel_init(
 ) -> ! {
     clear_bss();
     println!("MOS-Rust started!");
-    println!("RAM size: {} MB", ram_size / 1024 / 1024);
+    println!("RAM size: {} KiB", ram_size / 1024);
     mm::init(ram_size);
     panic!()
 }
 
 /// Clear the .bss section
-pub fn clear_bss() {
+fn clear_bss() {
     extern "C" {
         static mut __start_bss: u8;
         static mut __end_bss: u8;

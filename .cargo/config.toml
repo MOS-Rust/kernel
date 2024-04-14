@@ -7,8 +7,7 @@ rustflags = [
     "-C", "link-arg=-Tsrc/kernel.ld",
     "-C", "force-frame-pointers=yes",
     "-C", "llvm-args=--debugger-tune=gdb",
-    "-C", "target-feature=-mips32r2,+noabicalls,+xgot,+crt-static",
-    "-C", "relocation-model=static",
+    "-C", "target-feature=-mips32r2",
     "-g",
 ]
 

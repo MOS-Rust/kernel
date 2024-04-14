@@ -4,6 +4,12 @@ ENTRY(_entry)
 
 SECTIONS
 {
+    /DISCARD/ : {
+	    *(.comment)
+	    *(.eh_frame)
+	    *(.eh_frame_hdr)
+    }
+    
     . = 0x80020000;
     __start_kernel = .;
     
