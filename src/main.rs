@@ -1,15 +1,13 @@
 //! Rust entry point for the kernel
 #![deny(missing_docs)]
-#![deny(warnings)] 
+// #![deny(warnings)] 
 
 #![cfg_attr(target_arch = "mips", feature(asm_experimental_arch))]
 #![no_std]
 #![no_main]
 #![feature(panic_info_message)]
-#![feature(alloc_error_handler)]
 
-/// TODO: Implement global allocator
-// extern crate alloc;
+extern crate alloc;
 
 mod export;
 #[cfg(target_arch = "mips")]
@@ -21,6 +19,7 @@ mod error;
 mod mm;
 
 use core::{arch::global_asm, include_str, ptr::{addr_of_mut, write_bytes}};
+
 
 #[cfg(target_arch = "mips")]
 global_asm!(include_str!("../asm/init/entry.S"));
@@ -37,7 +36,6 @@ pub fn kernel_init(
     println!("MOS-Rust started!");
     println!("RAM size: {} MB", ram_size / 1024 / 1024);
     mm::init(ram_size);
-
     panic!()
 }
 

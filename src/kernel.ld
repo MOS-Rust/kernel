@@ -25,6 +25,6 @@ SECTIONS
     }
     __end_bss = .;
 
-    . = 0x80400000;
     __end_kernel = .;
+    . = 0x80400000;
 }

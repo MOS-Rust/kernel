@@ -1,6 +1,6 @@
 pub mod addr;
 mod heap;
 
-pub fn init(memsize: usize) {
-    heap::init(memsize);
+pub fn init(_memsize: usize) {
+    heap::init(_memsize);
 }
