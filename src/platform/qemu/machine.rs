@@ -1,4 +1,4 @@
-use crate::mm::addr::KSEG1;
+use crate::mm::layout::KSEG1;
 use super::malta::{FPGA_HALT, SERIAL_DATA, SERIAL_DATA_READY, SERIAL_LSR, SERIAL_THR_EMPTY};
 
 unsafe fn read_byte(addr: usize) -> u8 {
