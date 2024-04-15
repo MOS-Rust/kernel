@@ -34,7 +34,6 @@ pub extern "C" fn kernel_init(
 ) -> ! {
     clear_bss();
     println!("MOS-Rust started!");
-    println!("RAM size: {} KiB", ram_size / 1024);
     mm::init(ram_size);
     panic!()
 }

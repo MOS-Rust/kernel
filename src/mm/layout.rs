@@ -4,12 +4,22 @@ use crate::const_export_usize;
 
 pub const NASID: usize = 256;
 pub const PAGE_SIZE: usize = 4096;
-pub const PAGE_SIZE_BITS: usize = 12;
 pub const PTMAP: usize = PAGE_SIZE;
 pub const PDMAP: usize = 0x0040_0000; // Bytes mapped by a page directory entry, 4 MiB
-pub const PTSHIFT: usize = 12;
+pub const PGSHIFT: usize = 12;
 pub const PDSHIFT: usize = 22;
 
+pub const PTE_HARDFLAG_SHIFT: usize = 6;
+
+pub const PTE_G: usize = 0x0001 << PTE_HARDFLAG_SHIFT;
+pub const PTE_V: usize = 0x0002 << PTE_HARDFLAG_SHIFT;
+pub const PTE_D: usize = 0x0004 << PTE_HARDFLAG_SHIFT;
+
+pub const PTE_C_CACHEABLE: usize = 0x0018 << PTE_HARDFLAG_SHIFT;
+pub const PTE_C_UNCACHEABLE: usize = 0x0010 << PTE_HARDFLAG_SHIFT;
+
+pub const PTE_COW: usize = 0x0001;
+pub const PTE_LIBRARY: usize = 0x0002;
 
 /*
  o     4G ----------->  +----------------------------+------------0x100000000
