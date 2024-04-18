@@ -11,7 +11,7 @@ extern crate alloc;
 
 mod export;
 #[cfg(target_arch = "mips")]
-#[path ="platform/qemu/mod.rs"]
+#[path ="platform/mips/mod.rs"]
 mod platform;
 mod panic;
 mod console;
