@@ -1,6 +1,5 @@
 //! Contains exactly the same thing in MOS `include/mmu.h`
 #![allow(dead_code)] // TODO: Remove this
-use crate::const_export_usize;
 
 pub const NASID: usize = 256;
 pub const PAGE_SIZE: usize = 4096;
@@ -86,4 +85,3 @@ pub const UTEXT: usize = PDMAP;
 pub const UCOW: usize = UTEXT - PTMAP;
 pub const UTEMP: usize = UCOW - PTMAP;
 
-const_export_usize!(KSTACKTOP, 0x80400000);

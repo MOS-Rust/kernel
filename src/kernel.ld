@@ -25,12 +25,20 @@ SECTIONS
     }
     __end_data = .;
     
+    . = ALIGN(4K);
     __start_bss = .;
     .bss : {
         *(.bss .bss.*)
     }
+    
+    . = 0x80300000;
     __end_bss = .;
-
-    __end_kernel = .;
+    __stack_bottom = .;
+    . = ALIGN(4096);
+    .stack : {
+        *(.bss.stack)
+    }
     . = 0x80400000;
+    __stack_top = .;
+    __end_kernel = .;
 }

@@ -28,8 +28,8 @@ pub fn heap_test() {
     for i in 0..=255 {
         assert_eq!(v[i], i as u8);
     }
-    drop(v);
     let s = String::from("Hello, world!");
     assert_eq!(s, "Hello, world!");
+    drop(v);
     println!("Heap test passed!");
 }
