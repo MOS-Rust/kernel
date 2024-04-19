@@ -85,7 +85,7 @@ impl VA {
     }
 
     /// Translates from kernel virtual address to physical address
-    fn paddr(&self) -> PA {
+    pub fn paddr(&self) -> PA {
         if self.0 < ULIM {
             panic!("VA::paddr: Invalid virtual address");
         }
