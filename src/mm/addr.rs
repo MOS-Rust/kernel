@@ -1,12 +1,11 @@
 #![allow(dead_code)] // TODO: Remove this
-#![allow(unused_imports)] // TODO: Remove this
 
-use core::cmp::{PartialEq, Eq, Ord, Ordering};
+use core::cmp::{PartialEq, Eq, Ord};
 use core::convert::{From, Into};
 use core::ops::{Add, Sub, Deref};
 
 use super::get_pagenum;
-use super::layout::{PAGE_SIZE, PDSHIFT, PGSHIFT, ULIM};
+use super::layout::{PDSHIFT, PGSHIFT, ULIM};
 
 macro_rules! impl_usize {
     ($name:ident) => {
@@ -30,19 +29,19 @@ macro_rules! impl_usize {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
 pub struct PA(pub usize);
 
 #[repr(C)]
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
 pub struct VA(pub usize);
 
 #[repr(C)]
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
 pub struct PPN(pub usize);
 
 #[repr(C)]
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
 pub struct VPN(pub usize);
 
 impl_usize!(PA);
@@ -56,9 +55,21 @@ impl From<PA> for PPN {
     }
 }
 
+impl From<PPN> for PA {
+    fn from(ppn: PPN) -> Self {
+        PA(ppn.0 << PGSHIFT)
+    }
+}
+
 impl From<VA> for VPN {
     fn from(va: VA) -> Self {
         VPN(va.0 >> PGSHIFT)
+    }
+}
+
+impl From<VPN> for VA {
+    fn from(vpn: VPN) -> Self {
+        VA(vpn.0 << PGSHIFT)
     }
 }
 
@@ -93,20 +104,30 @@ impl VA {
     }
 }
 
-#[repr(C)]
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
-struct PDE(usize);
-
-#[repr(C)]
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
-struct PTE(usize);
-
-impl PTE {
-    pub fn addr(&self) -> PA {
-        PA(self.0 & !0xfff)
+impl Add<usize> for PPN {
+    type Output = PPN;
+    fn add(self, rhs: usize) -> Self::Output {
+        PPN(self.0 + rhs)
     }
+}
 
-    pub fn flags(&self) -> usize {
-        self.0 & 0xfff
+impl Add<usize> for VPN {
+    type Output = VPN;
+    fn add(self, rhs: usize) -> Self::Output {
+        VPN(self.0 + rhs)
+    }
+}
+
+impl Sub<PPN> for PPN {
+    type Output = usize;
+    fn sub(self, rhs: PPN) -> Self::Output {
+        self.0 - rhs.0
+    }
+}
+
+impl Sub<VPN> for VPN {
+    type Output = usize;
+    fn sub(self, rhs: VPN) -> Self::Output {
+        self.0 - rhs.0
     }
 }

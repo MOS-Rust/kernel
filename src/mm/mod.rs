@@ -1,6 +1,7 @@
 mod addr;
 mod heap;
 mod page;
+mod page_table;
 pub mod layout;
 
 use crate::println;
@@ -19,6 +20,8 @@ pub fn init(memsize: usize) {
     );
     heap::init();
     heap::heap_test();
+    page::init();
+    page::alloc_test();
 }
 
 unsafe fn set_memsize(memsize: usize) {

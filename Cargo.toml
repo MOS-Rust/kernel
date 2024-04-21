@@ -6,7 +6,7 @@ edition = "2021"
 
 [dependencies]
 allocator = { version = "0.1.0", path = "../allocator" }
-spinning_top = "0.3.0"
+
 
 [build-dependencies]
 preprocessor = { version = "0.1.0", path = "../tools/preprocessor" }
