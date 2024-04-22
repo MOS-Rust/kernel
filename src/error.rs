@@ -43,3 +43,19 @@ pub const E_FILE_EXISTS: i32 = -12;
 
 /// File not a valid executable
 pub const E_NOT_EXEC: i32 = -13;
+
+pub enum Error {
+    Unspecified = 1,
+    BadEnv,
+    Inval,
+    NoMem,
+    NoSys,
+    NoFreeEnv,
+    IpcNotRecv,
+    NoDisk,
+    MaxOpen,
+    NotFound,
+    BadPath,
+    FileExists,
+    NotExec,
+}
