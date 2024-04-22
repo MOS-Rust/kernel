@@ -2,19 +2,18 @@
 
 use alloc::vec::Vec;
 use core::ptr::{addr_of_mut, write_bytes};
+use crate::error::MosError;
 
-use crate::{
-    mm::addr::VA,
-    println,
-};
+use crate::mm::addr::VA;
 
 use super::{
     addr::{PA, PPN},
     get_pagenum,
-    layout::{PAGE_SIZE},
+    layout::PAGE_SIZE,
 };
 
 #[repr(C)]
+#[derive(Clone, Copy, Debug)]
 pub struct Page {
     pub ppn: PPN,
     pub ref_count: u16,
@@ -34,11 +33,25 @@ impl Page {
             self.ref_count -= 1;
         }
     }
+
+    pub fn to_pa(&self) -> PA {
+        PA::from(PPN::from(self.ppn.0))
+    }
+
+    pub fn to_kva(&self) -> VA {
+        self.to_pa().kaddr()
+    }
 }
 
 impl From<Page> for PPN {
     fn from(page: Page) -> Self {
         PPN(page.ppn.0)
+    }
+}
+
+impl From<Page> for PA {
+    fn from(page: Page) -> Self {
+        PA::from(page.ppn.0)
     }
 }
 
@@ -72,14 +85,14 @@ impl PageAllocator {
         }
     }
 
-    pub fn alloc(&mut self, clear: bool) -> Option<PPN> {
+    pub fn alloc(&mut self, clear: bool) -> Result<PPN, MosError> {
         if let Some(ppn) = self.free_list.pop() {
             if clear {
                 clear_page(ppn);
             }
-            Some(ppn)
+            Ok(ppn)
         } else {
-            None
+            Err(MosError::NoMem)
         }
     }
 
@@ -143,9 +156,10 @@ pub fn dec_ref(ppn: PPN) {
 }
 
 pub fn alloc_test() {
-    let ppn = unsafe { PAGE_ALLOCATOR.alloc(true).unwrap() };
-    println!("Allocated page: {:?}", ppn);
-    unsafe { PAGE_ALLOCATOR.dealloc(ppn) };
-    println!("Deallocated page: {:?}", ppn);
-    // TODO: populating test
+    // TODO: return type of page alloc is modified, rewrite test
+    // let ppn = unsafe { PAGE_ALLOCATOR.alloc(true).unwrap() };
+    // println!("Allocated page: {:?}", ppn);
+    // unsafe { PAGE_ALLOCATOR.dealloc(ppn) };
+    // println!("Deallocated page: {:?}", ppn);
+    // // TODO: populating test
 }

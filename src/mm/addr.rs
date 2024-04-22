@@ -1,12 +1,13 @@
 #![allow(dead_code)] // TODO: Remove this
 
 use core::cmp::{PartialEq, Eq, Ord};
-use core::convert::{From, Into};
 use core::ops::{Add, Sub, Deref};
 
 use super::get_pagenum;
 use super::layout::{PDSHIFT, PGSHIFT, ULIM};
 
+/// TODO: add documentation
+#[macro_export]
 macro_rules! impl_usize {
     ($name:ident) => {
         impl From<usize> for $name {
