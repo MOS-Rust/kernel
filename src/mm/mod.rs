@@ -1,8 +1,8 @@
 mod addr;
 mod heap;
 mod page;
-mod page_table;
 pub mod layout;
+mod map;
 
 use crate::println;
 
@@ -32,10 +32,12 @@ unsafe fn set_memsize(memsize: usize) {
     PAGENUM = memsize / layout::PAGE_SIZE;
 }
 
+#[inline]
 pub fn get_memsize() -> usize {
     unsafe { MEMSIZE }
 }
 
+#[inline]
 pub fn get_pagenum() -> usize {
     unsafe { PAGENUM }
 }
