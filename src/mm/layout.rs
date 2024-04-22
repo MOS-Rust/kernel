@@ -20,6 +20,16 @@ pub const PTE_C_UNCACHEABLE: usize = 0x0010 << PTE_HARDFLAG_SHIFT;
 pub const PTE_COW: usize = 0x0001;
 pub const PTE_LIBRARY: usize = 0x0002;
 
+pub enum PteFlag {
+    G = PTE_G as isize,
+    V = PTE_V as isize,
+    D = PTE_D as isize,
+    Cacheable = PTE_C_CACHEABLE as isize,
+    UnCacheable = PTE_C_UNCACHEABLE as isize,
+    Cow = PTE_COW as isize,
+    Library = PTE_LIBRARY as isize,
+}
+
 /*
  o     4G ----------->  +----------------------------+------------0x100000000
  o                      |       ...                  |  kseg2
