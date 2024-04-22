@@ -11,7 +11,7 @@ use crate::{
 use super::{
     addr::{PA, PPN},
     get_pagenum,
-    layout::PGSHIFT,
+    layout::{PAGE_SIZE},
 };
 
 #[repr(C)]
@@ -30,7 +30,15 @@ impl Page {
     }
 
     pub fn dec_ref(&mut self) {
-        self.ref_count -= 1;
+        if self.ref_count > 0 {
+            self.ref_count -= 1;
+        }
+    }
+}
+
+impl From<Page> for PPN {
+    fn from(page: Page) -> Self {
+        PPN(page.ppn.0)
     }
 }
 
@@ -75,6 +83,19 @@ impl PageAllocator {
         }
     }
 
+    pub fn dealloc(&mut self, ppn: PPN) {
+        assert!(self.page_table[ppn.0].ref_count == 0);
+        self.free_list.push(ppn);
+    }
+
+    pub fn find_page(&mut self, ppn: PPN) -> Option<&mut Page> {
+        if ppn.0 < self.page_table.len() {
+            Some(&mut self.page_table[ppn.0])
+        } else {
+            None
+        }
+    }
+
     // pub fn alloc_n(&mut self, clear: bool, n: usize) -> Option<Vec<PPN>> {
     //     if self.free_list.len() < n {
     //         None
@@ -91,16 +112,12 @@ impl PageAllocator {
     //     }
     // }
 
-    pub fn dealloc(&mut self, ppn: PPN) {
-        assert!(self.page_table[ppn.0].ref_count == 0);
-        self.free_list.push(ppn);
-    }
 }
 
 fn clear_page(ppn: PPN) {
     let va = PA::from(ppn).kaddr();
     unsafe {
-        write_bytes(va.0 as *mut u8, 0, 1 << PGSHIFT);
+        write_bytes(va.0 as *mut u8, 0, PAGE_SIZE);  //? is this correct?
     }
 }
 
