@@ -10,24 +10,23 @@ pub const PDSHIFT: usize = 22;
 
 pub const PTE_HARDFLAG_SHIFT: usize = 6;
 
-pub const PTE_G: usize = 0x0001 << PTE_HARDFLAG_SHIFT;
-pub const PTE_V: usize = 0x0002 << PTE_HARDFLAG_SHIFT;
-pub const PTE_D: usize = 0x0004 << PTE_HARDFLAG_SHIFT;
+const PTE_COW: usize = 0x0001;
+const PTE_LIBRARY: usize = 0x0002;
 
-pub const PTE_C_CACHEABLE: usize = 0x0018 << PTE_HARDFLAG_SHIFT;
-pub const PTE_C_UNCACHEABLE: usize = 0x0010 << PTE_HARDFLAG_SHIFT;
-
-pub const PTE_COW: usize = 0x0001;
-pub const PTE_LIBRARY: usize = 0x0002;
-
-pub enum PteFlag {
-    G = PTE_G as isize,
-    V = PTE_V as isize,
-    D = PTE_D as isize,
-    Cacheable = PTE_C_CACHEABLE as isize,
-    UnCacheable = PTE_C_UNCACHEABLE as isize,
-    Cow = PTE_COW as isize,
-    Library = PTE_LIBRARY as isize,
+bitflags! {
+    pub struct PteFlags: usize {
+        const G = 1 << 0;
+        const V = 1 << 1;
+        const D = 1 << 2;
+        
+        // Only used internally
+        const C0 = 1 << 3;
+        const C1 = 1 << 4;
+        const C2 = 1 << 5;
+        
+        const Cached = PteFlags::C2.bits() & PteFlags::C1.bits();
+        const Uncached = PteFlags::C2.bits();
+    }
 }
 
 /*

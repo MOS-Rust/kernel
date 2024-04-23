@@ -9,6 +9,9 @@
 
 extern crate alloc;
 
+#[macro_use]
+extern crate bitflags;
+
 mod export;
 #[cfg(target_arch = "mips")]
 #[path ="platform/mips/mod.rs"]

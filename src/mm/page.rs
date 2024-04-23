@@ -11,7 +11,7 @@ use crate::{
 use super::{
     addr::{PA, PPN},
     get_pagenum,
-    layout::{PAGE_SIZE},
+    layout::PAGE_SIZE,
 };
 
 #[repr(C)]
@@ -88,9 +88,9 @@ impl PageAllocator {
         self.free_list.push(ppn);
     }
 
-    pub fn find_page(&mut self, ppn: PPN) -> Option<&mut Page> {
+    pub fn find_page(&self, ppn: PPN) -> Option<&Page> {
         if ppn.0 < self.page_table.len() {
-            Some(&mut self.page_table[ppn.0])
+            Some(&self.page_table[ppn.0])
         } else {
             None
         }
@@ -132,6 +132,18 @@ pub fn init() {
     let current = PPN::from(VA::from(unsafe { addr_of_mut!(__end_kernel) as usize }).paddr());
     let end = PPN::from(get_pagenum());
     unsafe { PAGE_ALLOCATOR.init(current, end) }
+}
+
+pub fn alloc(clear: bool) -> Option<PPN> {
+    unsafe { PAGE_ALLOCATOR.alloc(clear) }
+}
+
+pub fn dealloc(ppn: PPN) {
+    unsafe { PAGE_ALLOCATOR.dealloc(ppn) }
+}
+
+pub fn find_page(ppn: PPN) -> Option<&'static Page> {
+    unsafe { PAGE_ALLOCATOR.find_page(ppn) }
 }
 
 pub fn inc_ref(ppn: PPN) {
