@@ -23,6 +23,7 @@ pub fn init(memsize: usize) {
     heap::heap_test();
     page::init();
     page::alloc_test();
+    map::mapping_test();
 }
 
 unsafe fn set_memsize(memsize: usize) {

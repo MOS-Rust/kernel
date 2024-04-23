@@ -1,32 +1,11 @@
 #![allow(dead_code)] // TODO: Remove this
 
 use core::cmp::{PartialEq, Eq, Ord};
-use core::convert::{From, Into};
-use core::ops::{Add, Sub, Deref};
+use core::convert::From;
+use core::ops::{Add, Sub};
 
 use super::get_pagenum;
 use super::layout::{PDSHIFT, PGSHIFT, ULIM};
-
-macro_rules! impl_usize {
-    ($name:ident) => {
-        impl From<usize> for $name {
-            fn from(x: usize) -> Self {
-                $name(x)
-            }
-        }
-        impl Into<usize> for $name {
-            fn into(self) -> usize {
-                self.0
-            }
-        }
-        impl Deref for $name {
-            type Target = usize;
-            fn deref(&self) -> &Self::Target {
-                &self.0
-            }
-        }
-    };
-}
 
 #[repr(C)]
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
@@ -44,10 +23,19 @@ pub struct PPN(pub usize);
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
 pub struct VPN(pub usize);
 
-impl_usize!(PA);
-impl_usize!(VA);
-impl_usize!(PPN);
-impl_usize!(VPN);
+impl Add<usize> for PA {
+    type Output = PA;
+    fn add(self, rhs: usize) -> Self::Output {
+        PA(self.0 + rhs)
+    }
+}
+
+impl Add<usize> for VA {
+    type Output = VA;
+    fn add(self, rhs: usize) -> Self::Output {
+        VA(self.0 + rhs)
+    }
+}
 
 impl From<PA> for PPN {
     fn from(pa: PA) -> Self {
@@ -102,6 +90,18 @@ impl VA {
         }
         PA(self.0 - ULIM)
     }
+
+    pub fn pte_addr(&self) -> VA {
+        VA(self.0 & !0xFFF)
+    }
+
+    pub fn as_ptr<T>(&self) -> *const T {
+        self.0 as *const T
+    }
+
+    pub fn as_mut_ptr<T>(&self) -> *mut T {
+        self.0 as *mut T
+    }
 }
 
 impl Add<usize> for PPN {
@@ -129,5 +129,11 @@ impl Sub<VPN> for VPN {
     type Output = usize;
     fn sub(self, rhs: VPN) -> Self::Output {
         self.0 - rhs.0
+    }
+}
+
+impl PPN {
+    pub fn kaddr(&self) -> VA {
+        PA::from(*self).kaddr()
     }
 }

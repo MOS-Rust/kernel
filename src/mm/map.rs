@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use core::slice::from_raw_parts_mut;
+use crate::println;
 
 use crate::error::Error;
 
@@ -49,17 +49,16 @@ pub struct PageTable {
 }
 
 impl PageTable {
-    pub fn new() -> PageTable {
-        let ppn = alloc(true).expect("Failed to allocate a page for page table.");
+    pub fn init() -> (PageTable, PPN) {
+        let ppn = alloc(true).expect("Failed to allocate a page for PageTable.");
         inc_ref(ppn);
-        PageTable { ppn }
+        (PageTable { ppn }, ppn)
     }
 
     pub fn walk(&self, va: VA, create: bool) -> Result<Option<&mut Pte>, Error> {
-        let base_ptr = PA::from(self.ppn.0).kaddr().0 as *mut Pte;
-        let slice = unsafe { from_raw_parts_mut(base_ptr, 1024) };
-        let pte = &mut slice[va.pdx()];
-        if !pte.flags().contains(PteFlags::V) {
+        let base_pd = self.ppn.kaddr().as_mut_ptr::<Pte>();
+        let pde = unsafe { &mut *base_pd.add(va.pdx()) };
+        if !pde.flags().contains(PteFlags::V) {
             if !create {
                 return Ok(None);
             }
@@ -68,14 +67,15 @@ impl PageTable {
                 return Err(Error::NoMem);
             }
             inc_ref(ppn.unwrap());
-            pte.set(ppn.unwrap(), PteFlags::V | PteFlags::Cached);
+            pde.set(ppn.unwrap(), PteFlags::V | PteFlags::Cached);
         }
+        let base_pt = pde.addr().kaddr().as_mut_ptr::<Pte>();
+        let pte = unsafe { &mut *base_pt.add(va.ptx()) };
         Ok(Some(pte))
     }
 
     pub fn insert(&self, asid: usize, ppn: PPN, va: VA, flags: PteFlags) -> Result<(), Error> {
-        let pte = self.walk(va, false);
-        if let Ok(Some(pte)) = pte {
+        if let Ok(Some(pte)) = self.walk(va, false) {
            if pte.flags().contains(PteFlags::V) {
                 if ppn == pte.ppn() {
                     tlb_invalidate(asid, va);
@@ -87,8 +87,7 @@ impl PageTable {
            }
         }
         tlb_invalidate(asid, va);
-        let pte = self.walk(va, true);
-        if let Ok(Some(pte)) = pte {
+        if let Ok(Some(pte)) = self.walk(va, true) {
             *pte = Pte::new(ppn, flags | PteFlags::V | PteFlags::Cached);
             inc_ref(ppn);
             Ok(())
@@ -134,6 +133,45 @@ impl PageTable {
             },
         }
     }
+
+    unsafe fn nth(&self, n: usize) -> &mut Pte {
+        assert!(n < 1024);
+        let base_ptr = self.ppn.kaddr().as_mut_ptr::<Pte>();
+        &mut *base_ptr.add(n)
+    }
 }
 
 pub type PageDirectory = PageTable;
+
+impl PageDirectory {
+    fn va2pa(&self, va: VA) -> Option<PA> {
+        let base_pd = self.ppn.kaddr().as_mut_ptr::<Pte>();
+        let pde = unsafe { &*base_pd.add(va.pdx()) };
+        if !pde.flags().contains(PteFlags::V) {
+            return None;
+        }
+        let base_pt = pde.addr().kaddr().as_mut_ptr::<Pte>();
+        let pte = unsafe { &*base_pt.add(va.ptx()) };
+        if !pte.flags().contains(PteFlags::V) {
+            return None;
+        }
+        Some(pte.addr())
+    }
+}
+
+pub fn mapping_test() {
+    let mut ppns = [PPN(0); 4];
+    let (pd, pd_ppn) = PageTable::init();
+    assert!(find_page(pd_ppn).unwrap().ref_count() == 1);
+    for i in 0..4 {
+        ppns[i] = alloc(true).expect("Failed to allocate a page.");
+    }
+
+    // Test inserting into pd
+    assert!(pd.insert(0, ppns[0], VA(0x0), PteFlags::empty()).is_ok());
+    assert!(find_page(ppns[0]).unwrap().ref_count() == 1);
+    let pde = pd.lookup(VA(0x0)).unwrap().0;
+    assert!(pde.flags().contains(PteFlags::V) && pde.flags().contains(PteFlags::Cached));
+    assert_eq!(pd.va2pa(VA(0x0)).unwrap(), ppns[0].into());
+    println!("Mapping test passed!");
+}

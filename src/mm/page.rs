@@ -9,7 +9,7 @@ use crate::{
 };
 
 use super::{
-    addr::{PA, PPN},
+    addr::PPN,
     get_pagenum,
     layout::PAGE_SIZE,
 };
@@ -124,22 +124,20 @@ impl PageAllocator {
 }
 
 fn clear_page(ppn: PPN) {
-    let va = PA::from(ppn).kaddr();
+    let va = ppn.kaddr();
     unsafe {
-        write_bytes(va.0 as *mut u8, 0, PAGE_SIZE);
+        write_bytes(va.as_mut_ptr::<u8>(), 0, PAGE_SIZE);
     }
 }
 
-// TODO: make this thread-safe
-// TODO: find a wrapper to make alloc and dealloc safe
 pub static mut PAGE_ALLOCATOR: PageAllocator = PageAllocator::new();
 
 pub fn init() {
     extern "C" {
         static mut __end_kernel: u8;
     }
-    let current = PPN::from(VA::from(unsafe { addr_of_mut!(__end_kernel) as usize }).paddr());
-    let end = PPN::from(get_pagenum());
+    let current = PPN::from(VA(unsafe { addr_of_mut!(__end_kernel) as usize }).paddr());
+    let end = PPN(get_pagenum());
     unsafe { PAGE_ALLOCATOR.init(current, end) }
 }
 
@@ -164,9 +162,24 @@ pub fn dec_ref(ppn: PPN) {
 }
 
 pub fn alloc_test() {
-    let ppn = unsafe { PAGE_ALLOCATOR.alloc(true).unwrap() };
-    println!("Allocated page: {:?}", ppn);
-    unsafe { PAGE_ALLOCATOR.dealloc(ppn) };
-    println!("Deallocated page: {:?}", ppn);
-    // TODO: populating test
+    let mut pages = [PPN(0); 4];
+    for ppn in pages.iter_mut() {
+        *ppn = alloc(true).expect("Failed to allocate a page.");
+    }
+    assert!(pages[0] != pages[1]);
+    assert!(pages[1] != pages[2]);
+    assert!(pages[2] != pages[3]);
+
+    let raw_addr = pages[1].kaddr().0 as *mut u8;
+    unsafe {
+        *raw_addr = 0x12;
+        assert_eq!(*raw_addr, 0x12);
+    }
+    dealloc(pages[1]);
+    assert_eq!(unsafe { *raw_addr }, 0x12);
+    let new_page = alloc(true).expect("Failed to allocate a page.");
+    assert_eq!(new_page, pages[1]);
+    assert_eq!(unsafe { *raw_addr }, 0); // The page should be cleared
+
+    println!("Page allocation test passed!");
 }
