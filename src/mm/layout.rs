@@ -8,13 +8,12 @@ pub const PDMAP: usize = 0x0040_0000; // Bytes mapped by a page directory entry,
 pub const PGSHIFT: usize = 12;
 pub const PDSHIFT: usize = 22;
 
-pub const PTE_HARDFLAG_SHIFT: usize = 6;
-
 const PTE_COW: usize = 0x0001;
 const PTE_LIBRARY: usize = 0x0002;
 
 bitflags! {
     pub struct PteFlags: usize {
+        /// the 6 bits below are those stored in cp0.entry_lo
         const G = 1 << 0;
         const V = 1 << 1;
         const D = 1 << 2;
@@ -26,6 +25,10 @@ bitflags! {
         
         const Cached = PteFlags::C2.bits() & PteFlags::C1.bits();
         const Uncached = PteFlags::C2.bits();
+
+        /// the bits below are controlled by software
+        const COW = 1 << 6;
+        const SHARED = 1 << 7;
     }
 }
 

@@ -3,6 +3,7 @@ mod heap;
 mod page;
 pub mod layout;
 mod map;
+mod tlb;
 
 use crate::println;
 

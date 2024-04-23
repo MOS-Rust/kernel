@@ -15,21 +15,30 @@ use super::{
 };
 
 #[repr(C)]
+#[derive(Debug, Clone, Copy)]
 pub struct Page {
-    pub ppn: PPN,
-    pub ref_count: u16,
+    ppn: PPN,
+    ref_count: u16,
 }
 
 impl Page {
-    pub fn new(ppn: PPN) -> Page {
+    fn new(ppn: PPN) -> Page {
         Page { ppn, ref_count: 0 }
     }
 
-    pub fn inc_ref(&mut self) {
+    pub fn ppn(self) -> PPN {
+        self.ppn
+    }
+
+    pub fn ref_count(self) -> u16 {
+        self.ref_count
+    }
+
+    fn inc_ref(&mut self) {
         self.ref_count += 1;
     }
 
-    pub fn dec_ref(&mut self) {
+    fn dec_ref(&mut self) {
         if self.ref_count > 0 {
             self.ref_count -= 1;
         }
@@ -48,14 +57,14 @@ pub struct PageAllocator {
 }
 
 impl PageAllocator {
-    pub const fn new() -> PageAllocator {
+    const fn new() -> PageAllocator {
         PageAllocator {
             page_table: Vec::new(),
             free_list: Vec::new(),
         }
     }
 
-    pub fn init(&mut self, current: PPN, end: PPN) {
+    fn init(&mut self, current: PPN, end: PPN) {
         self.page_table = Vec::with_capacity(get_pagenum());
         self.free_list = Vec::with_capacity(get_pagenum());
         for i in 0..current.0 {
@@ -72,7 +81,7 @@ impl PageAllocator {
         }
     }
 
-    pub fn alloc(&mut self, clear: bool) -> Option<PPN> {
+    fn alloc(&mut self, clear: bool) -> Option<PPN> {
         if let Some(ppn) = self.free_list.pop() {
             if clear {
                 clear_page(ppn);
@@ -83,12 +92,12 @@ impl PageAllocator {
         }
     }
 
-    pub fn dealloc(&mut self, ppn: PPN) {
+    fn dealloc(&mut self, ppn: PPN) {
         assert!(self.page_table[ppn.0].ref_count == 0);
         self.free_list.push(ppn);
     }
 
-    pub fn find_page(&self, ppn: PPN) -> Option<&Page> {
+    fn find_page(&self, ppn: PPN) -> Option<&Page> {
         if ppn.0 < self.page_table.len() {
             Some(&self.page_table[ppn.0])
         } else {
@@ -117,7 +126,7 @@ impl PageAllocator {
 fn clear_page(ppn: PPN) {
     let va = PA::from(ppn).kaddr();
     unsafe {
-        write_bytes(va.0 as *mut u8, 0, PAGE_SIZE);  //? is this correct?
+        write_bytes(va.0 as *mut u8, 0, PAGE_SIZE);
     }
 }
 
