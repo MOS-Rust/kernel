@@ -12,6 +12,7 @@ const PTE_COW: usize = 0x0001;
 const PTE_LIBRARY: usize = 0x0002;
 
 bitflags! {
+    #[derive(Debug)]
     pub struct PteFlags: usize {
         /// the 6 bits below are those stored in cp0.entry_lo
         const G = 1 << 0;
@@ -23,8 +24,8 @@ bitflags! {
         const C1 = 1 << 4;
         const C2 = 1 << 5;
         
-        const Cached = PteFlags::C2.bits() & PteFlags::C1.bits();
-        const Uncached = PteFlags::C2.bits();
+        const Cached = PteFlags::C2.bits() | PteFlags::C1.bits();
+        const Uncached = PteFlags::C2.bits() & !PteFlags::C1.bits();
 
         /// the bits below are controlled by software
         const COW = 1 << 6;
