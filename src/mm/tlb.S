@@ -37,8 +37,8 @@ _do_tlb_refill:
     mfc0    A1, CP0_BADVADDR
     mfc0    A2, CP0_ENTRYHI
     andi    A2, A2, 0xff
-.globl _do_tlb_refill_call:
-    andi    SP, SP, -24
+.globl _do_tlb_refill_call
+    addi    SP, SP, -24
     sw      RA, 20(SP)
     addi    A0, SP, 12
     jal     _do_tlb_refill
