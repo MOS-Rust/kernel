@@ -1,5 +1,3 @@
-#![allow(dead_code)] // TODO: Remove this
-
 use core::cmp::{PartialEq, Eq, Ord};
 use core::convert::From;
 use core::ops::{Add, Sub};
@@ -95,9 +93,9 @@ impl VA {
         VA(self.0 & !0xFFF)
     }
 
-    pub fn as_ptr<T>(&self) -> *const T {
-        self.0 as *const T
-    }
+    // pub fn as_ptr<T>(&self) -> *const T {
+    //     self.0 as *const T
+    // }
 
     pub fn as_mut_ptr<T>(&self) -> *mut T {
         self.0 as *mut T

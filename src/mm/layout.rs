@@ -8,9 +8,6 @@ pub const PDMAP: usize = 0x0040_0000; // Bytes mapped by a page directory entry,
 pub const PGSHIFT: usize = 12;
 pub const PDSHIFT: usize = 22;
 
-const PTE_COW: usize = 0x0001;
-const PTE_LIBRARY: usize = 0x0002;
-
 bitflags! {
     #[derive(Debug)]
     pub struct PteFlags: usize {

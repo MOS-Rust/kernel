@@ -1,5 +1,3 @@
-#![allow(dead_code)] // TODO: Remove this
-
 use alloc::vec::Vec;
 use core::ptr::{addr_of_mut, write_bytes};
 
@@ -16,18 +14,13 @@ use super::{
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
-pub struct Page {
-    ppn: PPN,
+pub struct PageTracker {
     ref_count: u16,
 }
 
-impl Page {
-    fn new(ppn: PPN) -> Page {
-        Page { ppn, ref_count: 0 }
-    }
-
-    pub fn ppn(self) -> PPN {
-        self.ppn
+impl PageTracker {
+    fn new() -> PageTracker {
+        PageTracker { ref_count: 0 }
     }
 
     pub fn ref_count(self) -> u16 {
@@ -45,35 +38,29 @@ impl Page {
     }
 }
 
-impl From<Page> for PPN {
-    fn from(page: Page) -> Self {
-        PPN(page.ppn.0)
-    }
-}
-
 pub struct PageAllocator {
-    page_table: Vec<Page>,
+    pages: Vec<PageTracker>,
     free_list: Vec<PPN>,
 }
 
 impl PageAllocator {
     const fn new() -> PageAllocator {
         PageAllocator {
-            page_table: Vec::new(),
+            pages: Vec::new(),
             free_list: Vec::new(),
         }
     }
 
     fn init(&mut self, current: PPN, end: PPN) {
-        self.page_table = Vec::with_capacity(get_pagenum());
+        self.pages = Vec::with_capacity(get_pagenum());
         self.free_list = Vec::with_capacity(get_pagenum());
-        for i in 0..current.0 {
-            let mut page = Page::new(PPN(i));
+        for _ in 0..current.0 {
+            let mut page = PageTracker::new();
             page.inc_ref();
-            self.page_table.push(page);
+            self.pages.push(page);
         }
-        for i in current.0..end.0 {
-            self.page_table.push(Page::new(PPN(i)));
+        for _ in current.0..end.0 {
+            self.pages.push(PageTracker::new());
         }
         // We may want the lower addresses to be allocated earlier
         for i in (current.0..end.0).rev() {
@@ -93,34 +80,17 @@ impl PageAllocator {
     }
 
     fn dealloc(&mut self, ppn: PPN) {
-        assert!(self.page_table[ppn.0].ref_count == 0);
+        assert!(self.pages[ppn.0].ref_count == 0);
         self.free_list.push(ppn);
     }
 
-    fn find_page(&self, ppn: PPN) -> Option<&Page> {
-        if ppn.0 < self.page_table.len() {
-            Some(&self.page_table[ppn.0])
+    fn find_page(&self, ppn: PPN) -> Option<&PageTracker> {
+        if ppn.0 < self.pages.len() {
+            Some(&self.pages[ppn.0])
         } else {
             None
         }
     }
-
-    // pub fn alloc_n(&mut self, clear: bool, n: usize) -> Option<Vec<PPN>> {
-    //     if self.free_list.len() < n {
-    //         None
-    //     } else {
-    //         let mut ppns = Vec::new();
-    //         for _ in 0..n {
-    //             let ppn = self.free_list.pop().unwrap();
-    //             if clear {
-    //                 clear_page(ppn);
-    //             }
-    //             ppns.push(ppn);
-    //         }
-    //         Some(ppns)
-    //     }
-    // }
-
 }
 
 fn clear_page(ppn: PPN) {
@@ -149,16 +119,16 @@ pub fn dealloc(ppn: PPN) {
     unsafe { PAGE_ALLOCATOR.dealloc(ppn) }
 }
 
-pub fn find_page(ppn: PPN) -> Option<&'static Page> {
+pub fn find_page(ppn: PPN) -> Option<&'static PageTracker> {
     unsafe { PAGE_ALLOCATOR.find_page(ppn) }
 }
 
 pub fn inc_ref(ppn: PPN) {
-    unsafe { PAGE_ALLOCATOR.page_table[ppn.0].inc_ref() }
+    unsafe { PAGE_ALLOCATOR.pages[ppn.0].inc_ref() }
 }
 
 pub fn dec_ref(ppn: PPN) {
-    unsafe { PAGE_ALLOCATOR.page_table[ppn.0].dec_ref() }
+    unsafe { PAGE_ALLOCATOR.pages[ppn.0].dec_ref() }
 }
 
 pub fn alloc_test() {
