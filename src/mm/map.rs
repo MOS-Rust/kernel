@@ -12,6 +12,12 @@ use super::{
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
+pub struct Pde(pub usize);
+
+impl Pde {
+    
+}
+
 pub struct Pte(pub usize);
 
 impl Pte {
@@ -58,6 +64,7 @@ impl PageTable {
     pub fn walk(&self, va: VA, create: bool) -> Result<Option<&mut Pte>, Error> {
         let base_pd = self.ppn.kaddr().as_mut_ptr::<Pte>();
         let pde = unsafe { &mut *base_pd.add(va.pdx()) };
+        
         if !pde.flags().contains(PteFlags::V) {
             if !create {
                 return Ok(None);
@@ -76,7 +83,7 @@ impl PageTable {
 
     pub fn insert(&self, asid: usize, ppn: PPN, va: VA, flags: PteFlags) -> Result<(), Error> {
         if let Ok(Some(pte)) = self.walk(va, false) {
-           if pte.flags().contains(PteFlags::V) {
+            if pte.flags().contains(PteFlags::V) {
                 if ppn == pte.ppn() {
                     tlb_invalidate(asid, va);
                     *pte.flags_mut() = flags | PteFlags::V | PteFlags::Cached;
@@ -84,7 +91,7 @@ impl PageTable {
                 } else {
                     self.remove(asid, va);
                 }
-           }
+            }
         }
         tlb_invalidate(asid, va);
         if let Ok(Some(pte)) = self.walk(va, true) {
