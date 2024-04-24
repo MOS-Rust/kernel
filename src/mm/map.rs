@@ -7,17 +7,11 @@ use crate::error::Error;
 use super::{
     addr::{PA, PPN, VA},
     layout::PteFlags,
-    page::{alloc, dealloc, dec_ref, find_page, inc_ref}, tlb::tlb_invalidate,
+    page::{alloc, dealloc, dec_ref, find_page, inc_ref, Page}, tlb::tlb_invalidate,
 };
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
-pub struct Pde(pub usize);
-
-impl Pde {
-    
-}
-
 pub struct Pte(pub usize);
 
 impl Pte {
@@ -50,9 +44,13 @@ impl Pte {
     }
 }
 
+pub type Pde = Pte;
+
 pub struct PageTable {
     ppn: PPN,
 }
+
+//! TODO: fix errors, implement page for occurances of ppn
 
 impl PageTable {
     pub fn init() -> (PageTable, PPN) {
@@ -61,27 +59,34 @@ impl PageTable {
         (PageTable { ppn }, ppn)
     }
 
+    fn pte_at(&self, offset: usize) -> &mut Pte {
+        let base_pd: *mut Pde = self.ppn.kaddr().as_mut_ptr::<Pde>();
+        unsafe { &mut *base_pd.add(offset) }
+    }
+
     pub fn walk(&self, va: VA, create: bool) -> Result<Option<&mut Pte>, Error> {
-        let base_pd = self.ppn.kaddr().as_mut_ptr::<Pte>();
-        let pde = unsafe { &mut *base_pd.add(va.pdx()) };
+        let pte = self.pte_at(va.pdx());
         
-        if !pde.flags().contains(PteFlags::V) {
+        if !pte.flags().contains(PteFlags::V) {
             if !create {
                 return Ok(None);
             }
-            let ppn = alloc(true);
-            if ppn.is_none() {
+            if let Some(ppn) = alloc(true) {
+                inc_ref(ppn);
+                pte.set(ppn, PteFlags::V | PteFlags::Cached);
+            } else {
                 return Err(Error::NoMem);
             }
-            inc_ref(ppn.unwrap());
-            pde.set(ppn.unwrap(), PteFlags::V | PteFlags::Cached);
         }
-        let base_pt = pde.addr().kaddr().as_mut_ptr::<Pte>();
-        let pte = unsafe { &mut *base_pt.add(va.ptx()) };
-        Ok(Some(pte))
+        let base_pt = pte.addr().kaddr().as_mut_ptr::<Pte>();
+        let ret = unsafe { &mut *base_pt.add(va.ptx()) };
+        
+        Ok(Some(ret))
     }
 
-    pub fn insert(&self, asid: usize, ppn: PPN, va: VA, flags: PteFlags) -> Result<(), Error> {
+    pub fn insert(&self, asid: usize, page: Page, va: VA, flags: PteFlags) -> Result<(), Error> {
+        let ppn = page.ppn();
+        
         if let Ok(Some(pte)) = self.walk(va, false) {
             if pte.flags().contains(PteFlags::V) {
                 if ppn == pte.ppn() {
@@ -93,7 +98,9 @@ impl PageTable {
                 }
             }
         }
+
         tlb_invalidate(asid, va);
+        
         if let Ok(Some(pte)) = self.walk(va, true) {
             *pte = Pte::new(ppn, flags | PteFlags::V | PteFlags::Cached);
             inc_ref(ppn);

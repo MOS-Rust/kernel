@@ -12,6 +12,23 @@ use super::{
     layout::PAGE_SIZE,
 };
 
+#[derive(Clone, Copy, Debug)]
+pub struct Page {
+    ppn: PPN,
+}
+
+impl Page {
+    pub fn ppn(self) -> PPN {
+        self.ppn
+    }
+}
+
+impl From<PPN> for Page {
+    fn from(value: PPN) -> Self {
+        Page { ppn: value }
+    }
+}
+
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct PageTracker {
