@@ -45,6 +45,7 @@ pub const E_FILE_EXISTS: i32 = -12;
 pub const E_NOT_EXEC: i32 = -13;
 
 #[derive(Debug)]
+#[repr(u8)]
 pub enum Error {
     Unspecified = 1,
     BadEnv,
