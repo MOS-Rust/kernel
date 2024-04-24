@@ -173,6 +173,8 @@ impl PageDirectory {
     }
 }
 
+//! TODO add other test, fix error and move test to another file
+
 pub fn mapping_test() {
     let mut ppns = [PPN(0); 3];
     let (pd, pd_ppn) = PageTable::init();
