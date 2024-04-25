@@ -2,7 +2,7 @@
 
 use core::arch::global_asm;
 
-use super::{addr::{VA, VPN}, layout::{PteFlags, PAGE_SIZE, UENVS, UPAGES, USTACKTOP, UTEMP, UVPT}, map::PageDirectory, page::alloc};
+use super::{addr::{VA, VPN}, layout::{PteFlags, PAGE_SIZE, UENVS, UPAGES, USTACKTOP, UTEMP, UVPT}, map::PageDirectory, page::page_alloc};
 
 global_asm!(include_str!("../../asm/mm/tlb.S"));
 
@@ -35,7 +35,7 @@ pub fn passive_alloc(va: VA, pgdir: PageDirectory, asid: usize) {
         panic!("Passive alloc: kernel address");
     }
 
-    let page = alloc(true).unwrap();
+    let page = page_alloc(true).unwrap();
     let flags = if va_val >= UVPT && va_val < UVPT + PAGE_SIZE {
         PteFlags::empty()
     } else {

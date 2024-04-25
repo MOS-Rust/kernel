@@ -7,12 +7,12 @@ use crate::{
 };
 
 use super::{
-    addr::PPN,
+    addr::{PA, PPN},
     get_pagenum,
     layout::PAGE_SIZE,
 };
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Eq, Ord)]
 pub struct Page {
     ppn: PPN,
 }
@@ -30,6 +30,18 @@ impl Page {
 impl From<PPN> for Page {
     fn from(value: PPN) -> Self {
         Page { ppn: value }
+    }
+}
+
+impl From<Page> for PA {
+    fn from(value: Page) -> Self {
+        value.ppn().into()
+    }
+}
+
+impl From<PA> for Page {
+    fn from(value: PA) -> Self {
+        Page::new(value.into())
     }
 }
 
@@ -157,8 +169,8 @@ pub fn page_dealloc(page: Page) {
 }
 
 #[inline]
-pub fn find_page(ppn: PPN) -> Option<&'static PageTracker> {
-    unsafe { PAGE_ALLOCATOR.find_page(ppn) }
+pub fn find_page(page: Page) -> Option<&'static PageTracker> {
+    unsafe { PAGE_ALLOCATOR.find_page(page.ppn()) }
 }
 
 #[inline]

@@ -7,7 +7,7 @@ use crate::error::Error;
 use super::{
     addr::{PA, PPN, VA},
     layout::PteFlags,
-    page::{alloc, dealloc, dec_ref, find_page, inc_ref, Page}, tlb::tlb_invalidate,
+    page::{alloc, find_page, inc_ref, page_alloc, page_dealloc, page_dec_ref, page_inc_ref, Page}, tlb::tlb_invalidate,
 };
 
 #[repr(C)]
@@ -47,20 +47,19 @@ impl Pte {
 pub type Pde = Pte;
 
 pub struct PageTable {
-    ppn: PPN,
+    page: Page,
 }
 
-//! TODO: fix errors, implement page for occurances of ppn
-
 impl PageTable {
-    pub fn init() -> (PageTable, PPN) {
+    pub fn init() -> (PageTable, Page) {
         let ppn = alloc(true).expect("Failed to allocate a page for PageTable.");
-        inc_ref(ppn);
-        (PageTable { ppn }, ppn)
+        let page = Page::new(ppn);
+        page_inc_ref(page);
+        (PageTable { page }, page)
     }
 
     fn pte_at(&self, offset: usize) -> &mut Pte {
-        let base_pd: *mut Pde = self.ppn.kaddr().as_mut_ptr::<Pde>();
+        let base_pd: *mut Pde = self.page.ppn().kaddr().as_mut_ptr::<Pde>();
         unsafe { &mut *base_pd.add(offset) }
     }
 
@@ -71,9 +70,9 @@ impl PageTable {
             if !create {
                 return Ok(None);
             }
-            if let Some(ppn) = alloc(true) {
-                inc_ref(ppn);
-                pte.set(ppn, PteFlags::V | PteFlags::Cached);
+            if let Some(page) = page_alloc(true) {
+                page_inc_ref(page);
+                pte.set(page.ppn(), PteFlags::V | PteFlags::Cached);
             } else {
                 return Err(Error::NoMem);
             }
@@ -110,12 +109,12 @@ impl PageTable {
         }
     }
 
-    pub fn lookup(&self, va: VA) -> Option<(&mut Pte, PPN)> {
+    pub fn lookup(&self, va: VA) -> Option<(&mut Pte, Page)> {
         let pte = self.walk(va, false);
         if let Ok(Some(pte)) = pte {
             if pte.flags().contains(PteFlags::V) {
                 let ppn = pte.ppn();
-                return Some((pte, ppn));
+                return Some((pte, Page::new(ppn)));
             }
         }
         None
@@ -123,34 +122,35 @@ impl PageTable {
 
     pub fn remove(&self, asid: usize, va: VA) {
         match self.lookup(va) {
-            Some((pte, ppn)) => {
+            Some((pte, page)) => {
                 tlb_invalidate(asid, va);
-                PageTable::dec_ref(ppn);
+                PageTable::try_recycle(page);
                 *pte = Pte::empty();
             },
             None => {},
         }
     }
 
-    fn dec_ref(ppn: PPN) {
-        let page = find_page(ppn).unwrap();
-        match page.ref_count() {
-            0 => {
-                panic!("PageTable::decref: page is not referenced.");
-            },
-            1 => {
-                dec_ref(ppn);
-                dealloc(ppn);
-            },
-            _ => {
-                dec_ref(ppn);
-            },
+    fn try_recycle(page: Page) {
+        if let Some(tracker) = find_page(page) {
+            match tracker.ref_count() {
+                0 => {
+                    panic!("PageTable::decref: page is not referenced.");
+                },
+                1 => {
+                    page_dec_ref(page);
+                    page_dealloc(page);
+                },
+                _ => {
+                    page_dec_ref(page);
+                },
+            }
         }
     }
 
     unsafe fn nth(&self, n: usize) -> &mut Pte {
         assert!(n < 1024);
-        let base_ptr = self.ppn.kaddr().as_mut_ptr::<Pte>();
+        let base_ptr = self.page.ppn().kaddr().as_mut_ptr::<Pte>();
         &mut *base_ptr.add(n)
     }
 }
@@ -159,7 +159,7 @@ pub type PageDirectory = PageTable;
 
 impl PageDirectory {
     fn va2pa(&self, va: VA) -> Option<PA> {
-        let base_pd = self.ppn.kaddr().as_mut_ptr::<Pte>();
+        let base_pd = self.page.ppn().kaddr().as_mut_ptr::<Pte>();
         let pde = unsafe { &*base_pd.add(va.pdx()) };
         if !pde.flags().contains(PteFlags::V) {
             return None;
@@ -173,68 +173,66 @@ impl PageDirectory {
     }
 }
 
-//! TODO add other test, fix error and move test to another file
-
 pub fn mapping_test() {
-    let mut ppns = [PPN(0); 3];
-    let (pd, pd_ppn) = PageTable::init();
-    assert!(find_page(pd_ppn).unwrap().ref_count() == 1);
+    let mut pages = [Page::new(PPN(0)); 3];
+    let (pd, pd_page) = PageTable::init();
+    assert!(find_page(pd_page).unwrap().ref_count() == 1);
     for i in 0..3 {
-        ppns[i] = alloc(true).expect("Failed to allocate a page.");
+        pages[i] = page_alloc(true).expect("Failed to allocate a page.");
     }
 
     // Test inserting into pd
-    assert!(pd.insert(0, ppns[0], VA(0x0), PteFlags::empty()).is_ok());
-    assert!(find_page(ppns[0]).unwrap().ref_count() == 1);
+    assert!(pd.insert(0, pages[0], VA(0x0), PteFlags::empty()).is_ok());
+    assert!(find_page(pages[0]).unwrap().ref_count() == 1);
     let pde = unsafe { pd.nth(0) };
     assert!(pde.flags().contains(PteFlags::V) && pde.flags().contains(PteFlags::Cached));
     let pte = pd.lookup(VA(0x0)).unwrap().0;
     assert!(pte.flags().contains(PteFlags::V) && pte.flags().contains(PteFlags::Cached));
-    assert_eq!(pd.va2pa(VA(0x0)).unwrap(), ppns[0].into());
+    assert_eq!(pd.va2pa(VA(0x0)).unwrap(), pages[0].into());
 
     // Inserting ppns[1] into 0x1000
-    assert!(pd.insert(0, ppns[1], VA(0x1000), PteFlags::empty()).is_ok());
-    assert_eq!(pd.va2pa(VA(0x1000)).unwrap(), ppns[1].into());
-    assert!(find_page(ppns[1]).unwrap().ref_count() == 1);
+    assert!(pd.insert(0, pages[1], VA(0x1000), PteFlags::empty()).is_ok());
+    assert_eq!(pd.va2pa(VA(0x1000)).unwrap(), pages[1].into());
+    assert!(find_page(pages[1]).unwrap().ref_count() == 1);
 
     // Replacing ppns[1] with ppns[2], ppns[1] should be deallocated
-    assert!(pd.insert(0, ppns[2], VA(0x1000), PteFlags::empty()).is_ok());
-    assert_eq!(pd.va2pa(VA(0x1000)).unwrap(), ppns[2].into());
-    assert!(find_page(ppns[1]).unwrap().ref_count() == 0);
-    assert!(find_page(ppns[2]).unwrap().ref_count() == 1);
+    assert!(pd.insert(0, pages[2], VA(0x1000), PteFlags::empty()).is_ok());
+    assert_eq!(pd.va2pa(VA(0x1000)).unwrap(), pages[2].into());
+    assert!(find_page(pages[1]).unwrap().ref_count() == 0);
+    assert!(find_page(pages[2]).unwrap().ref_count() == 1);
 
     // Replacing ppns[2] with ppns[0], ppns[2] should be deallocated
-    assert!(pd.insert(0, ppns[0], VA(0x1000), PteFlags::empty()).is_ok());
-    assert_eq!(pd.va2pa(VA(0x0)).unwrap(), ppns[0].into());
-    assert_eq!(pd.va2pa(VA(0x1000)).unwrap(), ppns[0].into());
-    assert!(find_page(ppns[0]).unwrap().ref_count() == 2);
-    assert!(find_page(ppns[2]).unwrap().ref_count() == 0);
+    assert!(pd.insert(0, pages[0], VA(0x1000), PteFlags::empty()).is_ok());
+    assert_eq!(pd.va2pa(VA(0x0)).unwrap(), pages[0].into());
+    assert_eq!(pd.va2pa(VA(0x1000)).unwrap(), pages[0].into());
+    assert!(find_page(pages[0]).unwrap().ref_count() == 2);
+    assert!(find_page(pages[2]).unwrap().ref_count() == 0);
 
     // Check if dealloc works
-    let ppn2 = alloc(true).unwrap();
-    let ppn1 = alloc(true).unwrap();
-    assert_eq!(ppn1, ppns[1]);
-    assert_eq!(ppn2, ppns[2]);
-    dealloc(ppn1);
-    dealloc(ppn2);
+    let page2 = page_alloc(true).unwrap();
+    let page1 = page_alloc(true).unwrap();
+    assert_eq!(page1, pages[1]);
+    assert_eq!(page2, pages[2]);
+    page_dealloc(page1);
+    page_dealloc(page2);
 
     // Test removing
     // Remove ppns[0] at 0x0, it should remain at 0x1000
     pd.remove(0, VA(0x0));
     assert!(pd.va2pa(VA(0x0)).is_none());
-    assert_eq!(pd.va2pa(VA(0x1000)).unwrap(), ppns[0].into());
-    assert!(find_page(ppns[0]).unwrap().ref_count() == 1);
+    assert_eq!(pd.va2pa(VA(0x1000)).unwrap(), pages[0].into());
+    assert!(find_page(pages[0]).unwrap().ref_count() == 1);
 
     // Remove ppns[0] at 0x1000, it should be deallocated
     pd.remove(0, VA(0x1000));
     assert!(pd.va2pa(VA(0x1000)).is_none());
-    assert!(find_page(ppns[0]).unwrap().ref_count() == 0);
-    let ppn0 = alloc(true).unwrap();
-    assert_eq!(ppn0, ppns[0]);
-    dealloc(ppn0);
+    assert!(find_page(pages[0]).unwrap().ref_count() == 0);
+    let page0 = page_alloc(true).unwrap();
+    assert_eq!(page0, pages[0]);
+    page_dealloc(page0);
 
     // Free resources
-    PageTable::dec_ref(pde.ppn());
-    PageTable::dec_ref(pd_ppn);
+    PageTable::try_recycle(pde.ppn().into());
+    PageTable::try_recycle(pd_page);
     println!("Mapping test passed!");
 }
