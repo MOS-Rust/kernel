@@ -17,7 +17,11 @@ pub fn print_char(c: char) {
     }
     unsafe {
         while read_byte(KSEG1 + SERIAL_LSR) & SERIAL_THR_EMPTY == 0 {}
-        write_byte(KSEG1 + SERIAL_DATA, c as u8);
+        let mut buf = [0; 4];
+        c.encode_utf8(&mut buf);
+        for byte in buf {
+            write_byte(KSEG1 + SERIAL_DATA, byte);
+        }
     }
 }
 

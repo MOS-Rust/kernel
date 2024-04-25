@@ -1,0 +1,15 @@
+{
+    "configurations": [
+        {
+            "name": "Kernel Debug",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/target/mipsel-unknown-none/debug/kernel",
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}",
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb-multiarch",
+            "miDebuggerServerAddress": "localhost:1234"
+        }
+    ]
+}
