@@ -1,5 +1,5 @@
+use crate::mm::layout::KSEG1;
 use super::malta::{FPGA_HALT, SERIAL_DATA, SERIAL_DATA_READY, SERIAL_LSR, SERIAL_THR_EMPTY};
-use super::KSEG1;
 
 unsafe fn read_byte(addr: usize) -> u8 {
     let ptr = addr as *const u8;
