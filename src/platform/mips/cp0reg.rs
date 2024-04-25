@@ -1,3 +1,4 @@
+//! MIPS CP0 registers and bit definitions
 use crate::{const_export_str, const_export_usize};
 
 const_export_str!(CP0_INDEX, "$0");

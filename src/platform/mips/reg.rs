@@ -1,3 +1,5 @@
+//! MIPS General Purpose Registers
+
 use crate::const_export_str;
 
 const_export_str!(ZERO, "$0");

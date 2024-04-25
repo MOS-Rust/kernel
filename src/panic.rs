@@ -1,4 +1,10 @@
 //! Panic handler
+//!
+//! This module provides the panic handler for the kernel. When a panic occurs, this handler is called
+//! to print diagnostic information and halt the machine.
+//!
+//! By default, the machine will halt when a panic occurs. If the environment variable `MOS_HANG_ON_PANIC` is set to `1`,
+//! the machine will hang instead of halting.
 
 use core::arch::asm;
 
