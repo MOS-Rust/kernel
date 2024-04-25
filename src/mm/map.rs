@@ -176,14 +176,14 @@ impl PageDirectory {
 pub fn mapping_test() {
     let mut pages = [Page::new(PPN(0)); 3];
     let (pd, pd_page) = PageTable::init();
-    assert!(find_page(pd_page).unwrap().ref_count() == 1);
+    assert!(pd_page.ref_count() == 1);
     for i in 0..3 {
         pages[i] = page_alloc(true).expect("Failed to allocate a page.");
     }
 
     // Test inserting into pd
     assert!(pd.insert(0, pages[0], VA(0x0), PteFlags::empty()).is_ok());
-    assert!(find_page(pages[0]).unwrap().ref_count() == 1);
+    assert!(pages[0].ref_count() == 1);
     let pde = unsafe { pd.nth(0) };
     assert!(pde.flags().contains(PteFlags::V) && pde.flags().contains(PteFlags::Cached));
     let pte = pd.lookup(VA(0x0)).unwrap().0;
@@ -193,20 +193,20 @@ pub fn mapping_test() {
     // Inserting ppns[1] into 0x1000
     assert!(pd.insert(0, pages[1], VA(0x1000), PteFlags::empty()).is_ok());
     assert_eq!(pd.va2pa(VA(0x1000)).unwrap(), pages[1].into());
-    assert!(find_page(pages[1]).unwrap().ref_count() == 1);
+    assert!(pages[1].ref_count() == 1);
 
     // Replacing ppns[1] with ppns[2], ppns[1] should be deallocated
     assert!(pd.insert(0, pages[2], VA(0x1000), PteFlags::empty()).is_ok());
     assert_eq!(pd.va2pa(VA(0x1000)).unwrap(), pages[2].into());
-    assert!(find_page(pages[1]).unwrap().ref_count() == 0);
-    assert!(find_page(pages[2]).unwrap().ref_count() == 1);
+    assert!(pages[1].ref_count() == 0);
+    assert!(pages[2].ref_count() == 1);
 
     // Replacing ppns[2] with ppns[0], ppns[2] should be deallocated
     assert!(pd.insert(0, pages[0], VA(0x1000), PteFlags::empty()).is_ok());
     assert_eq!(pd.va2pa(VA(0x0)).unwrap(), pages[0].into());
     assert_eq!(pd.va2pa(VA(0x1000)).unwrap(), pages[0].into());
-    assert!(find_page(pages[0]).unwrap().ref_count() == 2);
-    assert!(find_page(pages[2]).unwrap().ref_count() == 0);
+    assert!(pages[0].ref_count() == 2);
+    assert!(pages[2].ref_count() == 0);
 
     // Check if dealloc works
     let page2 = page_alloc(true).unwrap();
@@ -221,12 +221,12 @@ pub fn mapping_test() {
     pd.remove(0, VA(0x0));
     assert!(pd.va2pa(VA(0x0)).is_none());
     assert_eq!(pd.va2pa(VA(0x1000)).unwrap(), pages[0].into());
-    assert!(find_page(pages[0]).unwrap().ref_count() == 1);
+    assert!(pages[0].ref_count() == 1);
 
     // Remove ppns[0] at 0x1000, it should be deallocated
     pd.remove(0, VA(0x1000));
     assert!(pd.va2pa(VA(0x1000)).is_none());
-    assert!(find_page(pages[0]).unwrap().ref_count() == 0);
+    assert!(pages[0].ref_count() == 0);
     let page0 = page_alloc(true).unwrap();
     assert_eq!(page0, pages[0]);
     page_dealloc(page0);
