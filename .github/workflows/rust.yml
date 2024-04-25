@@ -24,6 +24,12 @@ jobs:
         repository: "MOS-Rust/tools"
         path: "tools"
         token: ${{ secrets.PAT }} 
+    - name: Checkout MOS-Rust/allocator
+      uses: actions/checkout@v4
+      with:
+        repository: "MOS-Rust/allocator"
+        path: "allocator"
+        token: ${{ secrets.PAT }}
     - uses: dtolnay/rust-toolchain@nightly
     - run: rustup component add llvm-tools rust-src clippy
     - name: Build
