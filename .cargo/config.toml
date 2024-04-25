@@ -2,13 +2,11 @@
 target = "mipsel-unknown-none"
 
 [target.mipsel-unknown-none]
-runner = "qemu-system-mipsel -cpu 4Kc -m 64 -nographic -M malta -no-reboot -kernel"
+runner = "qemu-system-mipsel -cpu 24Kc -m 64 -nographic -M malta -no-reboot -kernel"
 rustflags = [
     "-C", "link-arg=-Tsrc/kernel.ld",
     "-C", "force-frame-pointers=yes",
     "-C", "llvm-args=--debugger-tune=gdb",
-    "-C", "target-feature=-mips32r2",
-    "-g",
 ]
 
 [unstable]
