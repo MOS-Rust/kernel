@@ -18,6 +18,10 @@ pub struct Page {
 }
 
 impl Page {
+    pub fn new(ppn: PPN) -> Self {
+        Page { ppn }
+    }
+
     pub fn ppn(self) -> PPN {
         self.ppn
     }
@@ -128,24 +132,53 @@ pub fn init() {
     unsafe { PAGE_ALLOCATOR.init(current, end) }
 }
 
+#[inline]
 pub fn alloc(clear: bool) -> Option<PPN> {
     unsafe { PAGE_ALLOCATOR.alloc(clear) }
 }
 
+#[inline]
+pub fn page_alloc(clear: bool) -> Option<Page> {
+    if let Some(ppn) = alloc(clear) {
+        Some(Page::new(ppn))
+    } else {
+        None
+    }
+}
+
+#[inline]
 pub fn dealloc(ppn: PPN) {
     unsafe { PAGE_ALLOCATOR.dealloc(ppn) }
 }
 
+#[inline]
+pub fn page_dealloc(page: Page) {
+    dealloc(page.ppn())
+}
+
+#[inline]
 pub fn find_page(ppn: PPN) -> Option<&'static PageTracker> {
     unsafe { PAGE_ALLOCATOR.find_page(ppn) }
 }
 
+#[inline]
 pub fn inc_ref(ppn: PPN) {
     unsafe { PAGE_ALLOCATOR.pages[ppn.0].inc_ref() }
 }
 
+#[inline]
+pub fn page_inc_ref(page: Page) {
+    inc_ref(page.ppn())
+}
+
+#[inline]
 pub fn dec_ref(ppn: PPN) {
     unsafe { PAGE_ALLOCATOR.pages[ppn.0].dec_ref() }
+}
+
+#[inline]
+pub fn page_dec_ref(page: Page) {
+    dec_ref(page.ppn())
 }
 
 pub fn alloc_test() {
