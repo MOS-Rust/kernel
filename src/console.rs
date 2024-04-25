@@ -13,6 +13,8 @@ impl Write for Stdout {
     }
 }
 
+/// this function fails when argument includes 
+/// more than bare string in release mode
 pub fn print(args: fmt::Arguments) {
     Stdout.write_fmt(args).unwrap();
 }

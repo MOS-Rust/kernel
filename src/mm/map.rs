@@ -2,7 +2,7 @@
 
 use crate::println;
 
-use crate::error::Error;
+use crate::error::MosError;
 
 use super::{
     addr::{PA, PPN, VA},
@@ -63,7 +63,7 @@ impl PageTable {
         unsafe { &mut *base_pd.add(offset) }
     }
 
-    pub fn walk(&self, va: VA, create: bool) -> Result<Option<&mut Pte>, Error> {
+    pub fn walk(&self, va: VA, create: bool) -> Result<Option<&mut Pte>, MosError> {
         let pte = self.pte_at(va.pdx());
         
         if !pte.flags().contains(PteFlags::V) {
@@ -74,7 +74,7 @@ impl PageTable {
                 page_inc_ref(page);
                 pte.set(page.ppn(), PteFlags::V | PteFlags::Cached);
             } else {
-                return Err(Error::NoMem);
+                return Err(MosError::NoMem);
             }
         }
         let base_pt = pte.addr().kaddr().as_mut_ptr::<Pte>();
@@ -83,7 +83,7 @@ impl PageTable {
         Ok(Some(ret))
     }
 
-    pub fn insert(&self, asid: usize, page: Page, va: VA, flags: PteFlags) -> Result<(), Error> {
+    pub fn insert(&self, asid: usize, page: Page, va: VA, flags: PteFlags) -> Result<(), MosError> {
         let ppn = page.ppn();
         
         if let Ok(Some(pte)) = self.walk(va, false) {
@@ -105,7 +105,7 @@ impl PageTable {
             inc_ref(ppn);
             Ok(())
         } else {
-            Err(Error::NoMem)
+            Err(MosError::NoMem)
         }
     }
 

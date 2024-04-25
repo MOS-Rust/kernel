@@ -1,10 +1,8 @@
 use alloc::vec::Vec;
 use core::ptr::{addr_of_mut, write_bytes};
+use crate::println;
 
-use crate::{
-    mm::addr::VA,
-    println,
-};
+use crate::mm::addr::VA;
 
 use super::{
     addr::{PA, PPN},
