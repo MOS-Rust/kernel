@@ -7,6 +7,6 @@ _entry:
     mtc0    ZERO, CP0_STATUS
 
     /* Set up stack pointer */
-    la      SP, KSTACKTOP
+    la      SP, __stack_top;
     
     j       kernel_init

@@ -10,14 +10,24 @@
 #![no_main]
 #![feature(panic_info_message)]
 
+extern crate alloc;
+
+#[macro_use]
+extern crate bitflags;
+
 mod export;
 #[cfg(target_arch = "mips")]
-#[path ="platform/qemu/lib.rs"]
+#[path ="platform/mips/mod.rs"]
 mod platform;
 mod panic;
 mod console;
+mod error;
+mod mm;
+mod logging;
 
 use core::{arch::global_asm, include_str, ptr::{addr_of_mut, write_bytes}};
+
+use log::info;
 
 #[cfg(target_arch = "mips")]
 global_asm!(include_str!("../asm/init/entry.S"));
@@ -28,9 +38,16 @@ global_asm!(include_str!("../asm/init/entry.S"));
 /// for initializing various modules of the kernel.
 ///
 #[no_mangle]
-pub fn kernel_init() -> ! {
+pub extern "C" fn kernel_init(
+    _argc: usize,
+    _argv: *const *const char,
+    _envp: *const *const char,
+    ram_size: usize,
+) -> ! {
     clear_bss();
-    println!("MOS-Rust started!");
+    logging::init();
+    info!("MOS-Rust started!");
+    mm::init(ram_size);
     panic!()
 }
 

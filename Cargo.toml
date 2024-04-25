@@ -5,6 +5,11 @@ authors = ["Qin-Shihuang <0.0@owo.li>", "FyVoid <mythstudiofyvoid@outlook.com>"]
 edition = "2021"
 
 [dependencies]
+allocator = { version = "0.1.0", path = "../allocator" }
+bitflags = "2.5.0"
+log = "0.4"
 
 [build-dependencies]
 preprocessor = { version = "0.1.0", path = "../tools/preprocessor" }
+
+[features]
