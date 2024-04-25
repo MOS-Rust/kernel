@@ -1,3 +1,5 @@
+//! A simple logging implementation
+
 use log::{Level, LevelFilter, Log, Metadata, Record};
 
 use crate::println;
@@ -14,11 +16,11 @@ impl Log for Logger {
             return;
         }
         let color = match record.level() {
-            Level::Error => "31",
-            Level::Warn => "93",
-            Level::Info => "34",
-            Level::Debug => "32",
-            Level::Trace => "90",
+            Level::Error => "31", // red
+            Level::Warn => "93",  // yellow
+            Level::Info => "34",  // blue
+            Level::Debug => "32", // green
+            Level::Trace => "90", // gray
         };
         println!(
             "\x1b[1;{}m[{}:{}][{}] {}\x1b[0m",
@@ -33,6 +35,22 @@ impl Log for Logger {
     fn flush(&self) {}
 }
 
+/// Initialize the logger
+///
+/// The log level is controlled by the `LOG_LEVEL` environment variable.
+///
+/// If `LOG_LEVEL` is not set, the default log level is `Info` in release mode
+/// and `Debug` in debug mode.
+/// 
+/// The log level can be set to one of the following values:
+/// - `error`
+/// - `warn`
+/// - `info`
+/// - `debug`
+/// - `trace`
+/// 
+/// Usage:
+/// LOG_LEVEL=trace cargo run
 pub fn init() {
     static LOGGER: Logger = Logger;
     log::set_logger(&LOGGER).unwrap();
