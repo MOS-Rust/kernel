@@ -13,8 +13,11 @@ mod export;
 mod platform;
 mod panic;
 mod console;
+mod logging;
 
 use core::{arch::global_asm, include_str, ptr::{addr_of_mut, write_bytes}};
+
+use log::info;
 
 #[cfg(target_arch = "mips")]
 global_asm!(include_str!("../asm/init/entry.S"));
@@ -23,7 +26,8 @@ global_asm!(include_str!("../asm/init/entry.S"));
 #[no_mangle]
 pub fn kernel_init() -> ! {
     clear_bss();
-    println!("MOS-Rust started!");
+    logging::init();
+    info!("MOS-Rust started!");
     panic!()
 }
 
