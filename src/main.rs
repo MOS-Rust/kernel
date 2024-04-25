@@ -1,4 +1,7 @@
 //! Rust entry point for the kernel
+//!
+//! This crate is the entry point for the kernel. It is responsible for initializing the kernel and starting its execution.
+
 #![deny(missing_docs)]
 #![deny(warnings)] 
 
@@ -19,7 +22,11 @@ use core::{arch::global_asm, include_str, ptr::{addr_of_mut, write_bytes}};
 #[cfg(target_arch = "mips")]
 global_asm!(include_str!("../asm/init/entry.S"));
 
-/// Entry point for the kernel, called by _entry() in init/entry.S
+/// Kernel initialization function
+///
+/// This function is the entry point of the kernel. It is called by _entry() in init/entry.S when the kernel starts and is responsible
+/// for initializing various modules of the kernel.
+///
 #[no_mangle]
 pub fn kernel_init() -> ! {
     clear_bss();
@@ -28,6 +35,9 @@ pub fn kernel_init() -> ! {
 }
 
 /// Clear the .bss section
+///
+/// This function clears the `.bss` section of the kernel. 
+/// All memory locations in the `.bss` section (i.e. from __start_bss to __end_bss) are set to 0 in this function.
 pub fn clear_bss() {
     extern "C" {
         static mut __start_bss: u8;
