@@ -1,3 +1,4 @@
+//! Page entry table, Page directory table and related functions
 #![allow(dead_code)]
 
 use crate::println;
@@ -10,31 +11,40 @@ use super::{
     page::{alloc, find_page, inc_ref, page_alloc, page_dealloc, page_dec_ref, page_inc_ref, Page}, tlb::tlb_invalidate,
 };
 
+/// page table entry
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct Pte(pub usize);
 
 impl Pte {
+    /// construct a page entry by page's ppn
+    /// flags are set for this entry
     pub fn new(ppn: PPN, flags: PteFlags) -> Pte {
         Pte(ppn.0 << 10 | flags.bits())
     }
 
+    /// construct an empty entry
     pub fn empty() -> Pte {
         Pte(0)
     }
 
+    /// acquire ppn of this entry
     pub fn ppn(self) -> PPN {
         PPN(self.0 >> 10)
     }
 
+    /// acquire flags of this entry
     pub fn flags(self) -> PteFlags {
         PteFlags::from_bits_truncate(self.0 & 0x3FF)
     }
 
+    /// acquire address of this entry
     pub fn addr(self) -> PA {
         self.ppn().into()
     }
 
+    /// set ppn and flags of this entry
+    /// is this method necessary? (we can construct new entry instead modify old ones)
     pub fn set(&mut self, ppn: PPN, flags: PteFlags) {
         self.0 = ppn.0 << 10 | flags.bits();
     }
@@ -46,11 +56,14 @@ impl Pte {
 
 pub type Pde = Pte;
 
+/// page table directory
 pub struct PageTable {
     page: Page,
 }
 
 impl PageTable {
+    /// construct a page table with its page
+    /// page's ref_count will be set to 1
     pub fn init() -> (PageTable, Page) {
         let ppn = alloc(true).expect("Failed to allocate a page for PageTable.");
         let page = Page::new(ppn);
@@ -58,11 +71,19 @@ impl PageTable {
         (PageTable { page }, page)
     }
 
+    /// return pte at this page's offset
     fn pte_at(&self, offset: usize) -> &mut Pte {
         let base_pd: *mut Pde = self.page.ppn().kaddr().as_mut_ptr::<Pde>();
         unsafe { &mut *base_pd.add(offset) }
     }
 
+    /// return pte at va of this page table directory
+    /// return MosError::NoMem if create is set and page allocation failed
+    /// 
+    /// # arguments
+    /// * va: virtual address for target pte
+    /// * create: create a new page if pte is not valid
+    /// 
     pub fn walk(&self, va: VA, create: bool) -> Result<Option<&mut Pte>, MosError> {
         let pte = self.pte_at(va.pdx());
         
@@ -83,6 +104,10 @@ impl PageTable {
         Ok(Some(ret))
     }
 
+    /// map the physical page at virtual address va,
+    /// the lower 12 bits of pte will be set to flags
+    /// 
+    /// return () on success, MosError::NoMem on failure
     pub fn insert(&self, asid: usize, page: Page, va: VA, flags: PteFlags) -> Result<(), MosError> {
         let ppn = page.ppn();
         
@@ -109,6 +134,14 @@ impl PageTable {
         }
     }
 
+    /// lookup the page that virtual address va is mapped to
+    /// return a tuple of (pte, page)
+    /// 
+    /// # return value
+    /// * pte: &mut Pte, page table entry of va
+    /// * page: Page, page of va
+    /// 
+    /// return None if page not found valid
     pub fn lookup(&self, va: VA) -> Option<(&mut Pte, Page)> {
         let pte = self.walk(va, false);
         if let Ok(Some(pte)) = pte {
@@ -120,6 +153,7 @@ impl PageTable {
         None
     }
 
+    /// unmap the page at virtual address va
     pub fn remove(&self, asid: usize, va: VA) {
         match self.lookup(va) {
             Some((pte, page)) => {
@@ -131,6 +165,8 @@ impl PageTable {
         }
     }
 
+    /// decrease the ref_count of page
+    /// if page's ref_count is set to 0, recycle it
     fn try_recycle(page: Page) {
         if let Some(tracker) = find_page(page) {
             match tracker.ref_count() {
@@ -148,6 +184,7 @@ impl PageTable {
         }
     }
 
+    /// acquire the nth pte of this page table
     unsafe fn nth(&self, n: usize) -> &mut Pte {
         assert!(n < 1024);
         let base_ptr = self.page.ppn().kaddr().as_mut_ptr::<Pte>();
@@ -158,6 +195,7 @@ impl PageTable {
 pub type PageDirectory = PageTable;
 
 impl PageDirectory {
+    /// convert virtual address va to physical address pa in current page directory
     fn va2pa(&self, va: VA) -> Option<PA> {
         let base_pd = self.page.ppn().kaddr().as_mut_ptr::<Pte>();
         let pde = unsafe { &*base_pd.add(va.pdx()) };
