@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use crate::println;
+use log::debug;
 
 use crate::error::MosError;
 
@@ -234,5 +234,5 @@ pub fn mapping_test() {
     // Free resources
     PageTable::try_recycle(pde.ppn().into());
     PageTable::try_recycle(pd_page);
-    println!("Mapping test passed!");
+    debug!("Mapping test passed!");
 }

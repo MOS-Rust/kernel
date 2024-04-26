@@ -1,8 +1,7 @@
 //! heap
 use alloc::{string::String, vec::Vec};
 use allocator::Allocator;
-
-use crate::println;
+use log::{debug, info};
 
 // 1MiB
 const KERNEL_HEAP_SIZE: usize = 0x100_000;
@@ -18,7 +17,7 @@ pub fn init() {
         ALLOCATOR.lock().add_size
         (KERNEL_HEAP.as_ptr() as usize, KERNEL_HEAP_SIZE);
     }
-    println!("Initialized {} KiB of kernel heap.", KERNEL_HEAP_SIZE / 1024);
+    info!("Initialized {} KiB of kernel heap.", KERNEL_HEAP_SIZE / 1024);
 }
 
 pub fn heap_test() {
@@ -32,5 +31,5 @@ pub fn heap_test() {
     let s = String::from("Hello, world!");
     assert_eq!(s, "Hello, world!");
     drop(v);
-    println!("Heap test passed!");
+    debug!("Heap test passed!");
 }
