@@ -10,7 +10,6 @@ use core::arch::asm;
 
 use crate::{platform::halt, println};
 
-#[cfg(target_arch = "mips")]
 #[panic_handler]
 fn panic(_info: &core::panic::PanicInfo) -> ! {
     let sp: usize;

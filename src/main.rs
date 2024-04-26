@@ -5,10 +5,10 @@
 #![deny(missing_docs)]
 #![deny(warnings)] 
 
-#![cfg_attr(target_arch = "mips", feature(asm_experimental_arch))]
 #![no_std]
 #![no_main]
 #![feature(panic_info_message)]
+#![feature(asm_experimental_arch)]
 
 extern crate alloc;
 
@@ -16,8 +16,7 @@ extern crate alloc;
 extern crate bitflags;
 
 mod export;
-#[cfg(target_arch = "mips")]
-#[path ="platform/mips/mod.rs"]
+
 mod platform;
 mod panic;
 mod console;
@@ -29,7 +28,6 @@ use core::{arch::global_asm, include_str, ptr::{addr_of_mut, write_bytes}};
 
 use log::info;
 
-#[cfg(target_arch = "mips")]
 global_asm!(include_str!("../asm/init/entry.S"));
 
 /// Kernel initialization function
