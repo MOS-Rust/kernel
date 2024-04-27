@@ -7,11 +7,11 @@ use super::{addr::{VA, VPN}, layout::{PteFlags, PAGE_SIZE, UENVS, UPAGES, USTACK
 global_asm!(include_str!("../../asm/mm/tlb.S"));
 
 extern "C" {
-    fn _tlb_out(entryhi: usize);
+    fn _tlb_out(entryhi: u32);
 }
 
 pub fn tlb_invalidate(asid: usize, va: VA) {
-    let entryhi: usize = VPN::from(va).0 << 12 | asid;
+    let entryhi: u32 = (VPN::from(va).0 << 12 | asid) as u32;
     unsafe {
         _tlb_out(entryhi);
     }
@@ -45,7 +45,7 @@ pub fn passive_alloc(va: VA, pgdir: PageDirectory, asid: usize) {
 }
 
 /// This function returns (entrylo0, entrylo1).
-pub fn do_tlb_refill(va: VA, asid: usize) -> (usize, usize) {
+pub fn do_tlb_refill(va: VA, asid: usize) -> (u32, u32) {
     tlb_invalidate(asid, va);
     // TODO:
     (0, 0)

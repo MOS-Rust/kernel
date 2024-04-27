@@ -8,16 +8,16 @@
 
 use core::arch::asm;
 
-use crate::{platform::halt, println};
+use crate::{mips::halt, println};
 
 #[panic_handler]
 fn panic(_info: &core::panic::PanicInfo) -> ! {
-    let sp: usize;
-    let ra: usize;
-    let badva: usize;
-    let sr: usize;
-    let cause: usize;
-    let epc: usize;
+    let sp: u32;
+    let ra: u32;
+    let badva: u32;
+    let sr: u32;
+    let cause: u32;
+    let epc: u32;
 
     unsafe {
         asm!(

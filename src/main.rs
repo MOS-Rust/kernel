@@ -9,6 +9,8 @@
 #![no_main]
 #![feature(panic_info_message)]
 #![feature(asm_experimental_arch)]
+#![feature(asm_const)]
+
 
 extern crate alloc;
 
@@ -17,12 +19,13 @@ extern crate bitflags;
 
 mod export;
 
-mod platform;
+mod mips;
 mod panic;
 mod console;
 mod error;
 mod mm;
 mod logging;
+mod exception;
 
 use core::{arch::global_asm, include_str, ptr::{addr_of_mut, write_bytes}};
 
