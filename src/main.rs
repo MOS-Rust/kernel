@@ -11,7 +11,6 @@
 #![feature(asm_experimental_arch)]
 #![feature(asm_const)]
 
-
 extern crate alloc;
 
 #[macro_use]
