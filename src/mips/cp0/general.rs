@@ -44,6 +44,15 @@ macro_rules! register_struct_rw {
     }
 }
 
+macro_rules! register_read_bit {
+    ($getter: ident, $bit: expr) => {
+        #[inline]
+        pub unsafe fn $getter() -> bool {
+            (read() & (1 << $bit)) != 0
+        }
+    };
+}
+
 macro_rules! register_set_bit {
     ($setter: ident, $bit: expr) => {
         #[inline]
@@ -63,7 +72,8 @@ macro_rules! register_clear_bit {
 }
 
 macro_rules! register_bit {
-    ($bit: expr, $setter: ident, $clearer: ident) => {
+    ($bit: expr, $getter: ident, $setter: ident, $clearer: ident) => {
+        register_read_bit!($getter, $bit);
         register_set_bit!($setter, $bit);
         register_clear_bit!($clearer, $bit);
     };
@@ -85,3 +95,39 @@ macro_rules! register_field {
         }
     };
 }
+
+macro_rules! register_struct_get_bit {
+    ($getter: ident, $bit: expr) => {
+        #[inline]
+        pub unsafe fn $getter(&self) -> bool {
+            (self.bits & (1 << $bit)) != 0
+        }
+    };
+}
+
+macro_rules! register_struct_set_bit {
+    ($setter: ident, $bit: expr) => { 
+        #[inline]
+        pub unsafe fn $setter(&mut self) {
+            self.bits |= 1 << $bit;
+        }
+    };
+}
+
+macro_rules! register_struct_clear_bit {
+    ($clearer: ident, $bit: expr) => {
+        #[inline]
+        pub unsafe fn $clearer(&mut self) {
+            self.bits &= !(1 << $bit);
+        }
+    };
+}
+
+macro_rules! register_struct_bit {
+    ($bit: expr, $getter: ident, $setter: ident, $clearer: ident) => {
+        register_struct_get_bit!($getter, $bit);
+        register_struct_set_bit!($setter, $bit);
+        register_struct_clear_bit!($clearer, $bit);
+    };
+}
+
