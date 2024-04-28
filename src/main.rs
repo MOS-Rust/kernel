@@ -9,6 +9,7 @@
 #![no_main]
 #![feature(panic_info_message)]
 #![feature(asm_experimental_arch)]
+#![feature(asm_const)]
 
 extern crate alloc;
 
@@ -17,7 +18,7 @@ extern crate bitflags;
 
 mod export;
 
-mod platform;
+mod mips;
 mod panic;
 mod console;
 mod error;

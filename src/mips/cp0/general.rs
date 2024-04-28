@@ -30,7 +30,21 @@ macro_rules! register_rw {
     };
 }
 
-macro_rules! set_bit {
+macro_rules! register_struct_rw {
+    ($ident: ident) => {
+        #[inline]
+        pub unsafe fn read_struct() -> $ident {
+            $ident {bits: read()}
+        }
+
+        #[inline]
+        pub unsafe fn write_struct(value: $ident) {
+            write(value.bits);
+        }
+    }
+}
+
+macro_rules! register_set_bit {
     ($setter: ident, $bit: expr) => {
         #[inline]
         pub unsafe fn $setter() {
@@ -39,7 +53,7 @@ macro_rules! set_bit {
     };
 }
 
-macro_rules! clear_bit {
+macro_rules! register_clear_bit {
     ($setter: ident, $bit: expr) => {
         #[inline]
         pub unsafe fn $setter() {
@@ -48,9 +62,26 @@ macro_rules! clear_bit {
     };
 }
 
-macro_rules! manipulate_bit {
+macro_rules! register_bit {
     ($bit: expr, $setter: ident, $clearer: ident) => {
-        set_bit!($setter, $bit);
-        clear_bit!($clearer, $bit);
+        register_set_bit!($setter, $bit);
+        register_clear_bit!($clearer, $bit);
+    };
+}
+
+macro_rules! register_field {
+    ($field: ident, $mask: expr, $shift: expr) => {
+        #[inline]
+        pub unsafe fn get_$field() -> u32 {
+            (read() & $mask) >> $shift
+        }
+
+        #[inline]
+        pub unsafe fn set_$field(value: u32) {
+            let mut reg = read();
+            reg &= !$mask;
+            reg |= value << $shift;
+            write(reg);
+        }
     };
 }

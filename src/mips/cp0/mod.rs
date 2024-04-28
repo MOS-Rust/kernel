@@ -1,5 +1,11 @@
 #[macro_use]
 mod general;
+mod cp0reg;
 
-mod status;
-mod ebase;
+pub mod index;
+pub mod random;
+pub mod entrylo;
+
+pub mod status;
+pub mod ebase;
+

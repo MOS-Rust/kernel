@@ -1,7 +1,7 @@
 #![allow(dead_code)] // TODO: Remove this
 
-pub mod reg;
-pub mod cp0reg;
+pub mod gpr;
+pub mod cp0;
 mod malta;
 mod machine;
 
