@@ -1,4 +1,4 @@
-//! heap
+//! Heap allocator.
 use allocator::Allocator;
 use log::info;
 
