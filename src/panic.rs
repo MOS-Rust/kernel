@@ -33,7 +33,7 @@ fn panic(_info: &core::panic::PanicInfo) -> ! {
             out("$11") sr,
             out("$12") cause,
             out("$13") epc,
-        )
+        );
     }
     println!(
         "Kernel Panicked: \"{}\" at {}",

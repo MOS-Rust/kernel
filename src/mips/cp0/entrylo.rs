@@ -23,9 +23,9 @@ pub struct EntryLo {
 
 impl EntryLo {
     register_struct_field!(get_ppn, set_ppn, 6, 24);
-    register_struct_bit!(is_global, set_global, clear_global, 0);
-    register_struct_bit!(is_valid, set_valid, clear_valid, 1);
-    register_struct_bit!(is_dirty, set_dirty, clear_dirty, 2);
+    register_struct_bit!(0, is_global, set_global, clear_global);
+    register_struct_bit!(1, is_valid, set_valid, clear_valid);
+    register_struct_bit!(2, is_dirty, set_dirty, clear_dirty);
 
     pub fn get_flags(&self) -> PteFlags {
         PteFlags::from_bits_truncate(self.bits & 0x3f)

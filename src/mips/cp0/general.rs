@@ -71,7 +71,7 @@ macro_rules! register_bit_clear {
 }
 
 macro_rules! register_bit {
-    ($getter: ident, $setter: ident, $clearer: ident, $bit: expr) => {
+    ($bit: expr, $getter: ident, $setter: ident, $clearer: ident) => {
         register_bit_get!($getter, $bit);
         register_bit_set!($setter, $bit);
         register_bit_clear!($clearer, $bit);
@@ -134,7 +134,7 @@ macro_rules! register_struct_bit_clear {
 }
 
 macro_rules! register_struct_bit {
-    ($getter: ident, $setter: ident, $clearer: ident, $bit: expr) => {
+    ($bit: expr, $getter: ident, $setter: ident, $clearer: ident) => {
         register_struct_bit_get!($getter, $bit);
         register_struct_bit_set!($setter, $bit);
         register_struct_bit_clear!($clearer, $bit);
