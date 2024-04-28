@@ -1,3 +1,5 @@
+//! Address types and conversion functions
+
 use core::cmp::{PartialEq, Eq, Ord};
 use core::ops::{Add, Sub};
 

@@ -1,6 +1,4 @@
 //! Page entry table, Page directory table and related functions
-#![allow(dead_code)]
-
 use crate::println;
 
 use crate::error::MosError;
@@ -11,7 +9,7 @@ use super::{
     page::{alloc, find_page, inc_ref, page_alloc, page_dealloc, page_dec_ref, page_inc_ref, Page}, tlb::tlb_invalidate,
 };
 
-/// page table entry
+/// Page table entry
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct Pte(pub usize);
@@ -44,7 +42,7 @@ impl Pte {
     }
 
     /// set ppn and flags of this entry
-    /// is this method necessary? (we can construct new entry instead modify old ones)
+    // is this method necessary? (we can construct new entry instead modify old ones)
     pub fn set(&mut self, ppn: PPN, flags: PteFlags) {
         self.0 = ppn.0 << 10 | flags.bits();
     }
@@ -56,7 +54,7 @@ impl Pte {
 
 pub type Pde = Pte;
 
-/// page table directory
+/// Page directory
 pub struct PageTable {
     page: Page,
 }
@@ -171,7 +169,7 @@ impl PageTable {
         if let Some(tracker) = find_page(page) {
             match tracker.ref_count() {
                 0 => {
-                    panic!("PageTable::decref: page is not referenced.");
+                    panic!("PageTable::try_recycle: page is not referenced.");
                 },
                 1 => {
                     page_dec_ref(page);
