@@ -1,8 +1,19 @@
-use core::{arch::global_asm, fmt::{Display, Formatter, Result}};
+use core::{arch::global_asm, fmt::{Display, Formatter, Result}, ptr::addr_of_mut};
+
+use mips::registers::cp0::ebase;
 
 use crate::const_export_usize;
 
 global_asm!(include_str!("../../asm/exception/trapframe.S"));
+
+pub unsafe fn init() {
+    extern "C" {
+        static mut _exception_entry: u8;
+    }
+    unsafe {
+        ebase::write(addr_of_mut!(_exception_entry) as u32);
+    }
+}
 
 #[repr(C)]
 struct Trapframe {
@@ -33,42 +44,42 @@ impl Display for Trapframe {
     }
 }
 
-const_export_usize!(TF_REG0, 0);
-const_export_usize!(TF_REG1, TF_REG0 + 4);
-const_export_usize!(TF_REG2, TF_REG1 + 4);
-const_export_usize!(TF_REG3, TF_REG2 + 4);
-const_export_usize!(TF_REG4, TF_REG3 + 4);
-const_export_usize!(TF_REG5, TF_REG4 + 4);
-const_export_usize!(TF_REG6, TF_REG5 + 4);
-const_export_usize!(TF_REG7, TF_REG6 + 4);
-const_export_usize!(TF_REG8, TF_REG7 + 4);
-const_export_usize!(TF_REG9, TF_REG8 + 4);
-const_export_usize!(TF_REG10, TF_REG9 + 4);
-const_export_usize!(TF_REG11, TF_REG10 + 4);
-const_export_usize!(TF_REG12, TF_REG11 + 4);
-const_export_usize!(TF_REG13, TF_REG12 + 4);
-const_export_usize!(TF_REG14, TF_REG13 + 4);
-const_export_usize!(TF_REG15, TF_REG14 + 4);
-const_export_usize!(TF_REG16, TF_REG15 + 4);
-const_export_usize!(TF_REG17, TF_REG16 + 4);
-const_export_usize!(TF_REG18, TF_REG17 + 4);
-const_export_usize!(TF_REG19, TF_REG18 + 4);
-const_export_usize!(TF_REG20, TF_REG19 + 4);
-const_export_usize!(TF_REG21, TF_REG20 + 4);
-const_export_usize!(TF_REG22, TF_REG21 + 4);
-const_export_usize!(TF_REG23, TF_REG22 + 4);
-const_export_usize!(TF_REG24, TF_REG23 + 4);
-const_export_usize!(TF_REG25, TF_REG24 + 4);
-const_export_usize!(TF_REG26, TF_REG25 + 4);
-const_export_usize!(TF_REG27, TF_REG26 + 4);
-const_export_usize!(TF_REG28, TF_REG27 + 4);
-const_export_usize!(TF_REG29, TF_REG28 + 4);
-const_export_usize!(TF_REG30, TF_REG29 + 4);
-const_export_usize!(TF_REG31, TF_REG30 + 4);
-const_export_usize!(TF_STATUS, TF_REG31 + 4);
-const_export_usize!(TF_HI, TF_STATUS + 4);
-const_export_usize!(TF_LO, TF_HI + 4);
-const_export_usize!(TF_BADVADDR, TF_LO + 4);
-const_export_usize!(TF_CAUSE, TF_BADVADDR + 4);
-const_export_usize!(TF_EPC, TF_CAUSE + 4);
-const_export_usize!(TF_SIZE, TF_EPC + 4);
+const_export_usize!(TF_REG0, 0x0);
+const_export_usize!(TF_REG1, 0x4);
+const_export_usize!(TF_REG2, 0x8);
+const_export_usize!(TF_REG3, 0xC);
+const_export_usize!(TF_REG4, 0x10);
+const_export_usize!(TF_REG5, 0x14);
+const_export_usize!(TF_REG6, 0x18);
+const_export_usize!(TF_REG7, 0x1C);
+const_export_usize!(TF_REG8, 0x20);
+const_export_usize!(TF_REG9, 0x24);
+const_export_usize!(TF_REG10, 0x28);
+const_export_usize!(TF_REG11, 0x2C);
+const_export_usize!(TF_REG12, 0x30);
+const_export_usize!(TF_REG13, 0x34);
+const_export_usize!(TF_REG14, 0x38);
+const_export_usize!(TF_REG15, 0x3C);
+const_export_usize!(TF_REG16, 0x40);
+const_export_usize!(TF_REG17, 0x44);
+const_export_usize!(TF_REG18, 0x48);
+const_export_usize!(TF_REG19, 0x4C);
+const_export_usize!(TF_REG20, 0x50);
+const_export_usize!(TF_REG21, 0x54);
+const_export_usize!(TF_REG22, 0x58);
+const_export_usize!(TF_REG23, 0x5C);
+const_export_usize!(TF_REG24, 0x60);
+const_export_usize!(TF_REG25, 0x64);
+const_export_usize!(TF_REG26, 0x68);
+const_export_usize!(TF_REG27, 0x6C);
+const_export_usize!(TF_REG28, 0x70);
+const_export_usize!(TF_REG29, 0x74);
+const_export_usize!(TF_REG30, 0x78);
+const_export_usize!(TF_REG31, 0x7C);
+const_export_usize!(TF_STATUS, 0x80);
+const_export_usize!(TF_HI, 0x84);
+const_export_usize!(TF_LO, 0x88);
+const_export_usize!(TF_BADVADDR, 0x8C);
+const_export_usize!(TF_CAUSE, 0x90);
+const_export_usize!(TF_EPC, 0x94);
+const_export_usize!(TF_SIZE, 0x98);
