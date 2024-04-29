@@ -8,6 +8,7 @@ edition = "2021"
 allocator = { version = "0.1.0", path = "../allocator" }
 bitflags = "2.5.0"
 log = "0.4"
+mips = { version = "0.1.0", path = "../mips" }
 
 [build-dependencies]
 preprocessor = { version = "0.1.0", path = "../tools/preprocessor" }

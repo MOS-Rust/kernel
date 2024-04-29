@@ -8,7 +8,7 @@
 
 use core::arch::asm;
 
-use crate::{mips::halt, println};
+use crate::{platform::halt, println};
 
 #[panic_handler]
 fn panic(_info: &core::panic::PanicInfo) -> ! {

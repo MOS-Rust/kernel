@@ -18,7 +18,7 @@ extern crate bitflags;
 
 mod export;
 
-mod mips;
+mod platform;
 mod panic;
 mod console;
 mod error;

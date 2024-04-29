@@ -1,5 +1,5 @@
 use core::fmt::{self, Write};
-use crate::mips::print_char;
+use crate::platform::print_char;
 
 struct Stdout;
 
