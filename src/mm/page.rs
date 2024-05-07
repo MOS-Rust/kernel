@@ -1,7 +1,7 @@
 //! Page structure and PageAllocator for memory management
+use crate::println;
 use alloc::vec::Vec;
 use core::ptr::{addr_of_mut, write_bytes};
-use crate::println;
 
 use crate::mm::addr::VA;
 
@@ -80,7 +80,7 @@ impl PageTracker {
     }
 
     /// Decrease tracker's ref_count
-    /// This function will NOT decrease ref_count 
+    /// This function will NOT decrease ref_count
     /// if it is less than 0
     fn dec_ref(&mut self) {
         if self.ref_count > 0 {
@@ -106,12 +106,12 @@ impl PageAllocator {
     }
 
     /// Init page allocator, acquire empty memory and generate empty pages
-    /// 
+    ///
     /// # arguments
     /// this part should be supplemented
     /// * current
     /// * end
-    /// 
+    ///
     fn init(&mut self, current: PPN, end: PPN) {
         self.pages = Vec::with_capacity(get_pagenum());
         self.free_list = Vec::with_capacity(get_pagenum());
@@ -142,7 +142,7 @@ impl PageAllocator {
         }
     }
 
-    /// Deallocator a page by its ppn, insert it into page free list
+    /// Deallocate a page by its ppn, insert it into page free list
     /// Panic if page's ref_count is not 0
     fn dealloc(&mut self, ppn: PPN) {
         assert!(self.pages[ppn.0].ref_count == 0);

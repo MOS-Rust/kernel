@@ -15,10 +15,14 @@ static mut KERNEL_HEAP: [u8; KERNEL_HEAP_SIZE] = [0; KERNEL_HEAP_SIZE];
 
 pub fn init() {
     unsafe {
-        ALLOCATOR.lock().add_size
-        (KERNEL_HEAP.as_ptr() as usize, KERNEL_HEAP_SIZE);
+        ALLOCATOR
+            .lock()
+            .add_size(KERNEL_HEAP.as_ptr() as usize, KERNEL_HEAP_SIZE);
     }
-    println!("Initialized {} KiB of kernel heap.", KERNEL_HEAP_SIZE / 1024);
+    println!(
+        "Initialized {} KiB of kernel heap.",
+        KERNEL_HEAP_SIZE / 1024
+    );
 }
 
 pub fn heap_test() {

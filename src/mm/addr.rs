@@ -1,6 +1,6 @@
 //! Address types and conversion functions
 
-use core::cmp::{PartialEq, Eq, Ord};
+use core::cmp::{Eq, Ord, PartialEq};
 use core::ops::{Add, Sub};
 
 use super::get_pagenum;

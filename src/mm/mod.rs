@@ -1,14 +1,14 @@
 //! Memory management module for MOS
 //!
 //! This module provides memory management functionality for the MOS kernel.
-//! 
+//!
 //! It includes functions for initializing memory, managing the heap and handling page allocation and mapping.
 
 mod addr;
 mod heap;
-mod page;
 pub mod layout;
 pub mod map;
+mod page;
 pub mod tlb;
 
 use crate::println;
@@ -41,15 +41,15 @@ pub fn init(memsize: usize) {
 }
 
 /// Sets the total memory size.
-/// 
+///
 /// Should only be called once.
-/// 
+///
 /// # Arguments
-/// 
+///
 /// * `memsize` - The total size of memory in bytes.
-/// 
+///
 /// # Panics
-/// 
+///
 /// Panics if the memory size has already been set.
 unsafe fn set_memsize(memsize: usize) {
     if MEMSIZE != 0 {

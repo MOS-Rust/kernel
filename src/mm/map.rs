@@ -6,7 +6,8 @@ use crate::error::MosError;
 use super::{
     addr::{PA, PPN, VA},
     layout::PteFlags,
-    page::{alloc, find_page, inc_ref, page_alloc, page_dealloc, page_dec_ref, page_inc_ref, Page}, tlb::tlb_invalidate,
+    page::{alloc, find_page, inc_ref, page_alloc, page_dealloc, page_dec_ref, page_inc_ref, Page},
+    tlb::tlb_invalidate,
 };
 
 /// Page table entry
@@ -77,14 +78,14 @@ impl PageTable {
 
     /// return pte at va of this page table directory
     /// return MosError::NoMem if create is set and page allocation failed
-    /// 
+    ///
     /// # arguments
     /// * va: virtual address for target pte
     /// * create: create a new page if pte is not valid
-    /// 
+    ///
     pub fn walk(&self, va: VA, create: bool) -> Result<Option<&mut Pte>, MosError> {
         let pte = self.pte_at(va.pdx());
-        
+
         if !pte.flags().contains(PteFlags::V) {
             if !create {
                 return Ok(None);
@@ -98,17 +99,17 @@ impl PageTable {
         }
         let base_pt = pte.addr().kaddr().as_mut_ptr::<Pte>();
         let ret = unsafe { &mut *base_pt.add(va.ptx()) };
-        
+
         Ok(Some(ret))
     }
 
     /// map the physical page at virtual address va,
     /// the lower 12 bits of pte will be set to flags
-    /// 
+    ///
     /// return () on success, MosError::NoMem on failure
     pub fn insert(&self, asid: usize, page: Page, va: VA, flags: PteFlags) -> Result<(), MosError> {
         let ppn = page.ppn();
-        
+
         if let Ok(Some(pte)) = self.walk(va, false) {
             if pte.flags().contains(PteFlags::V) {
                 if ppn == pte.ppn() {
@@ -122,7 +123,7 @@ impl PageTable {
         }
 
         tlb_invalidate(asid, va);
-        
+
         if let Ok(Some(pte)) = self.walk(va, true) {
             *pte = Pte::new(ppn, flags | PteFlags::V | PteFlags::Cached);
             inc_ref(ppn);
@@ -134,11 +135,11 @@ impl PageTable {
 
     /// lookup the page that virtual address va is mapped to
     /// return a tuple of (pte, page)
-    /// 
+    ///
     /// # return value
     /// * pte: &mut Pte, page table entry of va
     /// * page: Page, page of va
-    /// 
+    ///
     /// return None if page not found valid
     pub fn lookup(&self, va: VA) -> Option<(&mut Pte, Page)> {
         let pte = self.walk(va, false);
@@ -158,8 +159,8 @@ impl PageTable {
                 tlb_invalidate(asid, va);
                 PageTable::try_recycle(page);
                 *pte = Pte::empty();
-            },
-            None => {},
+            }
+            None => {}
         }
     }
 
@@ -170,14 +171,14 @@ impl PageTable {
             match tracker.ref_count() {
                 0 => {
                     panic!("PageTable::try_recycle: page is not referenced.");
-                },
+                }
                 1 => {
                     page_dec_ref(page);
                     page_dealloc(page);
-                },
+                }
                 _ => {
                     page_dec_ref(page);
-                },
+                }
             }
         }
     }
@@ -227,18 +228,24 @@ pub fn mapping_test() {
     assert_eq!(pd.va2pa(VA(0x0)).unwrap(), pages[0].into());
 
     // Inserting ppns[1] into 0x1000
-    assert!(pd.insert(0, pages[1], VA(0x1000), PteFlags::empty()).is_ok());
+    assert!(pd
+        .insert(0, pages[1], VA(0x1000), PteFlags::empty())
+        .is_ok());
     assert_eq!(pd.va2pa(VA(0x1000)).unwrap(), pages[1].into());
     assert!(pages[1].ref_count() == 1);
 
     // Replacing ppns[1] with ppns[2], ppns[1] should be deallocated
-    assert!(pd.insert(0, pages[2], VA(0x1000), PteFlags::empty()).is_ok());
+    assert!(pd
+        .insert(0, pages[2], VA(0x1000), PteFlags::empty())
+        .is_ok());
     assert_eq!(pd.va2pa(VA(0x1000)).unwrap(), pages[2].into());
     assert!(pages[1].ref_count() == 0);
     assert!(pages[2].ref_count() == 1);
 
     // Replacing ppns[2] with ppns[0], ppns[2] should be deallocated
-    assert!(pd.insert(0, pages[0], VA(0x1000), PteFlags::empty()).is_ok());
+    assert!(pd
+        .insert(0, pages[0], VA(0x1000), PteFlags::empty())
+        .is_ok());
     assert_eq!(pd.va2pa(VA(0x0)).unwrap(), pages[0].into());
     assert_eq!(pd.va2pa(VA(0x1000)).unwrap(), pages[0].into());
     assert!(pages[0].ref_count() == 2);
