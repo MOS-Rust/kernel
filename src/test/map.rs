@@ -46,9 +46,9 @@ pub fn mapping_test() {
     assert!(pd.insert(0, pages[0], VA(0x0), PteFlags::empty()).is_ok());
     assert!(pages[0].ref_count() == 1);
     let pde = unsafe { pd.nth(0) };
-    assert!(pde.flags().contains(PteFlags::V) && pde.flags().contains(PteFlags::Cached));
+    assert!(pde.flags().contains(PteFlags::V) && pde.flags().contains(PteFlags::Cacheable));
     let pte = pd.lookup(VA(0x0)).unwrap().0;
-    assert!(pte.flags().contains(PteFlags::V) && pte.flags().contains(PteFlags::Cached));
+    assert!(pte.flags().contains(PteFlags::V) && pte.flags().contains(PteFlags::Cacheable));
     assert_eq!(pd.va2pa(VA(0x0)).unwrap(), pages[0].into());
 
     // Inserting ppns[1] into 0x1000

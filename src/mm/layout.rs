@@ -16,14 +16,13 @@ bitflags! {
         const G = 1 << 0;
         const V = 1 << 1;
         const D = 1 << 2;
-        
+
         // Only used internally
         const C0 = 1 << 3;
         const C1 = 1 << 4;
         const C2 = 1 << 5;
         
-        // TODO: `Cacheable` is a more appropriate name
-        const Cached = PteFlags::C2.bits() | PteFlags::C1.bits();
+        const Cacheable = PteFlags::C2.bits() | PteFlags::C1.bits();
         const Uncached = PteFlags::C2.bits() & !PteFlags::C1.bits();
 
         /// the bits below are controlled by software
@@ -96,4 +95,3 @@ pub const USTACKTOP: usize = UTOP - 2 * PTMAP;
 pub const UTEXT: usize = PDMAP;
 pub const UCOW: usize = UTEXT - PTMAP;
 pub const UTEMP: usize = UCOW - PTMAP;
-
