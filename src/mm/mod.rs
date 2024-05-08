@@ -1,11 +1,13 @@
-mod addr;
+pub mod addr;
 mod heap;
-mod page;
 pub mod layout;
-mod map;
+pub mod map;
+pub mod page;
 mod tlb;
 
 use log::info;
+
+use crate::test;
 
 static mut MEMSIZE: usize = 0;
 static mut PAGENUM: usize = 0;
@@ -20,10 +22,10 @@ pub fn init(memsize: usize) {
         get_pagenum()
     );
     heap::init();
-    heap::heap_test();
+    test!(HeapTest);
     page::init();
-    page::alloc_test();
-    map::mapping_test();
+    test!(AllocTest);
+    test!(MappingTest);
 }
 
 unsafe fn set_memsize(memsize: usize) {
