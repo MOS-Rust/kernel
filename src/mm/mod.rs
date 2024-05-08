@@ -5,7 +5,7 @@ pub mod layout;
 mod map;
 mod tlb;
 
-use crate::println;
+use log::info;
 
 static mut MEMSIZE: usize = 0;
 static mut PAGENUM: usize = 0;
@@ -14,7 +14,7 @@ pub fn init(memsize: usize) {
     unsafe {
         set_memsize(memsize);
     }
-    println!(
+    info!(
         "Memory size: {} KiB, number of pages: {}.",
         get_memsize() / 1024,
         get_pagenum()
