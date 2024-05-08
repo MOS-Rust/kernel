@@ -1,4 +1,4 @@
-//! Page entry table, Page directory table and related functions
+//! This module contains the implementation of page entry table, page directory table, and related functions.
 use crate::println;
 
 use crate::error::MosError;

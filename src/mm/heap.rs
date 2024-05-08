@@ -1,4 +1,12 @@
 //! Heap allocator.
+//!
+//! This module provides a heap allocator implementation for managing dynamic memory allocation.
+//! It includes functions for initializing the allocator and performing a heap test.
+//!
+//! # Note
+//!
+//! This implementation uses a fixed-size kernel heap of 1 MiB. 
+
 use alloc::{string::String, vec::Vec};
 use allocator::Allocator;
 
@@ -13,6 +21,11 @@ const KERNEL_HEAP_SIZE: usize = 0x100_000;
 static ALLOCATOR: Allocator<32> = Allocator::new();
 static mut KERNEL_HEAP: [u8; KERNEL_HEAP_SIZE] = [0; KERNEL_HEAP_SIZE];
 
+/// Initialize the heap allocator.
+///
+/// This function initializes the heap allocator by adding the kernel heap memory range to the allocator.
+/// 
+/// This function should be called only once.
 pub fn init() {
     unsafe {
         ALLOCATOR
@@ -25,6 +38,7 @@ pub fn init() {
     );
 }
 
+/// Perform a heap test.
 pub fn heap_test() {
     let mut v = Vec::<u8>::new();
     for i in 0..=255 {

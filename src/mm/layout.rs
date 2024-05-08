@@ -1,11 +1,59 @@
-//! Contains exactly the same thing in MOS `include/mmu.h`
+//! Contains the layout constants for memory management in the MOS kernel.
+//!
+//! This module defines various constants related to memory layout, such as page sizes, address
+//! ranges, and flags for page table entries. It also includes a diagram illustrating the memory
+//! layout for different sections of the kernel and user space.
+//!
+//! # Constants
+//!
+//! - `NASID`: Maximum number of Address Space Identifiers (ASIDs).
+//! - `PAGE_SIZE`: Bytes per page.
+//! - `PTMAP`: Bytes mapped by a page table entry (4 KiB).
+//! - `PDMAP`: Bytes mapped by a page directory entry (4 MiB).
+//! - `PGSHIFT`: Page shift value (12).
+//! - `PDSHIFT`: Page directory shift value (22).
+//!
+//! # PteFlags
+//!
+//! The `PteFlags` bitflags struct represents the flags for a page table entry.
+//!
+//! # Memory Layout Diagram
+//!
+//! The memory layout diagram shows the different sections of memory in the kernel and user space.
+//! It includes the following sections:
+//!
+//! - `KSEG2`: Kernel segment 2.
+//! - `KSEG1`: Kernel segment 1.
+//! - `KSEG0`: Kernel segment 0.
+//! - `KSTACKTOP`: Kernel stack top.
+//! - `KERNBASE`: Kernel base address.
+//! - `ULIM`: User limit.
+//! - `UVPT`: User virtual page table.
+//! - `UPAGES`: User pages.
+//! - `UENVS`: User environments.
+//! - `UTOP`: User top.
+//! - `UXSTACKTOP`: User exception stack top.
+//! - `USTACKTOP`: User stack top.
+//! - `UTEXT`: User text.
+//! - `UCOW`: User copy-on-write.
+//! - `UTEMP`: User temporary.
+//!
+//! The diagram also includes the address ranges for each section.
+//!
+//! For more information, refer to the MOS `include/mmu.h` file.
 #![allow(dead_code)] // TODO: Remove this
 
+/// Maximum number of Address Space Identifiers(ASIDs)
 pub const NASID: usize = 256;
+/// Bytes per page
 pub const PAGE_SIZE: usize = 4096;
+/// Bytes mapped by a page table entry, 4 KiB
 pub const PTMAP: usize = PAGE_SIZE;
-pub const PDMAP: usize = 0x0040_0000; // Bytes mapped by a page directory entry, 4 MiB
+/// Bytes mapped by a page directory entry, 4 MiB
+pub const PDMAP: usize = 0x0040_0000;
+/// Page shift value
 pub const PGSHIFT: usize = 12;
+/// Page directory shift value
 pub const PDSHIFT: usize = 22;
 
 bitflags! {
