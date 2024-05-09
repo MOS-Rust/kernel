@@ -1,8 +1,8 @@
 mod addr;
 mod heap;
-mod page;
+pub mod page;
 pub mod layout;
-mod map;
+pub mod map;
 mod tlb;
 
 use log::info;

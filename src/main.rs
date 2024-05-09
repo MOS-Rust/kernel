@@ -22,6 +22,7 @@ mod panic;
 mod console;
 mod error;
 mod mm;
+mod pm;
 mod logging;
 
 use core::{arch::global_asm, include_str, ptr::{addr_of_mut, write_bytes}};
