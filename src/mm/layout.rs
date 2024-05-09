@@ -8,6 +8,7 @@ pub const PDMAP: usize = 0x0040_0000; // Bytes mapped by a page directory entry,
 pub const PGSHIFT: usize = 12;
 pub const PDSHIFT: usize = 22;
 
+// TODO: Probably this should move to mips/cp0/entrylo.rs
 bitflags! {
     #[derive(Debug)]
     pub struct PteFlags: usize {
@@ -21,6 +22,7 @@ bitflags! {
         const C1 = 1 << 4;
         const C2 = 1 << 5;
         
+        // TODO: `Cacheable` is a more appropriate name
         const Cached = PteFlags::C2.bits() | PteFlags::C1.bits();
         const Uncached = PteFlags::C2.bits() & !PteFlags::C1.bits();
 

@@ -15,6 +15,9 @@ SECTIONS
     
     __start_text = .;
     .text : {
+        . = ALIGN(4096);
+        PROVIDE(__ebase = .);
+
         *(.text .text.*)
     }
     __end_text = .;

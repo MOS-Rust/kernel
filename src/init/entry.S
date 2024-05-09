@@ -10,3 +10,4 @@ _entry:
     la      SP, __stack_top;
     
     j       kernel_init
+    nop

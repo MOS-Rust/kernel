@@ -9,6 +9,7 @@
 #![no_main]
 #![feature(panic_info_message)]
 #![feature(asm_experimental_arch)]
+#![feature(asm_const)]
 
 extern crate alloc;
 
@@ -24,10 +25,12 @@ mod error;
 mod mm;
 mod pm;
 mod logging;
+mod exception;
 
 use core::{arch::global_asm, include_str, ptr::{addr_of_mut, write_bytes}};
 
 use log::info;
+use mips::registers::cp0::{compare, count};
 
 global_asm!(include_str!("../asm/init/entry.S"));
 
@@ -47,6 +50,9 @@ pub extern "C" fn kernel_init(
     logging::init();
     info!("MOS-Rust started!");
     mm::init(ram_size);
+    unsafe {exception::trapframe::init();}
+    println!("{}",unsafe { compare::read() });
+    println!("{}",unsafe { count::read() });
     panic!()
 }
 
