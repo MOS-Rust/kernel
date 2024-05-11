@@ -61,8 +61,12 @@ pub struct PageTable {
 }
 
 impl PageTable {
-    /// construct a page table with its page
-    /// page's ref_count will be set to 1
+    /// Initialize a new page table
+    /// A page is allocated for the page table
+    /// 
+    /// # Returns
+    /// 
+    /// A tuple containing the page table and the page
     pub fn init() -> (PageTable, Page) {
         let ppn = alloc(true).expect("Failed to allocate a page for PageTable.");
         let page = Page::new(ppn);
@@ -103,10 +107,13 @@ impl PageTable {
         Ok(Some(ret))
     }
 
-    /// map the physical page at virtual address va,
+    /// Map the physical page at virtual address va,
     /// the lower 12 bits of pte will be set to flags
     ///
-    /// return () on success, MosError::NoMem on failure
+    /// # Returns
+    /// 
+    /// Ok(()) if page is successfully inserted
+    /// MosError::NoMem if page allocation failed
     pub fn insert(&self, asid: usize, page: Page, va: VA, flags: PteFlags) -> Result<(), MosError> {
         let ppn = page.ppn();
 
@@ -133,14 +140,15 @@ impl PageTable {
         }
     }
 
-    /// lookup the page that virtual address va is mapped to
-    /// return a tuple of (pte, page)
+    /// Lookup the page that virtual address va is mapped to
     ///
-    /// # return value
+    /// # Returns
+    /// 
+    /// Ok((pte, page)) if page found valid
     /// * pte: &mut Pte, page table entry of va
     /// * page: Page, page of va
     ///
-    /// return None if page not found valid
+    /// None if page not found valid
     pub fn lookup(&self, va: VA) -> Option<(&mut Pte, Page)> {
         let pte = self.walk(va, false);
         if let Ok(Some(pte)) = pte {
@@ -165,7 +173,7 @@ impl PageTable {
     }
 
     /// decrease the ref_count of page
-    /// if page's ref_count is set to 0, recycle it
+    /// if page's ref_count is set to 0, deallocate the page
     fn try_recycle(page: Page) {
         if let Some(tracker) = find_page(page) {
             match tracker.ref_count() {
