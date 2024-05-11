@@ -98,6 +98,8 @@ pub struct PageAllocator {
 }
 
 impl PageAllocator {
+    /// Construct a new PageAllocator
+    /// with empty pages and free_list
     const fn new() -> Self {
         const NEW_VEC: Vec<PPN> = Vec::new();
         PageAllocator {
@@ -106,6 +108,20 @@ impl PageAllocator {
         }
     }
 
+    /// Initializes the memory management system with the given range of physical page numbers.
+    ///
+    /// # Arguments
+    ///
+    /// * `current` - The starting physical page number (PPN) of the range.
+    /// * `end` - The ending physical page number (PPN) of the range (exclusive).
+    /// 
+    /// # Note
+    /// 
+    /// PPNs in the range [0, current) are considered used and their ref_count is set to 1.
+    /// 
+    /// PPNS in the range [current, end) are considered free and are added to the free list.
+    /// 
+    /// The free list is organized as an array of vectors, where the ith vector contains all free blocks of size 2^i pages.
     fn init(&mut self, current: PPN, end: PPN) {
         const NEW_VEC: Vec<PPN> = Vec::new();
         self.pages = Vec::with_capacity(get_pagenum());
@@ -128,10 +144,20 @@ impl PageAllocator {
         }
     }
 
+    /// Allocate a contiguous block of physical pages.
+    ///
+    /// # Arguments
+    ///
+    /// * `clear` - Whether to clear the allocated pages.
+    /// * `size` - The number of pages to allocate, it will be rounded up to the nearest power of 2.
+    ///
+    /// # Returns
+    ///
+    /// * `Some(PPN)` - The starting physical page number (PPN) of the allocated block.
+    /// * `None` - If allocation fails.
     fn alloc(&mut self, clear: bool, size: usize) -> Option<PPN> {
         let size = size.next_power_of_two();
         let order = size.trailing_zeros() as usize;
-        assert!(order < ORDER);
         for i in order..ORDER {
             if !self.free_list[i].is_empty() {
                 for j in (order + 1..i + 1).rev() {
@@ -154,10 +180,15 @@ impl PageAllocator {
         return None;
     }
 
+    /// Deallocate a previously allocated block of physical pages.
+    ///
+    /// # Arguments
+    ///
+    /// * `ppn` - The starting physical page number (PPN) of the block to deallocate.
+    /// * `size` - The number of pages in the block, it will be rounded up to the nearest power of 2.
     fn dealloc(&mut self, ppn: PPN, size: usize) {
         let size = size.next_power_of_two();
         let order = size.trailing_zeros() as usize;
-        assert!(order < ORDER);
         self.free_list[order].push(ppn);
         let mut ppn = ppn;
         let mut order = order;
@@ -181,6 +212,16 @@ impl PageAllocator {
         }
     }
 
+    /// Find the PageTracker associated with a given physical page number (PPN).
+    ///
+    /// # Arguments
+    ///
+    /// * `ppn` - The physical page number (PPN) to search for.
+    ///
+    /// # Returns
+    ///
+    /// * `Some(&PageTracker)` - A reference to the PageTracker associated with the given PPN.
+    /// * `None` - If the PPN is out of range.
     fn find_page(&self, ppn: PPN) -> Option<&PageTracker> {
         if ppn.0 < self.pages.len() {
             Some(&self.pages[ppn.0])
@@ -190,70 +231,7 @@ impl PageAllocator {
     }
 }
 
-// impl PageAllocator {
-//     /// Construct an empty page allocator
-//     const fn new() -> PageAllocator {
-//         PageAllocator {
-//             pages: Vec::new(),
-//             free_list: Vec::new(),
-//         }
-//     }
-//
-//     /// Init page allocator, acquire empty memory and generate empty pages
-//     ///
-//     /// # arguments
-//     /// this part should be supplemented
-//     /// * current
-//     /// * end
-//     ///
-//     fn init(&mut self, current: PPN, end: PPN) {
-//         self.pages = Vec::with_capacity(get_pagenum());
-//         self.free_list = Vec::with_capacity(get_pagenum());
-//         for _ in 0..current.0 {
-//             let mut page = PageTracker::new();
-//             page.inc_ref();
-//             self.pages.push(page);
-//         }
-//         for _ in current.0..end.0 {
-//             self.pages.push(PageTracker::new());
-//         }
-//         // We may want the lower addresses to be allocated earlier
-//         for i in (current.0..end.0).rev() {
-//             self.free_list.push(PPN(i));
-//         }
-//     }
-//
-//     /// Allocate a page and return its ppn
-//     /// Clear page if arugument clear is set
-//     fn alloc(&mut self, clear: bool) -> Option<PPN> {
-//         if let Some(ppn) = self.free_list.pop() {
-//             if clear {
-//                 clear_page(ppn);
-//             }
-//             Some(ppn)
-//         } else {
-//             None
-//         }
-//     }
-//
-//     /// Deallocate a page by its ppn, insert it into page free list
-//     /// Panic if page's ref_count is not 0
-//     fn dealloc(&mut self, ppn: PPN) {
-//         assert!(self.pages[ppn.0].ref_count == 0);
-//         self.free_list.push(ppn);
-//     }
-//
-//     /// Find a page's tracker by its ppn
-//     fn find_page(&self, ppn: PPN) -> Option<&PageTracker> {
-//         if ppn.0 < self.pages.len() {
-//             Some(&self.pages[ppn.0])
-//         } else {
-//             None
-//         }
-//     }
-// }
-
-/// Write 0 to ppn's page
+/// Write 0x00 to ppn's page
 fn clear_page(ppn: PPN) {
     let va = ppn.kaddr();
     unsafe {

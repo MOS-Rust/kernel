@@ -1,4 +1,4 @@
-use log::{debug, info};
+use log::info;
 
 use crate::mm::{addr::{PPN, VA}, layout::PteFlags, map::{PageTable, Pte}, page::{alloc, dealloc, page_alloc, page_dealloc, Page}};
 
@@ -27,7 +27,7 @@ pub fn alloc_test() {
     dealloc(new_page, 1);
     dealloc(pages[2], 1);
     dealloc(pages[3], 1);
-    debug!("Page allocation test passed!");
+    info!("Page allocation test passed!");
 }
 impl PageTable {
     unsafe fn nth(&self, n: usize) -> &mut Pte {
