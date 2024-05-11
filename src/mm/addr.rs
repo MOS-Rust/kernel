@@ -1,21 +1,36 @@
-use core::cmp::{PartialEq, Eq, Ord};
+//! Address types and conversion functions
+//!
+//! This module provides types and conversion functions for working with physical and virtual addresses in the kernel.
+//! It defines the following types:
+//! - `PA`: Represents a physical address.
+//! - `VA`: Represents a virtual address.
+//! - `PPN`: Represents a physical page number.
+//! - `VPN`: Represents a virtual page number.
+//!
+//! The module also provides conversion functions between these types, as well as arithmetic operations on them.
+
+use core::cmp::{Eq, Ord, PartialEq};
 use core::ops::{Add, Sub};
 
 use super::get_pagenum;
 use super::layout::{PDSHIFT, PGSHIFT, ULIM};
 
+/// Physical Address
 #[repr(C)]
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
 pub struct PA(pub usize);
 
+/// Virtual Address
 #[repr(C)]
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
 pub struct VA(pub usize);
 
+/// Physical Page Number
 #[repr(C)]
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
 pub struct PPN(pub usize);
 
+/// Virtual Page Number
 #[repr(C)]
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
 pub struct VPN(pub usize);
@@ -60,6 +75,14 @@ impl From<VPN> for VA {
 
 impl PA {
     /// Translates from physical address to kernel virtual address
+    /// 
+    /// # Panics
+    /// 
+    /// Panics if the physical address is beyond the physical memory size
+    /// 
+    /// # Returns
+    /// 
+    /// The kernel virtual address
     pub fn kaddr(&self) -> VA {
         let ppn = PPN::from(*self);
         if ppn.0 >= get_pagenum() {
@@ -81,6 +104,14 @@ impl VA {
     }
 
     /// Translates from kernel virtual address to physical address
+    /// 
+    /// # Panics
+    /// 
+    /// Panics if the virtual address is not in the kernel space
+    /// 
+    /// # Returns
+    /// 
+    /// The physical address
     pub fn paddr(&self) -> PA {
         if self.0 < ULIM {
             panic!("VA::paddr: Invalid virtual address");
@@ -88,14 +119,17 @@ impl VA {
         PA(self.0 - ULIM)
     }
 
+    /// Get the page table entry address from the virtual address
     pub fn pte_addr(&self) -> VA {
         VA(self.0 & !0xFFF)
     }
 
+    // /// Get the pointer from the virtual address
     // pub fn as_ptr<T>(&self) -> *const T {
     //     self.0 as *const T
     // }
 
+    /// Get the mutable pointer from the virtual address
     pub fn as_mut_ptr<T>(&self) -> *mut T {
         self.0 as *mut T
     }
@@ -130,6 +164,15 @@ impl Sub<VPN> for VPN {
 }
 
 impl PPN {
+    /// Translates from physical page number to kernel virtual address
+    /// 
+    /// # Panics
+    /// 
+    /// Panics if the corresponding physical address is beyond the physical memory size
+    /// 
+    /// # Returns
+    /// 
+    /// The kernel virtual address
     pub fn kaddr(&self) -> VA {
         PA::from(*self).kaddr()
     }

@@ -11,26 +11,26 @@ use super::{
 };
 
 /// Page structure for paging memory management
-/// each page is tracked by its ppn,
+/// Each page is tracked by its ppn,
 /// actual data is stored in page allocator
-/// this structure simply wraps ppn
+/// This structure simply wraps ppn
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Eq, Ord)]
 pub struct Page {
     ppn: PPN,
 }
 
 impl Page {
-    /// construct a Page from ppn
+    /// Construct a Page from ppn
     pub fn new(ppn: PPN) -> Self {
         Page { ppn }
     }
 
-    /// acquire page's ppn
+    /// Acquire page's ppn
     pub fn ppn(self) -> PPN {
         self.ppn
     }
 
-    /// acquire page's ref_count
+    /// Acquire page's ref_count
     pub fn ref_count(self) -> u16 {
         let tracker = find_page(self);
         tracker.unwrap().ref_count()
@@ -57,29 +57,29 @@ impl From<PA> for Page {
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
-/// tracker storing page's ref_count
+/// Tracker storing page's ref_count
 pub struct PageTracker {
     ref_count: u16,
 }
 
 impl PageTracker {
-    /// construct a tracker with no reference
+    /// Construct a tracker with no reference
     fn new() -> PageTracker {
         PageTracker { ref_count: 0 }
     }
 
-    /// acquire this tracker's ref_count
+    /// Acquire this tracker's ref_count
     pub fn ref_count(self) -> u16 {
         self.ref_count
     }
 
-    /// increase tracker's ref_count
+    /// Increase tracker's ref_count
     fn inc_ref(&mut self) {
         self.ref_count += 1;
     }
 
-    /// deincrease tracker's ref_count
-    /// this function will NOT deincrease ref_count 
+    /// Decrease tracker's ref_count
+    /// This function will NOT decrease ref_count
     /// if it is less than 0
     fn dec_ref(&mut self) {
         if self.ref_count > 0 {
@@ -88,15 +88,15 @@ impl PageTracker {
     }
 }
 
-/// structure storing actual pages and refrence count
-/// manages page allocation and deallocation
+/// Structure storing actual pages and refrence count
+/// Manages page allocation and deallocation
 pub struct PageAllocator {
     pages: Vec<PageTracker>,
     free_list: Vec<PPN>,
 }
 
 impl PageAllocator {
-    /// construct an empty page allocator
+    /// Construct an empty page allocator
     const fn new() -> PageAllocator {
         PageAllocator {
             pages: Vec::new(),
@@ -104,7 +104,13 @@ impl PageAllocator {
         }
     }
 
-    /// init page allocator, acquire empty memory and generate empty pages
+    /// Init page allocator, acquire empty memory and generate empty pages
+    ///
+    /// # arguments
+    /// this part should be supplemented
+    /// * current
+    /// * end
+    ///
     fn init(&mut self, current: PPN, end: PPN) {
         self.pages = Vec::with_capacity(get_pagenum());
         self.free_list = Vec::with_capacity(get_pagenum());
@@ -122,7 +128,8 @@ impl PageAllocator {
         }
     }
 
-    /// allocate a page and return its ppn
+    /// Allocate a page and return its ppn
+    /// Clear page if arugument clear is set
     fn alloc(&mut self, clear: bool) -> Option<PPN> {
         if let Some(ppn) = self.free_list.pop() {
             if clear {
@@ -134,14 +141,14 @@ impl PageAllocator {
         }
     }
 
-    /// deallocator a page by its ppn, insert it into page free list
-    /// panic if page's ref_count is not 0
+    /// Deallocate a page by its ppn, insert it into page free list
+    /// Panic if page's ref_count is not 0
     fn dealloc(&mut self, ppn: PPN) {
         assert!(self.pages[ppn.0].ref_count == 0);
         self.free_list.push(ppn);
     }
 
-    /// find a page's tracker by its ppn
+    /// Find a page's tracker by its ppn
     fn find_page(&self, ppn: PPN) -> Option<&PageTracker> {
         if ppn.0 < self.pages.len() {
             Some(&self.pages[ppn.0])
@@ -151,7 +158,7 @@ impl PageAllocator {
     }
 }
 
-/// write 0 to ppn's page
+/// Write 0 to ppn's page
 fn clear_page(ppn: PPN) {
     let va = ppn.kaddr();
     unsafe {
@@ -159,11 +166,11 @@ fn clear_page(ppn: PPN) {
     }
 }
 
-/// page allocator instance for memory management
+/// Page allocator instance for memory management
 pub static mut PAGE_ALLOCATOR: PageAllocator = PageAllocator::new();
 
-/// detect used and unused memory limit
-/// init page allocator
+/// Detect used and unused memory limit
+/// Init page allocator
 pub fn init() {
     extern "C" {
         static mut __end_kernel: u8;
@@ -173,16 +180,18 @@ pub fn init() {
     unsafe { PAGE_ALLOCATOR.init(current, end) }
 }
 
-/// you should use page_alloc instead
-/// utility function, alloc a page and return its ppn
-/// return None if there's no free page
+/// You should use page_alloc instead
+/// Utility function, alloc a page and return its ppn,
+/// return None if there's no free page,
+/// clear page if argument clear is set
 #[inline]
 pub fn alloc(clear: bool) -> Option<PPN> {
     unsafe { PAGE_ALLOCATOR.alloc(clear) }
 }
 
-/// utility function, alloc a page and return it
-/// return None if there's no free page
+/// Utility function, alloc a page and return it,
+/// return None if there's no free page,
+/// clear page if argument clear is set
 #[inline]
 pub fn page_alloc(clear: bool) -> Option<Page> {
     if let Some(ppn) = alloc(clear) {
@@ -192,42 +201,50 @@ pub fn page_alloc(clear: bool) -> Option<Page> {
     }
 }
 
-/// you should use page_dealloc instread
-/// utility function, dealloc a page by its ppn
+/// You should use page_dealloc instead
+/// Utility function, dealloc a page by its ppn,
 /// panic if its ref_count is not 0
 #[inline]
 pub fn dealloc(ppn: PPN) {
     unsafe { PAGE_ALLOCATOR.dealloc(ppn) }
 }
 
-/// utility function, dealloc a page
+/// Utility function, dealloc a page,
 /// panic if its ref_count is not 0
 #[inline]
 pub fn page_dealloc(page: Page) {
     dealloc(page.ppn())
 }
 
-/// 
+/// Do not use this function to acquire page's ref_count,
+/// you should use page.ref_count() instead
+/// Find the page's tracker
 #[inline]
 pub fn find_page(page: Page) -> Option<&'static PageTracker> {
     unsafe { PAGE_ALLOCATOR.find_page(page.ppn()) }
 }
 
+/// You should use page_inc_ref instead
+/// Increase page's ref_count by its ppn
 #[inline]
 pub fn inc_ref(ppn: PPN) {
     unsafe { PAGE_ALLOCATOR.pages[ppn.0].inc_ref() }
 }
 
+/// Increase page's ref_count
 #[inline]
 pub fn page_inc_ref(page: Page) {
     inc_ref(page.ppn())
 }
 
+/// You should use page_dec_ref instead
+/// Decrease page's ref_count by its ppn
 #[inline]
 pub fn dec_ref(ppn: PPN) {
     unsafe { PAGE_ALLOCATOR.pages[ppn.0].dec_ref() }
 }
 
+/// Decrease page's ref_count
 #[inline]
 pub fn page_dec_ref(page: Page) {
     dec_ref(page.ppn())
