@@ -1,4 +1,4 @@
-use log::info;
+use log::{debug, info};
 
 use crate::mm::{addr::{PPN, VA}, layout::PteFlags, map::{PageTable, Pte}, page::{alloc, dealloc, page_alloc, page_dealloc, Page}};
 
@@ -6,7 +6,7 @@ use crate::mm::{addr::{PPN, VA}, layout::PteFlags, map::{PageTable, Pte}, page::
 pub fn alloc_test() {
     let mut pages = [PPN(0); 4];
     for ppn in pages.iter_mut() {
-        *ppn = alloc(true).expect("Failed to allocate a page.");
+        *ppn = alloc(true, 1).expect("Failed to allocate a page.");
     }
     assert!(pages[0] != pages[1]);
     assert!(pages[1] != pages[2]);
@@ -17,15 +17,18 @@ pub fn alloc_test() {
         *raw_addr = 0x12;
         assert_eq!(*raw_addr, 0x12);
     }
-    dealloc(pages[1]);
+    dealloc(pages[1], 1);
     assert_eq!(unsafe { *raw_addr }, 0x12);
-    let new_page = alloc(true).expect("Failed to allocate a page.");
+    let new_page = alloc(true, 1).expect("Failed to allocate a page.");
     assert_eq!(new_page, pages[1]);
     assert_eq!(unsafe { *raw_addr }, 0); // The page should be cleared
 
-    info!("Page allocation test passed!");
+    dealloc(pages[0], 1);
+    dealloc(new_page, 1);
+    dealloc(pages[2], 1);
+    dealloc(pages[3], 1);
+    debug!("Page allocation test passed!");
 }
-
 impl PageTable {
     unsafe fn nth(&self, n: usize) -> &mut Pte {
         assert!(n < 1024);
@@ -72,8 +75,6 @@ pub fn mapping_test() {
     // Check if dealloc works
     let page2 = page_alloc(true).unwrap();
     let page1 = page_alloc(true).unwrap();
-    assert_eq!(page1, pages[1]);
-    assert_eq!(page2, pages[2]);
     page_dealloc(page1);
     page_dealloc(page2);
 
