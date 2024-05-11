@@ -1,5 +1,4 @@
 //! Page structure and PageAllocator for memory management
-use crate::println;
 use alloc::vec::Vec;
 use log::debug;
 use core::ptr::{addr_of_mut, write_bytes};
