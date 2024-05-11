@@ -1,6 +1,7 @@
 //! Page structure and PageAllocator for memory management
 use crate::println;
 use alloc::vec::Vec;
+use log::debug;
 use core::ptr::{addr_of_mut, write_bytes};
 
 use crate::mm::addr::VA;
@@ -271,5 +272,5 @@ pub fn alloc_test() {
     assert_eq!(new_page, pages[1]);
     assert_eq!(unsafe { *raw_addr }, 0); // The page should be cleared
 
-    println!("Page allocation test passed!");
+    debug!("Page allocation test passed!");
 }

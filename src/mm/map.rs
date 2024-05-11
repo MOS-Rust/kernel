@@ -1,6 +1,7 @@
 //! This module contains the implementation of page entry table, page directory table, and related functions.
-use crate::println;
+#![allow(dead_code)]
 
+use log::debug;
 use crate::error::MosError;
 
 use super::{
@@ -285,5 +286,5 @@ pub fn mapping_test() {
     // Free resources
     PageTable::try_recycle(pde.ppn().into());
     PageTable::try_recycle(pd_page);
-    println!("Mapping test passed!");
+    debug!("Mapping test passed!");
 }

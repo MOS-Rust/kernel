@@ -8,9 +8,10 @@
 
 use core::arch::asm;
 
+use log::error;
+
 use crate::{platform::halt, println};
 
-#[cfg(target_arch = "mips")]
 #[panic_handler]
 fn panic(_info: &core::panic::PanicInfo) -> ! {
     let sp: usize;
@@ -36,7 +37,7 @@ fn panic(_info: &core::panic::PanicInfo) -> ! {
             out("$13") epc,
         )
     }
-    println!(
+    error!(
         "Kernel Panicked: \"{}\" at {}",
          _info.message().unwrap(), _info.location().unwrap()
     );
