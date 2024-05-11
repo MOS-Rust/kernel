@@ -2,5 +2,6 @@
 
 mod malta;
 mod machine;
+pub mod cp0reg;
 
 pub use machine::*;

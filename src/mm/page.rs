@@ -22,7 +22,7 @@ pub struct Page {
 
 impl Page {
     /// construct a Page from ppn
-    pub fn new(ppn: PPN) -> Self {
+    pub const fn new(ppn: PPN) -> Self {
         Page { ppn }
     }
 

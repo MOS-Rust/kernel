@@ -15,15 +15,30 @@ pub unsafe fn init() {
     }
 }
 
+#[derive(Clone, Copy, Debug)]
 #[repr(C)]
-struct Trapframe {
-    regs: [u32; 32],
-    status: u32,
-    hi: u32,
-    lo: u32,
-    badvaddr: u32,
-    cause: u32,
-    epc: u32,
+pub struct Trapframe {
+    pub(crate) regs: [usize; 32],
+    pub(crate) cp0_status: usize,
+    pub(crate) hi: usize,
+    pub(crate) lo: usize,
+    pub(crate) cp0_badvaddr: usize,
+    pub(crate) cp0_cause: usize,
+    pub(crate) cp0_epc: usize,
+}
+
+impl Trapframe {
+    pub const fn new() -> Trapframe {
+        Trapframe {
+            regs: [0; 32],
+            cp0_status: 0,
+            hi: 0,
+            lo: 0,
+            cp0_badvaddr: 0,
+            cp0_cause: 0,
+            cp0_epc: 0,
+        }
+    }
 }
 
 impl Display for Trapframe {
@@ -34,12 +49,12 @@ impl Display for Trapframe {
             write!(f, "{:08x}, ", self.regs[i])?;
         }
         write!(f, "]\n")?;
-        write!(f, "    status: {:08x}\n", self.status)?;
+        write!(f, "    status: {:08x}\n", self.cp0_status)?;
         write!(f, "    hi: {:08x}\n", self.hi)?;
         write!(f, "    lo: {:08x}\n", self.lo)?;
-        write!(f, "    badvaddr: {:08x}\n", self.badvaddr)?;
-        write!(f, "    cause: {:08x}\n", self.cause)?;
-        write!(f, "    epc: {:08x}\n", self.epc)?;
+        write!(f, "    badvaddr: {:08x}\n", self.cp0_badvaddr)?;
+        write!(f, "    cause: {:08x}\n", self.cp0_cause)?;
+        write!(f, "    epc: {:08x}\n", self.cp0_epc)?;
         write!(f, "}}")
     }
 }

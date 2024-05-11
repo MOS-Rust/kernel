@@ -1,43 +1,260 @@
+#![allow(dead_code)]
+
+use core::mem::size_of;
+use core::ptr;
+use core::ptr::addr_of_mut;
+
 use alloc::vec::Vec;
+use crate::error::MosError;
+use crate::mm::layout::PteFlags;
+use crate::mm::layout::ASID_BITMAP;
+use crate::mm::layout::NASID;
+use crate::mm::layout::PAGE_SIZE;
+use crate::mm::layout::UENVS;
+use crate::mm::layout::USTACKTOP;
+use crate::mm::layout::UTOP;
+use crate::mm::layout::UVPT;
+use crate::mm::map::PageDirectory;
+use crate::mm::map::PageTable;
+use crate::exception::trapframe::Trapframe;
+use crate::mm::addr::{PA, VA};
+use crate::mm::page::page_alloc;
+use crate::mm::page::page_inc_ref;
+use crate::mm::page::Page;
+use crate::platform::cp0reg::{STATUS_IM7, STATUS_IE, STATUS_EXL, STATUS_UM};
 
-use crate::mm::map::Pde;
-use crate::pm::trap::Trapframe;
+use super::ipc::IpcInfo;
+use super::tools::round;
 
+const NENV: usize = 1024;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum EnvStatus {
     Free, Runnable, NotRunnable,
 }
 
+#[derive(Clone, Copy, Debug)]
 pub struct Env {
+    pos: usize,
+
     tf: Trapframe,
 
-    id: u32,
-    asid: u32,
-    parent_id: u32,
+    id: usize,
+    asid: usize,
+    parent_id: usize,
     status: EnvStatus,
-    pgdir: Pde,
-    env_pri: u32,
+    pgdir: PageTable,
+    pri: u32,
 
     // IPC
-    ipc_value: u32,
-    ipc_from: u32,
-    ipc_recving: u32,
-    ipc_dstva: u32,
-    ipc_perm: u32,
+    ipc_info: IpcInfo,
 
-    env_user_tlb_mod_entry: u32,
+    user_tlb_mod_entry: usize,
 
-    env_runs: u32,
+    runs: u32,
+}
+
+impl Env {
+    pub const fn new(pos: usize) -> Env {
+        Env {
+            pos: pos,
+            tf: Trapframe::new(),
+
+            id: 0,
+            asid: 0,
+            parent_id: 0,
+            status: EnvStatus::Free,
+            pgdir: PageTable::empty(),
+            pri: 0,
+
+            ipc_info: IpcInfo::new(),
+
+            user_tlb_mod_entry: 0,
+
+            runs: 0,
+        }
+    }
+}
+
+#[repr(C, align(4096))]
+struct Envs {
+    env_array: [Env; NENV],
+}
+
+static mut ENVS: Envs = Envs { env_array: [Env::new(0); NENV] };
+
+fn at_envs(index: usize) -> Env {
+    if index >= NENV {
+        panic!("index out of ENVS limit")
+    }
+    unsafe {ENVS.env_array[index]}
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct EnvTracker {
+    pos: usize,
+}
+
+impl EnvTracker {
+    pub fn new(pos: usize) -> EnvTracker {
+        EnvTracker {
+            pos: pos,
+        }
+    }
 }
 
 pub struct EnvManager {
-    envs: Vec<Env>,
+    base_pgdir: PageDirectory,
+    id_iter: usize,
     free_list: Vec<EnvTracker>,
+    cur: EnvTracker,
 }
 
 impl EnvManager {
-    const fn new() -> EnvManager {
-        EnvManager {
-            
+    pub fn init() -> EnvManager {
+        let mut free_list = Vec::with_capacity(NENV);
+        let base_pgdir: PageDirectory;
+        for i in (0..NENV).rev() {
+            unsafe {ENVS.env_array[i] = Env::new(i);}
+            free_list.push(EnvTracker::new(i));
         }
+
+        if let Some(_page) = page_alloc(true) {
+            base_pgdir = PageDirectory::init().0;
+            unsafe {
+                // TODO: pages not mapped, map if it is used
+                map_segment(base_pgdir, 0, 
+                    PA(addr_of_mut!(ENVS) as usize), VA(UENVS), 
+                    round(size_of::<Env>(), PAGE_SIZE), PteFlags::G)
+            }
+
+            EnvManager {
+                base_pgdir,
+                id_iter: 0,
+                free_list: free_list,
+                cur: EnvTracker::new(0),
+            }
+
+        } else {
+            panic!("failed on page allocation");
+        }
+    }
+
+    fn alloc_asid(&self) -> Result<usize, MosError> {
+        for i in 0..NASID {
+            let index = i >> 5;
+            let inner = i & 31;
+            unsafe {
+                if ASID_BITMAP[index] & (1 << inner) == 0 {
+                    ASID_BITMAP[index] |= 1 << inner;
+                    return Ok(i);
+                }
+            }
+        }
+
+        Err(MosError::NoFreeEnv)
+    }
+
+    pub fn mkenvid(&mut self, env: Env) -> usize {
+        self.id_iter += 1;
+        ((self.id_iter - 1) << 11) | env.pos
+    }
+
+    pub fn envx(id: usize) -> usize {
+        id & ((1 << 10) - 1)
+    }
+
+    pub fn at(&self, pos: usize) -> Env {
+        at_envs(pos)
+    }
+
+    pub fn curenv(&self) -> Env {
+        self.at(self.cur.pos)
+    }
+
+    pub fn get_free_env(&mut self) ->Result<Env, MosError> {
+        if self.free_list.is_empty() {
+            return Err(MosError::NoFreeEnv)
+        }
+
+        let tracker = self.free_list.pop().unwrap();
+        Ok(at_envs(tracker.pos))
+    }
+
+    pub fn from_id(&self, id: usize, check_perm: bool) -> Result<Env, MosError> {
+        if id == 0 {
+            Ok(self.curenv())
+        } else {
+            let pos = Self::envx(id);
+            let env = self.at(pos);
+
+            if env.status == EnvStatus::Free || env.id != id {
+                return Err(MosError::BadEnv)
+            }
+
+            if check_perm {
+                if self.curenv().id != env.id && self.curenv().id != env.parent_id {
+                    return Err(MosError::BadEnv)
+                }
+            }
+
+            Ok(env)
+        }
+    }
+
+    fn setup_vm(&mut self, mut env: Env) -> Result<(), MosError> {
+        if let Some(page) = page_alloc(true) {
+            page_inc_ref(page);
+            env.pgdir = PageDirectory { page };
+            unsafe {
+                ptr::copy((env.pgdir.kaddr() + VA(UTOP).pdx()).as_mut_ptr::<u8>(),
+                (self.base_pgdir.kaddr() + VA(UTOP).pdx()).as_mut_ptr::<u8>(),
+                 size_of::<usize>() * (VA(UVPT).pdx() - VA(UTOP).pdx()));
+            }
+
+            // TODO: map page table of env itself to UVPT
+            Ok(())
+        } else {
+            return Err(MosError::NoFreeEnv)
+        }
+    }
+
+    pub fn alloc(&mut self, parent_id: usize) -> Result<Env, MosError> {
+        let ret = self.get_free_env();
+        if ret.is_ok() {
+            let mut env = ret.unwrap();
+            let r = self.setup_vm(env);
+            if r.is_err() {
+                return Err(r.unwrap_err())
+            }
+
+            env.user_tlb_mod_entry = 0;
+            env.runs = 0;
+            env.id = self.mkenvid(env);
+            if let Ok(asid) = self.alloc_asid() {
+                env.asid = asid;
+            } else {
+                return Err(MosError::NoFreeEnv)
+            }
+            env.parent_id = parent_id;
+
+            env.tf.cp0_status = STATUS_IM7 | STATUS_IE | STATUS_EXL | STATUS_UM;
+            env.tf.regs[29] = USTACKTOP - size_of::<i32>() - size_of::<usize>();
+
+            Ok(env)
+        } else {
+            return Err(MosError::NoFreeEnv)
+        }
+    }
+}
+
+fn map_segment(pgdir: PageDirectory, asid: usize, pa: PA, va: VA, size: usize, flags: PteFlags) {
+
+    assert!(pa.0 % PAGE_SIZE == 0);
+    assert!(va.0 % PAGE_SIZE == 0);
+    assert!(size % PAGE_SIZE == 0);
+
+    for i in 0..size {
+        let _r = pgdir.insert(asid, Page::from(pa + i), va + i, flags);
     }
 }

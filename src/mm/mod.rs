@@ -1,5 +1,5 @@
-mod addr;
 mod heap;
+pub mod addr;
 pub mod page;
 pub mod layout;
 pub mod map;

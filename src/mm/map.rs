@@ -46,8 +46,9 @@ impl Pte {
 
 pub type Pde = Pte;
 
+#[derive(Clone, Copy, Debug)]
 pub struct PageTable {
-    page: Page,
+    pub(crate) page: Page,
 }
 
 impl PageTable {
@@ -56,6 +57,16 @@ impl PageTable {
         let page = Page::new(ppn);
         page_inc_ref(page);
         (PageTable { page }, page)
+    }
+
+    pub fn kaddr(&self) -> VA {
+        self.page.ppn().kaddr()
+    }
+
+    pub const fn empty() -> PageTable {
+        PageTable {
+            page: Page::new(PPN(0))
+        }
     }
 
     fn pte_at(&self, offset: usize) -> &mut Pte {
