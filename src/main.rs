@@ -27,7 +27,9 @@ mod pm;
 mod test;
 
 use core::{
-    arch::global_asm, include_str, ptr::{addr_of_mut, write_bytes}
+    arch::global_asm,
+    include_str,
+    ptr::{addr_of_mut, write_bytes},
 };
 
 use log::info;
