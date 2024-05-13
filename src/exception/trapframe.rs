@@ -1,19 +1,8 @@
-use core::{arch::global_asm, fmt::{Display, Formatter, Result}, ptr::addr_of_mut};
-
-use mips::registers::cp0::ebase;
+use core::{arch::global_asm, fmt::{Display, Formatter, Result}};
 
 use crate::const_export_usize;
 
 global_asm!(include_str!("../../asm/exception/trapframe.S"));
-
-pub unsafe fn init() {
-    extern "C" {
-        static mut _exception_entry: u8;
-    }
-    unsafe {
-        ebase::write(addr_of_mut!(_exception_entry) as u32);
-    }
-}
 
 #[derive(Clone, Copy, Debug)]
 #[repr(C)]
