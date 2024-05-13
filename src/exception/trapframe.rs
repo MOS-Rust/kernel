@@ -7,13 +7,13 @@ global_asm!(include_str!("../../asm/exception/trapframe.S"));
 #[derive(Clone, Copy, Debug)]
 #[repr(C)]
 pub struct Trapframe {
-    pub(crate) regs: [usize; 32],
-    pub(crate) cp0_status: usize,
-    pub(crate) hi: usize,
-    pub(crate) lo: usize,
-    pub(crate) cp0_badvaddr: usize,
-    pub(crate) cp0_cause: usize,
-    pub(crate) cp0_epc: usize,
+    pub regs: [u32; 32],
+    pub cp0_status: u32,
+    pub hi: u32,
+    pub lo: u32,
+    pub cp0_badvaddr: u32,
+    pub cp0_cause: u32,
+    pub cp0_epc: u32,
 }
 
 impl Trapframe {

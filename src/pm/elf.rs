@@ -1,13 +1,15 @@
 #![allow(dead_code)]
 
-use core::{cmp::min, mem::size_of, ptr::{copy_nonoverlapping, null}};
+use core::{cmp::min, ptr::copy_nonoverlapping};
 
-use alloc::slice;
-use crate::mm::layout::PteFlags;
+use crate::{mm::layout::PteFlags, round_down};
 
-use crate::{error::MosError, mm::{addr::VA, layout::PAGE_SIZE, page::page_alloc}};
+use crate::{
+    error::MosError,
+    mm::{addr::VA, layout::PAGE_SIZE, page::page_alloc},
+};
 
-use super::{env::Env, tools::round_down};
+use super::env::Env;
 
 pub const EI_INDENT: usize = 16;
 
@@ -21,43 +23,43 @@ pub type Elf32Off = u32;
 pub type Elf32Section = u16;
 pub type Elf32Symndx = u32;
 
-#[derive(Clone, Copy, Debug)]
-pub struct Elf32Ehdr {
-    pub(crate) e_indent: [u8; EI_INDENT],
-    pub(crate) e_type: Elf32Half,
-    pub(crate) e_machine: Elf32Half,
-    pub(crate) e_version: Elf32Word,
-    pub(crate) e_entry: Elf32Addr,
-    pub(crate) e_phoff: Elf32Off,
-    pub(crate) e_shoff: Elf32Off,
-    pub(crate) e_flags: Elf32Word,
-    pub(crate) e_ehsize: Elf32Half,
-    pub(crate) e_phentsize: Elf32Half,
-    pub(crate) e_phnum: Elf32Half,
-    pub(crate) e_shentsize: Elf32Half,
-    pub(crate) e_shnum: Elf32Half,
-    pub(crate) e_shstrndx: Elf32Half,
+pub struct Elf32<'a> {
+    binary: &'a [u8],
 }
 
-pub const EI_MAG0: u8 = 0;
+#[derive(Clone, Copy, Debug)]
+pub struct Elf32Ehdr {
+    pub e_indent: [u8; EI_INDENT],
+    pub e_type: Elf32Half,
+    pub e_machine: Elf32Half,
+    pub e_version: Elf32Word,
+    pub e_entry: Elf32Addr,
+    pub e_phoff: Elf32Off,
+    pub e_shoff: Elf32Off,
+    pub e_flags: Elf32Word,
+    pub e_ehsize: Elf32Half,
+    pub e_phentsize: Elf32Half,
+    pub e_phnum: Elf32Half,
+    pub e_shentsize: Elf32Half,
+    pub e_shnum: Elf32Half,
+    pub e_shstrndx: Elf32Half,
+}
+
 pub const ELFMAG0: u8 = 0x7f;
-pub const EI_MAG1: u8 = 1;
 pub const ELFMAG1: u8 = 'E' as u8;
-pub const EI_MAG2: u8 = 2;
 pub const ELFMAG2: u8 = 'L' as u8;
-pub const EI_MAG3: u8 = 3;
 pub const ELFMAG3: u8 = 'F' as u8;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Elf32Phdr {
-    pub(crate) p_type: Elf32Word,
-    pub(crate) p_offset: Elf32Off,
-    pub(crate) p_vaddr: Elf32Addr,
-    pub(crate) p_paddr: Elf32Addr,
-    pub(crate) p_filesz: Elf32Word,
-    pub(crate) p_memsz: Elf32Word,
-    pub(crate) p_flags: Elf32Word,
-    pub(crate) p_align: Elf32Word,
+    pub p_type: Elf32Word,
+    pub p_offset: Elf32Off,
+    pub p_vaddr: Elf32Addr,
+    pub p_paddr: Elf32Addr,
+    pub p_filesz: Elf32Word,
+    pub p_memsz: Elf32Word,
+    pub p_flags: Elf32Word,
+    pub p_align: Elf32Word,
 }
 
 pub const PT_NULL: usize = 0;
@@ -78,25 +80,46 @@ pub const PF_W: u32 = 1 << 1;
 pub const PF_R: u32 = 1 << 2;
 pub const PF_MASKPROC: u32 = 0xf0000000;
 
-pub type ElfMapperFn = fn(&mut Env, VA, usize, PteFlags, *const u8, usize) -> Result<(), MosError>;
+pub type ElfMapperFn = fn(&mut Env, VA, usize, PteFlags, Option<&[u8]>) -> Result<(), MosError>;
 
-pub fn elf_from(binary: *const u8, size: usize) -> Option<*const Elf32Ehdr> {
-    let ehdr = binary as *const Elf32Ehdr;
-    if size >= size_of::<Elf32Ehdr>() {
-        unsafe {
-            let ehdr_slice = slice::from_raw_parts(ehdr as *const u8, size_of::<Elf32Ehdr>());
-            if ehdr_slice[0] == ELFMAG0 && ehdr_slice[1] == ELFMAG1 && ehdr_slice[2] == ELFMAG2 && ehdr_slice[3] == ELFMAG3 {
-                let ehdr_struct = &*ehdr;
-                if ehdr_struct.e_type == 2 {
-                    return Some(ehdr);
-                }
-            }
+impl<'a> Elf32<'a> {
+    pub fn is_elf32_format(data: &[u8]) -> bool {
+        data.len() >= 5
+            && data[0] == 0x7f
+            && data[1] == b'E'
+            && data[2] == b'L'
+            && data[3] == b'F'
+            && data[4] == 1
+    }
+
+    pub fn from_bytes(data: &'a [u8]) -> Self {
+        Self { binary: data }
+    }
+
+    pub fn ehdr(&self) -> &Elf32Ehdr {
+        unsafe { &*(self.binary.as_ptr() as *const Elf32Ehdr) }
+    }
+
+    pub fn phdr(&self, n: usize) -> &Elf32Phdr {
+        let ehdr = self.ehdr();
+        let ph_offset = ehdr.e_phoff as usize;
+        let ph_size = ehdr.e_phentsize as usize;
+        let ph_num = ehdr.e_phnum as usize;
+        let ph_start = ph_offset + n * ph_size;
+        if n < ph_num {
+            unsafe { &*((self.binary.as_ptr() as *const u8).add(ph_start) as *const Elf32Phdr) }
+        } else {
+            panic!("phdr index out of range");
         }
     }
-    None
 }
 
-pub fn elf_load_seg(ph: &Elf32Phdr, bin: *const u8, map_page: ElfMapperFn, env: &mut Env) -> Result<(), MosError> {
+pub fn elf_load_seg(
+    ph: &Elf32Phdr,
+    bin: &[u8],
+    map_page: ElfMapperFn,
+    env: &mut Env,
+) -> Result<(), MosError> {
     let va: VA = VA(ph.p_vaddr as usize);
     let bin_size: usize = ph.p_filesz as usize;
     let sg_size: usize = ph.p_memsz as usize;
@@ -105,10 +128,11 @@ pub fn elf_load_seg(ph: &Elf32Phdr, bin: *const u8, map_page: ElfMapperFn, env: 
         perm |= PteFlags::D;
     }
 
-    let offset = va.0 - round_down(va.0, PAGE_SIZE);
+    let offset = va.0 - round_down!(va.0, PAGE_SIZE);
     if offset != 0 {
-        if let Err(error) = map_page(env, va, offset, perm, bin, min(bin_size, PAGE_SIZE - offset)) {
-            return Err(error)
+        let len = min(bin_size, PAGE_SIZE - offset);
+        if let Err(error) = map_page(env, va, offset, perm, Some(&bin[..len])) {
+            return Err(error);
         }
     }
 
@@ -118,8 +142,16 @@ pub fn elf_load_seg(ph: &Elf32Phdr, bin: *const u8, map_page: ElfMapperFn, env: 
     }
 
     while i < bin_size {
-        if let Err(error) = map_page(env, va + i, 0, perm , null(), min(sg_size - i, PAGE_SIZE)) {
-            return Err(error)
+        let len = min(sg_size - i, PAGE_SIZE);
+        if let Err(error) = map_page(env, va + i, 0, perm, Some(&bin[i..i + len])) {
+            return Err(error);
+        }
+        i += PAGE_SIZE;
+    }
+
+    while i < sg_size {
+        if let Err(error) = map_page(env, va + i, 0, perm, None) {
+            return Err(error);
         }
         i += PAGE_SIZE;
     }
@@ -127,11 +159,26 @@ pub fn elf_load_seg(ph: &Elf32Phdr, bin: *const u8, map_page: ElfMapperFn, env: 
     Ok(())
 }
 
-pub fn load_icode_mapper(env: &mut Env, va: VA, offset: usize, perm: PteFlags, src: *const u8, len: usize) -> Result<(), MosError> {
+pub fn load_icode_mapper(
+    env: &mut Env,
+    va: VA,
+    offset: usize,
+    perm: PteFlags,
+    src: Option<&[u8]>,
+) -> Result<(), MosError> {
     let p = page_alloc(true).unwrap();
 
-    if !src.is_null() {
-        unsafe {copy_nonoverlapping(src, (p.ppn().kaddr() + offset).0 as *mut u8, len)}
+    // if !src.is_null() {
+    //     unsafe {copy_nonoverlapping(src, (p.ppn().kaddr() + offset).0 as *mut u8, len)}
+    // }
+    if let Some(data) = src {
+        unsafe {
+            copy_nonoverlapping(
+                data.as_ptr(),
+                (p.ppn().kaddr() + offset).0 as *mut u8,
+                data.len(),
+            )
+        }
     }
 
     env.pgdir.insert(env.asid, p, va, perm)

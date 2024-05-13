@@ -15,9 +15,8 @@ extern crate alloc;
 
 #[macro_use]
 extern crate bitflags;
-
+mod bitops;
 mod export;
-
 mod platform;
 mod panic;
 mod console;
@@ -30,6 +29,7 @@ mod exception;
 use core::{arch::global_asm, include_str, ptr::{addr_of_mut, write_bytes}};
 
 use log::info;
+
 //use mips::registers::cp0::{compare, count};
 
 global_asm!(include_str!("../asm/init/entry.S"));

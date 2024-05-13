@@ -8,8 +8,6 @@ pub const PDMAP: usize = 0x0040_0000; // Bytes mapped by a page directory entry,
 pub const PGSHIFT: usize = 12;
 pub const PDSHIFT: usize = 22;
 
-pub static mut ASID_BITMAP: [usize; 256 / 32] = [0; 256 / 32];
-
 // TODO: Probably this should move to mips/cp0/entrylo.rs
 bitflags! {
     #[derive(Clone, Copy, Debug)]
