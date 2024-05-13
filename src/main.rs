@@ -51,7 +51,7 @@ pub extern "C" fn kernel_init(
     logging::init();
     info!("MOS-Rust started!");
     mm::init(ram_size);
-    println!("ebase:0x{:x}", unsafe {mips::registers::cp0::ebase::read()});
+    pm::init();
     panic!("");
 }
 

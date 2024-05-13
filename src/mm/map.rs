@@ -96,7 +96,6 @@ impl PageTable {
 
     pub fn insert(&self, asid: usize, page: Page, va: VA, flags: PteFlags) -> Result<(), MosError> {
         let ppn = page.ppn();
-        
         if let Ok(Some(pte)) = self.walk(va, false) {
             if pte.flags().contains(PteFlags::V) {
                 if ppn == pte.ppn() {

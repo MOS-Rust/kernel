@@ -1,8 +1,12 @@
+use self::env::EnvManager;
+
 mod elf;
 mod env;
 mod ipc;
 mod schedule;
 
-// pub fn init() {
+static mut ENV_MANAGER: EnvManager = EnvManager::new();
 
-// }
+pub fn init() {
+    unsafe { ENV_MANAGER.init() };
+}

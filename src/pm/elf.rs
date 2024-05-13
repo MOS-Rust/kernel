@@ -168,9 +168,6 @@ pub fn load_icode_mapper(
 ) -> Result<(), MosError> {
     let p = page_alloc(true).unwrap();
 
-    // if !src.is_null() {
-    //     unsafe {copy_nonoverlapping(src, (p.ppn().kaddr() + offset).0 as *mut u8, len)}
-    // }
     if let Some(data) = src {
         unsafe {
             copy_nonoverlapping(
