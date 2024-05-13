@@ -1,5 +1,5 @@
 use alloc::{string::String, vec::Vec};
-use log::info;
+use log::debug;
 
 /// Perform a heap test.
 pub fn heap_test() {
@@ -13,5 +13,5 @@ pub fn heap_test() {
     let s = String::from("Hello, world!");
     assert_eq!(s, "Hello, world!");
     drop(v);
-    info!("Heap test passed!");
+    debug!("Heap test passed!");
 }

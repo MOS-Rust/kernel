@@ -183,7 +183,7 @@ impl PageTable {
 
     /// decrease the ref_count of page
     /// if page's ref_count is set to 0, deallocate the page
-    fn try_recycle(page: Page) {
+    pub fn try_recycle(page: Page) {
         if let Some(tracker) = find_page(page) {
             match tracker.ref_count() {
                 0 => {

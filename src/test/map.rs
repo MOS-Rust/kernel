@@ -1,4 +1,4 @@
-use log::info;
+use log::debug;
 
 use crate::mm::{addr::{PPN, VA}, layout::PteFlags, map::{PageTable, Pte}, page::{alloc, dealloc, page_alloc, page_dealloc, Page}};
 
@@ -23,7 +23,7 @@ pub fn alloc_test() {
     assert_eq!(new_page, pages[1]);
     assert_eq!(unsafe { *raw_addr }, 0); // The page should be cleared
 
-    info!("Page allocation test passed!");
+    debug!("Page allocation test passed!");
 }
 
 impl PageTable {
@@ -95,5 +95,5 @@ pub fn mapping_test() {
     // Free resources
     PageTable::try_recycle(pde.ppn().into());
     PageTable::try_recycle(pd_page);
-    info!("Mapping test passed!");
+    debug!("Mapping test passed!");
 }
