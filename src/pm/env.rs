@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 use core::mem::size_of;
+use core::panic;
 use core::ptr;
 use core::ptr::addr_of_mut;
 
@@ -23,6 +24,11 @@ use crate::mm::page::page_inc_ref;
 use crate::mm::page::Page;
 use crate::platform::cp0reg::{STATUS_IM7, STATUS_IE, STATUS_EXL, STATUS_UM};
 
+use super::elf::elf_from;
+use super::elf::elf_load_seg;
+use super::elf::load_icode_mapper;
+use super::elf::Elf32Phdr;
+use super::elf::PT_LOAD;
 use super::ipc::IpcInfo;
 use super::tools::round;
 
@@ -35,16 +41,16 @@ pub enum EnvStatus {
 
 #[derive(Clone, Copy, Debug)]
 pub struct Env {
-    pos: usize,
+    pub pos: usize,
 
-    tf: Trapframe,
+    pub(crate) tf: Trapframe,
 
-    id: usize,
-    asid: usize,
-    parent_id: usize,
-    status: EnvStatus,
-    pgdir: PageTable,
-    pri: u32,
+    pub(crate) id: usize,
+    pub(crate) asid: usize,
+    pub(crate) parent_id: usize,
+    pub(crate) status: EnvStatus,
+    pub(crate) pgdir: PageTable,
+    pub(crate) pri: u32,
 
     // IPC
     ipc_info: IpcInfo,
@@ -72,6 +78,31 @@ impl Env {
             user_tlb_mod_entry: 0,
 
             runs: 0,
+        }
+    }
+
+    fn load_icode(&mut self, binary: *const u8, size: usize) {
+        if let Some(ehdr) = elf_from(binary, size) {
+            let hdr = unsafe{*ehdr};
+            let mut ph_off = hdr.e_phoff;
+            let mut _ph_idx = 0;
+            while _ph_idx < hdr.e_phnum {
+                let ph = unsafe {*((binary.wrapping_add(ph_off as usize)) as *const Elf32Phdr)};
+                if ph.p_type == PT_LOAD as u32 {
+                    if let Err(_error) 
+                    = elf_load_seg(&ph, binary.wrapping_add(ph.p_offset as usize),
+                     load_icode_mapper, self) {
+                        panic!();
+                    }
+                }
+
+                _ph_idx += 1;
+                ph_off += hdr.e_phentsize as u32;
+            }
+
+            self.tf.cp0_epc = hdr.e_entry as usize;
+        } else {
+            panic!("bad elf at {:x}", binary as usize);
         }
     }
 }
@@ -246,6 +277,22 @@ impl EnvManager {
             return Err(MosError::NoFreeEnv)
         }
     }
+
+    fn create(&mut self, binary: *const u8, size: usize, priority: u32) -> Env {
+        
+        if let Ok(mut ret) = self.alloc(0) {
+            ret.pri = priority;
+            ret.status = EnvStatus::Runnable;
+
+            ret.load_icode(binary, size);
+            // TODO: add this env to env_sched_list
+
+            return ret;
+        } else {
+            panic!("failed on env allocation");
+        }
+    }
+
 }
 
 fn map_segment(pgdir: PageDirectory, asid: usize, pa: PA, va: VA, size: usize, flags: PteFlags) {
