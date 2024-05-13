@@ -4,7 +4,7 @@ use crate::error::MosError;
 use super::{
     addr::{PA, PPN, VA},
     layout::PteFlags,
-    page::{alloc, find_page, inc_ref, page_alloc, page_dealloc, page_dec_ref, page_inc_ref, Page},
+    page::{find_page, inc_ref, page_alloc, page_dealloc, page_dec_ref, page_inc_ref, Page},
     tlb::tlb_invalidate,
 };
 
@@ -67,8 +67,7 @@ impl PageTable {
     /// 
     /// A tuple containing the page table and the page
     pub fn init() -> (PageTable, Page) {
-        let ppn = alloc(true).expect("Failed to allocate a page for PageTable.");
-        let page = Page::new(ppn);
+        let page = page_alloc(true).expect("Failed to allocate a page for PageTable.");
         page_inc_ref(page);
         (PageTable { page }, page)
     }
@@ -218,4 +217,3 @@ impl PageDirectory {
         Some(pte.addr())
     }
 }
-
