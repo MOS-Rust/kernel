@@ -29,7 +29,6 @@ mod exception;
 use core::{arch::global_asm, include_str, ptr::{addr_of_mut, write_bytes}};
 
 use log::info;
-
 //use mips::registers::cp0::{compare, count};
 
 global_asm!(include_str!("../asm/init/entry.S"));
