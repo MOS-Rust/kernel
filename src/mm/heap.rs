@@ -1,7 +1,6 @@
 //! heap
-use alloc::{string::String, vec::Vec};
 use allocator::Allocator;
-use log::{debug, info};
+use log::info;
 
 // 1MiB
 const KERNEL_HEAP_SIZE: usize = 0x100_000;
@@ -18,18 +17,4 @@ pub fn init() {
         (KERNEL_HEAP.as_ptr() as usize, KERNEL_HEAP_SIZE);
     }
     info!("Initialized {} KiB of kernel heap.", KERNEL_HEAP_SIZE / 1024);
-}
-
-pub fn heap_test() {
-    let mut v = Vec::<u8>::new();
-    for i in 0..=255 {
-        v.push(i);
-    }
-    for i in 0..=255 {
-        assert_eq!(v[i], i as u8);
-    }
-    let s = String::from("Hello, world!");
-    assert_eq!(s, "Hello, world!");
-    drop(v);
-    debug!("Heap test passed!");
 }

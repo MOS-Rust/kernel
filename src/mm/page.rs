@@ -1,6 +1,5 @@
 //! Page structure and PageAllocator for memory management
 use alloc::vec::Vec;
-use log::debug;
 use core::ptr::{addr_of_mut, write_bytes};
 
 use crate::mm::addr::VA;
@@ -232,27 +231,4 @@ pub fn dec_ref(ppn: PPN) {
 #[inline]
 pub fn page_dec_ref(page: Page) {
     dec_ref(page.ppn())
-}
-
-pub fn alloc_test() {
-    let mut pages = [PPN(0); 4];
-    for ppn in pages.iter_mut() {
-        *ppn = alloc(true).expect("Failed to allocate a page.");
-    }
-    assert!(pages[0] != pages[1]);
-    assert!(pages[1] != pages[2]);
-    assert!(pages[2] != pages[3]);
-
-    let raw_addr = pages[1].kaddr().0 as *mut u8;
-    unsafe {
-        *raw_addr = 0x12;
-        assert_eq!(*raw_addr, 0x12);
-    }
-    dealloc(pages[1]);
-    assert_eq!(unsafe { *raw_addr }, 0x12);
-    let new_page = alloc(true).expect("Failed to allocate a page.");
-    assert_eq!(new_page, pages[1]);
-    assert_eq!(unsafe { *raw_addr }, 0); // The page should be cleared
-
-    debug!("Page allocation test passed!");
 }
