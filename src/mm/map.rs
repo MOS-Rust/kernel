@@ -49,6 +49,10 @@ impl Pte {
     pub fn flags_mut(&mut self) -> &mut PteFlags {
         unsafe { &mut *(self as *mut Pte as *mut PteFlags) }
     }
+
+    pub fn is_valid(&self) -> bool {
+        self.flags().contains(PteFlags::V)
+    }
 }
 
 pub type Pde = Pte;
@@ -83,7 +87,7 @@ impl PageTable {
     }
 
     /// return pte at this page's offset
-    fn pte_at(&self, offset: usize) -> &mut Pte {
+    pub fn pte_at(&self, offset: usize) -> &mut Pte {
         let base_pd: *mut Pde = self.page.ppn().kaddr().as_mut_ptr::<Pde>();
         unsafe { &mut *base_pd.add(offset) }
     }
