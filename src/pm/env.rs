@@ -7,6 +7,7 @@ use core::ptr;
 use core::ptr::addr_of_mut;
 
 use crate::error::MosError;
+use crate::exception::clock::reset_kclock;
 use crate::exception::trapframe::Trapframe;
 use crate::mm::addr::{PA, VA};
 use crate::mm::layout::PDSHIFT;
@@ -24,6 +25,8 @@ use crate::round;
 use alloc::collections::VecDeque;
 use alloc::vec::Vec;
 use log::info;
+use mips::registers::cp0::entryhi;
+use mips::registers::gpr::sp;
 
 use super::elf::elf_load_seg;
 use super::elf::load_icode_mapper;
@@ -31,10 +34,6 @@ use super::elf::Elf32;
 use super::elf::PT_LOAD;
 
 use super::ipc::IpcInfo;
-
-extern "C" {
-    fn _env_pop_trapframe(tf: *const Trapframe, asid: u32) -> !;
-}
 
 const NENV: usize = 1024;
 
@@ -270,7 +269,7 @@ impl EnvManager {
         }
     }
 
-    fn create(&self, binary: &[u8], priority: u32) -> &mut Env {
+    pub fn create(&self, binary: &[u8], priority: u32) -> &mut Env {
         let env = self.get_free_env().expect("failed on env allocation");
         env.priority = priority;
         env.status = EnvStatus::Runnable;
@@ -324,14 +323,14 @@ impl EnvManager {
     pub fn env_run(&mut self, env: &mut Env) -> ! {
         assert!(env.status == EnvStatus::Runnable);
         if let Some(cur) = self.curenv() {
-            cur.tf = unsafe { *(USTACKTOP as *mut Trapframe).wrapping_sub(1) };
+            cur.tf = unsafe { *Trapframe::from_memory(VA(USTACKTOP - size_of::<Trapframe>())) };
         }
         self.cur = Some(env.tracker());
         env.runs += 1;
 
         self.cur_pgdir = env.pgdir.clone();
 
-        unsafe { _env_pop_trapframe(&env.tf, env.asid as u32) };
+        unsafe { env_pop_trapframe(&env.tf, env.asid as u32) };
     }
 
     pub fn get_first(&self) -> Option<&mut Env> {
@@ -346,6 +345,10 @@ impl EnvManager {
         // tracker should be the first element (?)
         assert!(self.schedule_list.borrow_mut().pop_front() == Some(tracker));
         self.schedule_list.borrow_mut().push_back(tracker);
+    }
+
+    pub fn current_pgdir(&self) -> PageDirectory {
+        self.cur_pgdir
     }
 }
 
@@ -391,4 +394,14 @@ fn env_at(index: usize) -> &'static mut Env {
         panic!("index out of ENVS limit")
     }
     unsafe { &mut ENVS.env_array[index] }
+}
+
+unsafe fn env_pop_trapframe(tf: &Trapframe, asid: u32) -> ! {
+    extern "C" {
+        fn _ret_from_exception() -> !;
+    }
+    entryhi::write(asid);
+    mips::registers::gpr::write::<sp>(tf as *const _ as u32);
+    reset_kclock();
+    _ret_from_exception();
 }

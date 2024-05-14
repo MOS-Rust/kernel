@@ -1,21 +1,11 @@
+.macro SAVE_CONTEXT
 .set noat
 .set noreorder
-.balign 4096
-
-.section .text.exception_entry
-.globl _tlb_refill_entry
-_tlb_refill_entry:
-    j _exception_entry
-
-
-.org 0x180
-.globl _exception_entry
-_exception_entry:
     mfc0 K0, CP0_STATUS
     andi K0, STATUS_UM
     beqz K0, 1f
     move K0, SP
-    li   K0, KSTACKTOP
+    li   SP, KSTACKTOP
 
 1:
     subu SP, SP, TF_SIZE
@@ -63,4 +53,21 @@ _exception_entry:
     sw   $28, TF_REG28(SP)
     sw   $30, TF_REG30(SP)
     sw   $31, TF_REG31(SP)
+.set at
+.set reorder
+.endm
+
+.section .text.exception_entry
+.globl _tlb_refill_entry
+_tlb_refill_entry:
+    j _exception_entry
+
+
+.org 0x180
+.globl _exception_entry
+_exception_entry:
+    SAVE_CONTEXT
+    # mfc0    T0, CP0_STATUS
+	# and     T0, T0, ~(STATUS_UM | STATUS_EXL | STATUS_IE)
+	# mtc0    T0, CP0_STATUS
     j exception_handler

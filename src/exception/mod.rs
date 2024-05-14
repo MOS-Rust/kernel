@@ -4,31 +4,40 @@ pub mod clock;
 mod handlers;
 pub mod trapframe;
 
-use core::{arch::global_asm, ptr::addr_of_mut};
+use core::{arch::global_asm, mem::size_of, ptr::addr_of_mut};
+use log::trace;
 use mips::registers::cp0::{
-    cause::{self, Exception},
-    ebase,
-    status,
+    cause::{self, Exception}, ebase, epc, status
 };
 
-use crate::println;
+use crate::{exception::{handlers::{handle_int, handle_tlb, unhandled}, trapframe::Trapframe}, mm::{addr::VA, layout::KSTACKTOP}, platform::cp0reg::{STATUS_EXL, STATUS_IE, STATUS_UM}, println};
 
 global_asm!(include_str!("../../asm/exception/exception_entry.S"));
 
 #[no_mangle]
 pub unsafe extern "C" fn exception_handler() {
-    println!("Exception handler");
-    let mut status = status::read_struct();
-    status.clear_exl();
-    status.clear_ie();
-    status.set_kernel_mode();
-    status::write_struct(status);
+    println!("epc:{:x}", epc::read());
+    let tf = Trapframe::from_memory(VA(KSTACKTOP - size_of::<Trapframe>()));
+
     match cause::read_struct().exception() {
         Exception::Int => {
-            panic!("Unhandled interrupt");
+            handle_int();
+        }
+        Exception::TLBL => {
+            handle_tlb();
+        }
+        Exception::TLBS => {
+            trace!("");
+            handle_tlb();
+        }
+        Exception::Mod => {
+            panic!("Unhandled TLB exception");
+        }
+        Exception::Sys => {
+            panic!("Unhandled syscall");
         }
         _ => {
-            panic!("Unhandled exception");
+            unhandled(tf);
         }
     }
 }

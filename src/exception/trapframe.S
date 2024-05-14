@@ -1,14 +1,14 @@
 .macro RESTORE_CONTEXT
 .set noat
 .set noreorder
-    lw   v0, TF_STATUS(SP)
-    mtc0 v0, CP0_STATUS
-    lw   v1, TF_LO(SP)
-    mtlo v1
-    lw   v0, TF_HI(SP)
-    mthi v0
-    lw   v0, TF_EPC(SP)
-    mtc0 v0, CP0_EPC
+    lw   V0, TF_STATUS(SP)
+    mtc0 V0, CP0_STATUS
+    lw   V1, TF_LO(SP)
+    mtlo V1
+    lw   V0, TF_HI(SP)
+    mthi V0
+    lw   V0, TF_EPC(SP)
+    mtc0 V0, CP0_EPC
     lw   $31, TF_REG31(SP)
     lw   $30, TF_REG30(SP)
     lw   $28, TF_REG28(SP)
@@ -37,7 +37,14 @@
     lw   $3, TF_REG3(SP)
     lw   $2, TF_REG2(SP)
     lw   $1, TF_REG1(SP)
-    lw   $SP, TF_REG29(SP)
+    lw   SP, TF_REG29(SP)
 .set at
 .set reorder
 .endmacro
+
+
+.globl _ret_from_exception
+.type _ret_from_exception, @function
+_ret_from_exception:
+    RESTORE_CONTEXT
+    eret

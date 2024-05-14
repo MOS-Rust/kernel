@@ -1,10 +1,11 @@
 use crate::pm::ENV_MANAGER;
 
-pub fn schedule(r#yield: bool) {
+#[no_mangle]
+pub extern "C" fn schedule(env_yield: bool) -> ! {
     static mut COUNT: u32 = 0;
     unsafe {
         let mut env = ENV_MANAGER.curenv();
-        if r#yield || COUNT == 0 || env.is_none() || !env.as_ref().unwrap().runnable() {
+        if env_yield || COUNT == 0 || env.is_none() || !env.as_ref().unwrap().runnable() {
             if env.as_ref().is_some() && env.as_ref().unwrap().runnable() {
                 ENV_MANAGER.move_to_end(env.unwrap());
             }

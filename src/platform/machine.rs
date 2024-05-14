@@ -14,6 +14,7 @@ use super::malta::{FPGA_HALT, SERIAL_DATA, SERIAL_DATA_READY, SERIAL_LSR, SERIAL
 /// # Returns
 ///
 /// The byte read from the specified address.
+#[inline]
 unsafe fn read_byte(addr: usize) -> u8 {
     let ptr = addr as *const u8;
     ptr.read_volatile()
@@ -29,6 +30,7 @@ unsafe fn read_byte(addr: usize) -> u8 {
 ///
 /// * `addr` - The address to write to.
 /// * `data` - The byte to write.
+#[inline]
 unsafe fn write_byte(addr: usize, data: u8) {
     let ptr = addr as *mut u8;
     ptr.write_volatile(data);

@@ -27,6 +27,7 @@ pub struct Elf32<'a> {
     binary: &'a [u8],
 }
 
+#[repr(C)]
 #[derive(Clone, Copy, Debug)]
 pub struct Elf32Ehdr {
     pub e_indent: [u8; EI_INDENT],
@@ -50,6 +51,7 @@ pub const ELFMAG1: u8 = 'E' as u8;
 pub const ELFMAG2: u8 = 'L' as u8;
 pub const ELFMAG3: u8 = 'F' as u8;
 
+#[repr(C)]
 #[derive(Clone, Copy, Debug)]
 pub struct Elf32Phdr {
     pub p_type: Elf32Word,

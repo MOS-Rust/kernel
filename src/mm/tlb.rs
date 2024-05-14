@@ -2,10 +2,12 @@
 
 use core::arch::global_asm;
 
+use crate::pm::ENV_MANAGER;
+
 use super::{
     addr::{VA, VPN},
     layout::{PteFlags, PAGE_SIZE, UENVS, UPAGES, USTACKTOP, UTEMP, UVPT},
-    map::PageDirectory,
+    map::{PageDirectory, Pte},
     page::page_alloc,
 };
 
@@ -49,9 +51,22 @@ pub fn passive_alloc(va: VA, pgdir: PageDirectory, asid: usize) {
     pgdir.insert(asid, page, va.pte_addr(), flags).unwrap();
 }
 
-/// This function returns (entrylo0, entrylo1).
-pub fn do_tlb_refill(va: VA, asid: usize) -> (u32, u32) {
+
+// TODO: NOT GUARANTEED TO WORK
+#[no_mangle]
+pub unsafe extern "C" fn do_tlb_refill(pentrylo: *mut u32, va: u32, asid: u32) {
+    let va = VA(va as usize);
+    let asid = asid as usize;
     tlb_invalidate(asid, va);
-    // TODO:
-    (0, 0)
+
+    let pte_base: *mut Pte;
+    loop {
+        if let Some((pte, _)) = ENV_MANAGER.current_pgdir().lookup(va) {
+            pte_base = ((pte as *mut Pte as *mut _ as usize) & !0x7) as *mut Pte;
+            break;
+        }
+        passive_alloc(va, ENV_MANAGER.current_pgdir(), asid);
+    }
+    pentrylo.write_volatile((*pte_base).0 as u32 >> 6);
+    pentrylo.add(1).write_volatile((*pte_base.add(1)).0 as u32 >> 6);
 }

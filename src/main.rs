@@ -3,7 +3,7 @@
 //! This crate is the entry point for the kernel. It is responsible for initializing the kernel and starting its execution.
 
 #![deny(missing_docs)]
-#![deny(warnings)]
+// #![deny(warnings)]
 #![no_std]
 #![no_main]
 #![feature(panic_info_message)]
@@ -33,7 +33,6 @@ use core::{
 };
 
 use log::info;
-////use mips::registers::cp0::{compare, count};
 
 global_asm!(include_str!("../asm/init/entry.S"));
 

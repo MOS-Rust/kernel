@@ -56,7 +56,6 @@ pub const PGSHIFT: usize = 12;
 /// Page directory shift value
 pub const PDSHIFT: usize = 22;
 
-// TODO: Probably this should move to mips/cp0/entrylo.rs
 bitflags! {
     #[derive(Clone, Copy, Debug)]
     pub struct PteFlags: usize {
@@ -129,6 +128,7 @@ pub const KSEG0: usize = 0x8000_0000;
 pub const KSEG1: usize = 0xa000_0000;
 pub const KSEG2: usize = 0xc000_0000;
 
+pub const KSTACKTOP: usize = 0x8040_0000;
 pub const KERNBASE: usize = 0x8002_0000;
 pub const ULIM: usize = 0x8000_0000;
 

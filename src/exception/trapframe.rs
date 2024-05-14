@@ -1,6 +1,6 @@
 use core::{arch::global_asm, fmt::{Display, Formatter, Result}};
 
-use crate::const_export_usize;
+use crate::{const_export_usize, mm::addr::VA};
 
 global_asm!(include_str!("../../asm/exception/trapframe.S"));
 
@@ -27,6 +27,10 @@ impl Trapframe {
             cp0_cause: 0,
             cp0_epc: 0,
         }
+    }
+
+    pub unsafe fn from_memory(addr: VA) -> *mut Trapframe {
+        addr.0 as *mut Trapframe
     }
 }
 
