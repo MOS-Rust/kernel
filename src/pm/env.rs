@@ -332,7 +332,7 @@ impl EnvManager {
         self.cur = Some(env.tracker());
         env.runs += 1;
 
-        self.cur_pgdir = env.pgdir.clone();
+        self.cur_pgdir = env.pgdir;
 
         unsafe { _env_pop_trapframe(&mut env.tf, env.asid as u32) }
     }

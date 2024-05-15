@@ -43,6 +43,8 @@
 //! For more information, refer to the MOS `include/mmu.h` file.
 #![allow(dead_code)] // TODO: Remove this
 
+use crate::const_export_usize;
+
 /// Maximum number of Address Space Identifiers(ASIDs)
 pub const NASID: usize = 256;
 /// Bytes per page
@@ -128,7 +130,7 @@ pub const KSEG0: usize = 0x8000_0000;
 pub const KSEG1: usize = 0xa000_0000;
 pub const KSEG2: usize = 0xc000_0000;
 
-pub const KSTACKTOP: usize = 0x8040_0000;
+const_export_usize!(KSTACKTOP, 0x80400000);
 pub const KERNBASE: usize = 0x8002_0000;
 pub const ULIM: usize = 0x8000_0000;
 
