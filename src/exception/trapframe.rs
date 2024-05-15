@@ -1,8 +1,6 @@
-use core::{arch::global_asm, fmt::{Display, Formatter, Result}};
+use core::fmt::{Display, Formatter, Result};
 
 use crate::{const_export_usize, mm::addr::VA};
-
-global_asm!(include_str!("../../asm/exception/trapframe.S"));
 
 #[derive(Clone, Copy, Debug)]
 #[repr(C)]

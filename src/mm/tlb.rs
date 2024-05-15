@@ -6,7 +6,7 @@ use crate::pm::ENV_MANAGER;
 
 use super::{
     addr::{VA, VPN},
-    layout::{PteFlags, PAGE_SIZE, UENVS, UPAGES, USTACKTOP, UTEMP, UVPT},
+    layout::{PteFlags, PAGE_SIZE, UENVS, ULIM, UPAGES, USTACKTOP, UTEMP, UVPT},
     map::{PageDirectory, Pte},
     page::page_alloc,
 };
@@ -38,7 +38,7 @@ pub fn passive_alloc(va: VA, pgdir: PageDirectory, asid: usize) {
     if va_val >= UPAGES && va_val < UVPT {
         panic!("Passive alloc: pages zone.");
     }
-    if va_val >= va_val {
+    if va_val >= ULIM {
         panic!("Passive alloc: kernel address");
     }
 

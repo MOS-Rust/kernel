@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use core::arch::global_asm;
 use core::cell::RefCell;
 use core::mem::size_of;
 use core::panic;
@@ -7,9 +8,10 @@ use core::ptr;
 use core::ptr::addr_of_mut;
 
 use crate::error::MosError;
-use crate::exception::clock::reset_kclock;
 use crate::exception::trapframe::Trapframe;
+use crate::exception::trapframe::TF_SIZE;
 use crate::mm::addr::{PA, VA};
+use crate::mm::layout::KSTACKTOP;
 use crate::mm::layout::PDSHIFT;
 use crate::mm::layout::PGSHIFT;
 use crate::mm::layout::{PteFlags, NASID, PAGE_SIZE, UENVS, USTACKTOP, UTOP, UVPT};
@@ -25,8 +27,6 @@ use crate::round;
 use alloc::collections::VecDeque;
 use alloc::vec::Vec;
 use log::info;
-use mips::registers::cp0::entryhi;
-use mips::registers::gpr::sp;
 
 use super::elf::elf_load_seg;
 use super::elf::load_icode_mapper;
@@ -35,13 +35,14 @@ use super::elf::PT_LOAD;
 
 use super::ipc::IpcInfo;
 
+global_asm!(include_str!("../../asm/pm/env_asm.S"));
+
 const NENV: usize = 1024;
 
 const NEW_ENV: Env = Env::new(0);
 static mut ENVS: Envs = Envs {
     env_array: [NEW_ENV; NENV],
 };
-static mut ENV_COUNT: usize = 0;
 static mut ASID_BITMAP: [usize; NASID / 32] = [0; NASID / 32];
 
 #[derive(Debug, PartialEq, Eq)]
@@ -247,7 +248,7 @@ impl EnvManager {
         }
     }
 
-    pub fn alloc(&mut self, parent_id: usize) -> Result<&mut Env, MosError> {
+    pub fn alloc(&self, parent_id: usize) -> Result<&mut Env, MosError> {
         if let Ok(env) = self.get_free_env() {
             if let Err(error) = self.setup_vm(env) {
                 return Err(error);
@@ -270,7 +271,7 @@ impl EnvManager {
     }
 
     pub fn create(&self, binary: &[u8], priority: u32) -> &mut Env {
-        let env = self.get_free_env().expect("failed on env allocation");
+        let env = self.alloc(0).expect("failed to alloc env");
         env.priority = priority;
         env.status = EnvStatus::Runnable;
         env.load_icode(binary);
@@ -321,16 +322,19 @@ impl EnvManager {
     }
 
     pub fn env_run(&mut self, env: &mut Env) -> ! {
+        extern "C" {
+            fn _env_pop_trapframe(tf: *mut Trapframe, asid: u32) -> !;
+        }
         assert!(env.status == EnvStatus::Runnable);
         if let Some(cur) = self.curenv() {
-            cur.tf = unsafe { *Trapframe::from_memory(VA(USTACKTOP - size_of::<Trapframe>())) };
+            cur.tf = unsafe { *Trapframe::from_memory(VA(KSTACKTOP - TF_SIZE)) };
         }
         self.cur = Some(env.tracker());
         env.runs += 1;
 
         self.cur_pgdir = env.pgdir.clone();
 
-        unsafe { env_pop_trapframe(&env.tf, env.asid as u32) };
+        unsafe { _env_pop_trapframe(&mut env.tf, env.asid as u32) }
     }
 
     pub fn get_first(&self) -> Option<&mut Env> {
@@ -363,8 +367,9 @@ fn map_segment(pgdir: PageDirectory, asid: usize, pa: PA, va: VA, size: usize, f
 }
 
 fn mkenvid(env: &Env) -> usize {
+    static mut ENV_COUNT: usize = 0;
     unsafe { ENV_COUNT += 1 };
-    ((unsafe { ENV_COUNT } - 1) << 11) | env.pos
+    ((unsafe { ENV_COUNT }) << 11) | env.pos
 }
 
 fn asid_alloc() -> Result<usize, MosError> {
@@ -396,12 +401,11 @@ fn env_at(index: usize) -> &'static mut Env {
     unsafe { &mut ENVS.env_array[index] }
 }
 
-unsafe fn env_pop_trapframe(tf: &Trapframe, asid: u32) -> ! {
-    extern "C" {
-        fn _ret_from_exception() -> !;
-    }
-    entryhi::write(asid);
-    mips::registers::gpr::write::<sp>(tf as *const _ as u32);
-    reset_kclock();
-    _ret_from_exception();
-}
+// unsafe fn env_pop_trapframe(tf: *mut Trapframe, asid: u32) -> ! {
+//     extern "C" {
+//         fn _ret_from_exception(tf: *mut Trapframe) -> !;
+//     }
+//     entryhi::write(asid);
+//     reset_kclock();
+//     _ret_from_exception(tf as *mut Trapframe);
+// }
