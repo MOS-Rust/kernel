@@ -114,9 +114,14 @@ _exception_entry:
     mfc0    T0, CP0_STATUS
     and     T0, T0, ~(STATUS_UM | STATUS_EXL | STATUS_IE)
     mtc0    T0, CP0_STATUS
+    mfc0    T0, CP0_CAUSE
     andi    T0, 0x7c
-	lw      T0, exception_handlers(T0)
-	jr      T0
+    srl     T0, 2
+    move    A1, T0
+	# lw      T0, exception_handlers(T0)
+	# jr      T0 
+    move   A0, SP
+    j exception_handler
 
 .globl _ret_from_exception
 .type _ret_from_exception, @function

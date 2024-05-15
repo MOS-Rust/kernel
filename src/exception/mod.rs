@@ -5,7 +5,10 @@ pub mod trapframe;
 mod handler;
 
 use core::{arch::global_asm, ptr::addr_of_mut};
-use mips::registers::cp0::ebase;
+use log::trace;
+use mips::registers::cp0::{cause::{self, Exception}, ebase, epc};
+
+use crate::{exception::trapframe::Trapframe, mm::{addr::VA, layout::KSTACKTOP}, pm::schedule::schedule, println};
 
 
 
@@ -61,32 +64,32 @@ pub static exception_handlers: [Vector; 32] = [
     Vector { handler: _handle_unhandled  }, // 31
 ];
 
-// pub unsafe extern "C" fn exception_handler(sp: *mut u8) {
-//     println!("epc:{:x}", epc::read());
-//     let tf = Trapframe::from_memory(VA(sp as usize));
-// 
-//     match cause::read_struct().exception() {
-//         Exception::Int => {
-//             handle_int();
-//         }
-//         Exception::TLBL => {
-//             handle_tlb(tf);
-//         }
-//         Exception::TLBS => {
-//             trace!("");
-//             handle_tlb(tf);
-//         }
-//         Exception::Mod => {
-//             panic!("Unhandled TLB exception");
-//         }
-//         Exception::Sys => {
-//             panic!("Unhandled syscall");
-//         }
-//         _ => {
-//             unhandled(tf);
-//         }
-//     }
-// }
+#[no_mangle]
+pub unsafe extern "C" fn exception_handler(sp: *mut u32, exccode: u32) {
+    extern "C" {
+        fn _do_tlb_refill(sp: *mut u32);
+    }
+    match Exception::from(exccode) {
+        Exception::Int => {
+            schedule(false);
+        }
+        Exception::TLBL => {
+            _do_tlb_refill(sp)
+        }
+        Exception::TLBS => {
+            _do_tlb_refill(sp)
+        }
+        Exception::Mod => {
+            panic!("Unhandled TLB exception");
+        }
+        Exception::Sys => {
+            panic!("Unhandled syscall");
+        }
+        _ => {
+            _handle_unhandled();
+        }
+    }
+}
 
 pub fn init() {
     extern "C" {

@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use core::arch::asm;
 use core::arch::global_asm;
 use core::cell::RefCell;
 use core::mem::size_of;
@@ -8,6 +9,7 @@ use core::ptr;
 use core::ptr::addr_of_mut;
 
 use crate::error::MosError;
+use crate::exception::clock::reset_kclock;
 use crate::exception::trapframe::Trapframe;
 use crate::exception::trapframe::TF_SIZE;
 use crate::mm::addr::{PA, VA};
@@ -27,6 +29,7 @@ use crate::round;
 use alloc::collections::VecDeque;
 use alloc::vec::Vec;
 use log::info;
+use mips::registers::cp0::entryhi;
 
 use super::elf::elf_load_seg;
 use super::elf::load_icode_mapper;
@@ -334,7 +337,7 @@ impl EnvManager {
 
         self.cur_pgdir = env.pgdir;
 
-        unsafe { _env_pop_trapframe(&mut env.tf, env.asid as u32) }
+        unsafe { env_pop_trapframe(&mut env.tf, env.asid as u32) }
     }
 
     pub fn get_first(&self) -> Option<&mut Env> {
@@ -401,11 +404,15 @@ fn env_at(index: usize) -> &'static mut Env {
     unsafe { &mut ENVS.env_array[index] }
 }
 
-// unsafe fn env_pop_trapframe(tf: *mut Trapframe, asid: u32) -> ! {
-//     extern "C" {
-//         fn _ret_from_exception(tf: *mut Trapframe) -> !;
-//     }
-//     entryhi::write(asid);
-//     reset_kclock();
-//     _ret_from_exception(tf as *mut Trapframe);
-// }
+unsafe fn env_pop_trapframe(tf: *mut Trapframe, asid: u32) -> ! {
+    extern "C" {
+        fn _ret_from_exception() -> !;
+    }
+    entryhi::write(asid);
+    reset_kclock();
+    asm!("ori $sp, {}, 0",
+        in(reg) tf,
+        options(nostack, nomem)
+    );
+    _ret_from_exception();
+}
