@@ -66,9 +66,9 @@ pub struct PageTable {
 impl PageTable {
     /// Initialize a new page table
     /// A page is allocated for the page table
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// A tuple containing the page table and the page
     pub fn init() -> (PageTable, Page) {
         let page = page_alloc(true).expect("Failed to allocate a page for PageTable.");
@@ -82,7 +82,7 @@ impl PageTable {
 
     pub const fn empty() -> PageTable {
         PageTable {
-            page: Page::new(PPN(0))
+            page: Page::new(PPN(0)),
         }
     }
 
@@ -123,7 +123,7 @@ impl PageTable {
     /// the lower 12 bits of pte will be set to flags
     ///
     /// # Returns
-    /// 
+    ///
     /// Ok(()) if page is successfully inserted
     /// MosError::NoMem if page allocation failed
     pub fn insert(&self, asid: usize, page: Page, va: VA, flags: PteFlags) -> Result<(), MosError> {
@@ -154,7 +154,7 @@ impl PageTable {
     /// Lookup the page that virtual address va is mapped to
     ///
     /// # Returns
-    /// 
+    ///
     /// Ok((pte, page)) if page found valid
     /// * pte: &mut Pte, page table entry of va
     /// * page: Page, page of va

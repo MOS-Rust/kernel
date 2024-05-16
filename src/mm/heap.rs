@@ -5,7 +5,7 @@
 //!
 //! # Note
 //!
-//! This implementation uses a fixed-size kernel heap of 1 MiB. 
+//! This implementation uses a fixed-size kernel heap of 1 MiB.
 
 use allocator::Allocator;
 use log::info;
@@ -22,7 +22,7 @@ static mut KERNEL_HEAP: [u8; KERNEL_HEAP_SIZE] = [0; KERNEL_HEAP_SIZE];
 /// Initialize the heap allocator.
 ///
 /// This function initializes the heap allocator by adding the kernel heap memory range to the allocator.
-/// 
+///
 /// This function should be called only once.
 pub fn init() {
     unsafe {
@@ -30,5 +30,8 @@ pub fn init() {
             .lock()
             .add_size(KERNEL_HEAP.as_ptr() as usize, KERNEL_HEAP_SIZE);
     }
-    info!("Initialized {} KiB of kernel heap.", KERNEL_HEAP_SIZE / 1024);
+    info!(
+        "Initialized {} KiB of kernel heap.",
+        KERNEL_HEAP_SIZE / 1024
+    );
 }

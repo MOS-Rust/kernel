@@ -3,7 +3,8 @@ use crate::mm::addr::VA;
 
 #[derive(Clone, Copy, Debug)]
 pub enum IpcStatus {
-    Receiving, NotReceiving,
+    Receiving,
+    NotReceiving,
 }
 
 #[derive(Clone, Copy, Debug)]

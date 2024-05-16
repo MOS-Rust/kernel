@@ -4,8 +4,8 @@
 /*
  * QEMU MMIO address definitions.
  */
-const PCIIO_BASE : usize = 0x18000000;
-const FPGA_BASE  : usize = 0x1f000000;
+const PCIIO_BASE: usize = 0x18000000;
+const FPGA_BASE: usize = 0x1f000000;
 
 /*
  * 16550 Serial UART device definitions.

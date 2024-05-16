@@ -6,9 +6,9 @@
 
 pub mod addr;
 mod heap;
-pub mod page;
 pub mod layout;
 pub mod map;
+pub mod page;
 pub mod tlb;
 
 use log::info;

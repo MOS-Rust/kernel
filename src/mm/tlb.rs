@@ -1,5 +1,3 @@
-#![allow(dead_code)] // TODO: Remove this
-
 use core::arch::global_asm;
 
 use crate::pm::ENV_MANAGER;
@@ -51,8 +49,6 @@ pub fn passive_alloc(va: VA, pgdir: PageDirectory, asid: usize) {
     pgdir.insert(asid, page, va.pte_addr(), flags).unwrap();
 }
 
-
-// TODO: NOT GUARANTEED TO WORK
 #[no_mangle]
 pub unsafe extern "C" fn do_tlb_refill(pentrylo: *mut u32, va: u32, asid: u32) {
     let va = VA(va as usize);
@@ -68,5 +64,7 @@ pub unsafe extern "C" fn do_tlb_refill(pentrylo: *mut u32, va: u32, asid: u32) {
         passive_alloc(va, ENV_MANAGER.current_pgdir(), asid);
     }
     pentrylo.write_volatile((*pte_base).0 as u32 >> 6);
-    pentrylo.add(1).write_volatile((*pte_base.add(1)).0 as u32 >> 6);
+    pentrylo
+        .add(1)
+        .write_volatile((*pte_base.add(1)).0 as u32 >> 6);
 }
