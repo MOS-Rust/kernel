@@ -24,7 +24,7 @@ pub fn tlb_invalidate(asid: usize, va: VA) {
     }
 }
 
-pub fn passive_alloc(va: VA, pgdir: PageDirectory, asid: usize) {
+pub fn passive_alloc(va: VA, pgdir: &mut PageDirectory, asid: usize) {
     let va_val = va.0;
     if va_val < UTEMP {
         panic!("Passive alloc: address too low.");
