@@ -30,7 +30,7 @@ use core::{
     mem::size_of,
     ptr::{self, addr_of_mut},
 };
-use log::info;
+use log::{info, warn};
 
 pub const NENV: usize = 1024;
 
@@ -282,6 +282,9 @@ impl EnvManager {
 
     pub fn env_free(&mut self, env: &mut Env) {
         if let Some(curenv) = self.curenv() {
+            if curenv.id != env.id && curenv.id != env.parent_id {
+                warn!("{:x} try to free {:x} which is not its child", curenv.id, env.id);
+            }
             info!("{:x} free env {:x}", curenv.id, env.id);
         } else {
             info!("0 free env {:x}", env.id);
