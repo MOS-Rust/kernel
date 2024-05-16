@@ -2,7 +2,6 @@ use crate::{pm::ENV_MANAGER, println};
 
 #[no_mangle]
 pub extern "C" fn schedule(env_yield: bool) -> ! {
-    println!("schedule");
     unsafe { println!("TOTAL: {}", TOTAL); }
     static mut TOTAL: u32 = 100;
     static mut COUNT: u32 = 0;
