@@ -32,10 +32,10 @@ use core::{
 };
 use log::info;
 
-const NENV: usize = 1024;
+pub const NENV: usize = 1024;
 
 const NEW_ENV: Env = Env::new(0);
-static mut ENVS: Envs = Envs {
+pub(crate) static mut ENVS: Envs = Envs {
     env_array: [NEW_ENV; NENV],
 };
 static mut ASID_BITMAP: [usize; NASID / 32] = [0; NASID / 32];
@@ -122,7 +122,7 @@ impl Env {
 }
 
 #[repr(C, align(4096))]
-struct Envs {
+pub struct Envs {
     env_array: [Env; NENV],
 }
 
@@ -346,9 +346,25 @@ impl EnvManager {
         self.schedule_list.borrow_mut().push_back(tracker);
     }
 
-    pub fn current_pgdir(&self) -> PageDirectory {
-        self.cur_pgdir
+    pub fn current_pgdir(&mut self) -> &mut PageDirectory {
+        &mut self.cur_pgdir
     }
+
+    pub fn base_pgdir(&mut self) -> &mut PageDirectory {
+        &mut self.base_pgdir
+    }
+}
+
+pub fn env_alloc(parent_id: usize) -> Result<&'static mut Env, MosError> {
+    unsafe {ENV_MANAGER.alloc(parent_id)}
+}
+
+pub fn env_free(env: &mut Env) {
+    unsafe {ENV_MANAGER.env_free(env)}
+}
+
+pub fn get_base_pgdir() -> &'static mut PageDirectory {
+    unsafe {&mut ENV_MANAGER.base_pgdir}
 }
 
 fn map_segment(pgdir: PageDirectory, asid: usize, pa: PA, va: VA, size: usize, flags: PteFlags) {

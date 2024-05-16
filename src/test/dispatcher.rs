@@ -1,11 +1,12 @@
 #![allow(dead_code)]
 
-use super::{heap, map};
+use super::{env, heap, map};
 
 pub enum TestName {
     HeapTest,
     AllocTest,
     MappingTest,
+    EnvTest,
 }
 
 pub fn dispatcher(test_name: TestName) {
@@ -18,6 +19,9 @@ pub fn dispatcher(test_name: TestName) {
         }
         TestName::MappingTest => {
             map::mapping_test();
+        }
+        TestName::EnvTest => {
+            env::env_test();
         }
     }
 }
