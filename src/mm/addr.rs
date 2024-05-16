@@ -27,11 +27,13 @@ pub struct VA(pub usize);
 
 /// Physical Page Number
 #[repr(C)]
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
 pub struct PPN(pub usize);
 
 /// Virtual Page Number
 #[repr(C)]
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
 pub struct VPN(pub usize);
 
@@ -75,13 +77,13 @@ impl From<VPN> for VA {
 
 impl PA {
     /// Translates from physical address to kernel virtual address
-    /// 
+    ///
     /// # Panics
-    /// 
+    ///
     /// Panics if the physical address is beyond the physical memory size
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// The kernel virtual address
     pub fn kaddr(&self) -> VA {
         let ppn = PPN::from(*self);
@@ -104,13 +106,13 @@ impl VA {
     }
 
     /// Translates from kernel virtual address to physical address
-    /// 
+    ///
     /// # Panics
-    /// 
+    ///
     /// Panics if the virtual address is not in the kernel space
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// The physical address
     pub fn paddr(&self) -> PA {
         if self.0 < ULIM {
@@ -165,13 +167,13 @@ impl Sub<VPN> for VPN {
 
 impl PPN {
     /// Translates from physical page number to kernel virtual address
-    /// 
+    ///
     /// # Panics
-    /// 
+    ///
     /// Panics if the corresponding physical address is beyond the physical memory size
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// The kernel virtual address
     pub fn kaddr(&self) -> VA {
         PA::from(*self).kaddr()

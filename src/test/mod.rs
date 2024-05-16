@@ -2,6 +2,7 @@
 pub mod dispatcher;
 mod heap;
 mod map;
+mod env;
 
 /// A macro for running tests.
 ///
@@ -23,7 +24,7 @@ macro_rules! test {
         match option_env!("NO_TEST") {
             Some("1") => {}
             _ => {
-                use crate::test::dispatcher::{dispatcher, TestName};
+                use $crate::test::dispatcher::{dispatcher, TestName};
                 dispatcher(TestName::$name);
             }
         }

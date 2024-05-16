@@ -1,4 +1,4 @@
-use log::info;
+use log::debug;
 
 use crate::mm::{addr::{PPN, VA}, layout::PteFlags, map::{PageTable, Pte}, page::{alloc, dealloc, page_alloc, page_dealloc, Page}};
 
@@ -27,9 +27,12 @@ pub fn alloc_test() {
     dealloc(new_page, 1);
     dealloc(pages[2], 1);
     dealloc(pages[3], 1);
-    info!("Page allocation test passed!");
+    debug!("Page allocation test passed!");
 }
+
 impl PageTable {
+    // TODO: Find a better to deal with this
+    #[allow(clippy::mut_from_ref)]
     unsafe fn nth(&self, n: usize) -> &mut Pte {
         assert!(n < 1024);
         let base_ptr = self.page.ppn().kaddr().as_mut_ptr::<Pte>();
@@ -39,19 +42,19 @@ impl PageTable {
 
 pub fn mapping_test() {
     let mut pages = [Page::new(PPN(0)); 3];
-    let (pd, pd_page) = PageTable::init();
+    let (pd, pd_page) = PageTable::init().unwrap();
     assert!(pd_page.ref_count() == 1);
-    for i in 0..3 {
-        pages[i] = page_alloc(true).expect("Failed to allocate a page.");
-    }
+    pages.iter_mut().for_each(|page| {
+        *page = page_alloc(true).expect("Failed to allocate a page.");
+    });
 
     // Test inserting into pd
     assert!(pd.insert(0, pages[0], VA(0x0), PteFlags::empty()).is_ok());
     assert!(pages[0].ref_count() == 1);
     let pde = unsafe { pd.nth(0) };
-    assert!(pde.flags().contains(PteFlags::V) && pde.flags().contains(PteFlags::Cached));
+    assert!(pde.flags().contains(PteFlags::V) && pde.flags().contains(PteFlags::Cacheable));
     let pte = pd.lookup(VA(0x0)).unwrap().0;
-    assert!(pte.flags().contains(PteFlags::V) && pte.flags().contains(PteFlags::Cached));
+    assert!(pte.flags().contains(PteFlags::V) && pte.flags().contains(PteFlags::Cacheable));
     assert_eq!(pd.va2pa(VA(0x0)).unwrap(), pages[0].into());
 
     // Inserting ppns[1] into 0x1000
@@ -96,5 +99,5 @@ pub fn mapping_test() {
     // Free resources
     PageTable::try_recycle(pde.ppn().into());
     PageTable::try_recycle(pd_page);
-    info!("Mapping test passed!");
+    debug!("Mapping test passed!");
 }

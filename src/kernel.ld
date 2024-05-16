@@ -15,6 +15,9 @@ SECTIONS
     
     __start_text = .;
     .text : {
+        . = ALIGN(4096);
+        *(.text.exception_entry)
+
         *(.text .text.*)
     }
     __end_text = .;

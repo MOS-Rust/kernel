@@ -1,5 +1,5 @@
-use crate::mm::layout::KSEG1;
 use super::malta::{FPGA_HALT, SERIAL_DATA, SERIAL_DATA_READY, SERIAL_LSR, SERIAL_THR_EMPTY};
+use crate::mm::layout::KSEG1;
 
 /// Reads a byte from the specified address.
 ///
@@ -14,6 +14,7 @@ use super::malta::{FPGA_HALT, SERIAL_DATA, SERIAL_DATA_READY, SERIAL_LSR, SERIAL
 /// # Returns
 ///
 /// The byte read from the specified address.
+#[inline]
 unsafe fn read_byte(addr: usize) -> u8 {
     let ptr = addr as *const u8;
     ptr.read_volatile()
@@ -29,6 +30,7 @@ unsafe fn read_byte(addr: usize) -> u8 {
 ///
 /// * `addr` - The address to write to.
 /// * `data` - The byte to write.
+#[inline]
 unsafe fn write_byte(addr: usize, data: u8) {
     let ptr = addr as *mut u8;
     ptr.write_volatile(data);
@@ -56,7 +58,7 @@ pub fn print_char(c: char) {
 /// Reads a character from the serial port.
 ///
 /// Only characters that are ASCII printable are supported.
-/// 
+///
 /// # Returns
 ///
 /// The character read from the serial port, or '\0' if no character is available.
@@ -78,5 +80,5 @@ pub fn halt() -> ! {
     unsafe {
         write_byte(KSEG1 + FPGA_HALT, 0x42);
     }
-    loop {}
+    unreachable!()
 }

@@ -3,24 +3,27 @@
 //! This crate is the entry point for the kernel. It is responsible for initializing the kernel and starting its execution.
 
 #![deny(missing_docs)]
-#![deny(warnings)]
+// #![deny(warnings)]
 #![no_std]
 #![no_main]
 #![feature(panic_info_message)]
 #![feature(asm_experimental_arch)]
+#![feature(asm_const)]
 
 extern crate alloc;
 
 #[macro_use]
 extern crate bitflags;
-
+mod bitops;
 mod console;
 mod error;
+mod exception;
 mod export;
 mod logging;
 mod mm;
 mod panic;
 mod platform;
+mod pm;
 mod test;
 
 use core::{
@@ -46,10 +49,12 @@ pub extern "C" fn kernel_init(
     ram_size: usize,
 ) -> ! {
     clear_bss();
+    exception::init();
     logging::init();
     info!("MOS-Rust started!");
     mm::init(ram_size);
-    panic!()
+    pm::init();
+    panic!("");
 }
 
 /// Clear the .bss section

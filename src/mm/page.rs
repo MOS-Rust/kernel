@@ -23,7 +23,7 @@ pub struct Page {
 
 impl Page {
     /// Construct a Page from ppn
-    pub fn new(ppn: PPN) -> Self {
+    pub const fn new(ppn: PPN) -> Self {
         Page { ppn }
     }
 
@@ -137,7 +137,7 @@ impl PageAllocator {
         let mut current = current;
         while current < end {
             let lowbit = 1 << current.0.trailing_zeros();
-            let size = lowbit.min(prev_power_of_2(end - current)) as usize;
+            let size = lowbit.min(prev_power_of_2(end - current));
             let order = size.trailing_zeros() as usize;
             self.free_list[order].push(current);
             current = current + size;
@@ -177,7 +177,7 @@ impl PageAllocator {
                 return Some(ppn);
             }
         }
-        return None;
+        None
     }
 
     /// Deallocate a previously allocated block of physical pages.
@@ -267,21 +267,13 @@ pub fn alloc(clear: bool, size: usize) -> Option<PPN> {
 /// clear page if argument clear is set
 #[inline]
 pub fn page_alloc(clear: bool) -> Option<Page> {
-    if let Some(ppn) = alloc(clear, 1) {
-        Some(Page::new(ppn))
-    } else {
-        None
-    }
+    alloc(clear, 1).map(Page::new)
 }
 
 #[inline]
 #[allow(dead_code)]
 pub fn page_alloc_contiguous(clear: bool, size: usize) -> Option<Page> {
-    if let Some(ppn) = alloc(clear, size) {
-        Some(Page::new(ppn))
-    } else {
-        None
-    }
+    alloc(clear, size).map(Page::new)
 }
 
 /// You should use page_dealloc instead
@@ -339,6 +331,8 @@ pub fn page_dec_ref(page: Page) {
     dec_ref(page.ppn())
 }
 
+/// Find the previous power of 2 of x
+#[inline]
 fn prev_power_of_2(x: usize) -> usize {
     1 << (usize::BITS - x.leading_zeros() - 1)
 }

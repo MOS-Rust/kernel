@@ -4,14 +4,14 @@
 /*
  * QEMU MMIO address definitions.
  */
-const PCIIO_BASE : usize = 0x18000000;
-const FPGA_BASE  : usize = 0x1f000000;
+const PCIIO_BASE: usize = 0x18000000;
+const FPGA_BASE: usize = 0x1f000000;
 
 /*
  * 16550 Serial UART device definitions.
  */
 const SERIAL_BASE: usize = PCIIO_BASE + 0x3f8;
-pub const SERIAL_DATA: usize = SERIAL_BASE + 0x0;
+pub const SERIAL_DATA: usize = SERIAL_BASE;
 pub const SERIAL_LSR: usize = SERIAL_BASE + 0x5;
 pub const SERIAL_DATA_READY: u8 = 0x1;
 pub const SERIAL_THR_EMPTY: u8 = 0x20;
@@ -20,7 +20,7 @@ pub const SERIAL_THR_EMPTY: u8 = 0x20;
  * Intel PIIX4 IDE Controller device definitions.
  */
 const IDE_BASE: usize = PCIIO_BASE + 0x01f0;
-pub const IDE_DATA: usize = IDE_BASE + 0x00;
+pub const IDE_DATA: usize = IDE_BASE;
 pub const IDE_ERR: usize = IDE_BASE + 0x01;
 pub const IDE_NSECT: usize = IDE_BASE + 0x02;
 pub const IDE_LBAL: usize = IDE_BASE + 0x03;

@@ -1,6 +1,4 @@
 //! This module contains the implementation of page entry table, page directory table, and related functions.
-#![allow(dead_code)]
-
 use crate::error::MosError;
 
 use super::{
@@ -51,11 +49,16 @@ impl Pte {
     pub fn flags_mut(&mut self) -> &mut PteFlags {
         unsafe { &mut *(self as *mut Pte as *mut PteFlags) }
     }
+
+    pub fn is_valid(&self) -> bool {
+        self.flags().contains(PteFlags::V)
+    }
 }
 
 pub type Pde = Pte;
 
 /// Page directory
+#[derive(Clone, Copy, Debug)]
 pub struct PageTable {
     pub page: Page,
 }
@@ -63,18 +66,33 @@ pub struct PageTable {
 impl PageTable {
     /// Initialize a new page table
     /// A page is allocated for the page table
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// A tuple containing the page table and the page
-    pub fn init() -> (PageTable, Page) {
-        let page = page_alloc(true).expect("Failed to allocate a page for PageTable.");
-        page_inc_ref(page);
-        (PageTable { page }, page)
+    pub fn init() -> Result<(PageTable, Page), MosError> {
+        if let Some(page) = page_alloc(true) {
+            page_inc_ref(page);
+            Ok((PageTable { page }, page))
+        } else {
+            Err(MosError::NoMem)
+        }
+    }
+
+    // pub fn kaddr(&self) -> VA {
+    //     self.page.ppn().kaddr()
+    // }
+
+    pub const fn empty() -> PageTable {
+        PageTable {
+            page: Page::new(PPN(0)),
+        }
     }
 
     /// return pte at this page's offset
-    fn pte_at(&self, offset: usize) -> &mut Pte {
+    // TODO: Find a better to deal with this
+    #[allow(clippy::mut_from_ref)]
+    pub fn pte_at(&self, offset: usize) -> &mut Pte {
         let base_pd: *mut Pde = self.page.ppn().kaddr().as_mut_ptr::<Pde>();
         unsafe { &mut *base_pd.add(offset) }
     }
@@ -95,7 +113,7 @@ impl PageTable {
             }
             if let Some(page) = page_alloc(true) {
                 page_inc_ref(page);
-                pte.set(page.ppn(), PteFlags::V | PteFlags::Cached);
+                pte.set(page.ppn(), PteFlags::V | PteFlags::Cacheable);
             } else {
                 return Err(MosError::NoMem);
             }
@@ -110,17 +128,16 @@ impl PageTable {
     /// the lower 12 bits of pte will be set to flags
     ///
     /// # Returns
-    /// 
+    ///
     /// Ok(()) if page is successfully inserted
     /// MosError::NoMem if page allocation failed
     pub fn insert(&self, asid: usize, page: Page, va: VA, flags: PteFlags) -> Result<(), MosError> {
         let ppn = page.ppn();
-
         if let Ok(Some(pte)) = self.walk(va, false) {
             if pte.flags().contains(PteFlags::V) {
                 if ppn == pte.ppn() {
                     tlb_invalidate(asid, va);
-                    *pte.flags_mut() = flags | PteFlags::V | PteFlags::Cached;
+                    *pte.flags_mut() = flags | PteFlags::V | PteFlags::Cacheable;
                     return Ok(());
                 } else {
                     self.remove(asid, va);
@@ -131,7 +148,7 @@ impl PageTable {
         tlb_invalidate(asid, va);
 
         if let Ok(Some(pte)) = self.walk(va, true) {
-            *pte = Pte::new(ppn, flags | PteFlags::V | PteFlags::Cached);
+            *pte = Pte::new(ppn, flags | PteFlags::V | PteFlags::Cacheable);
             inc_ref(ppn);
             Ok(())
         } else {
@@ -142,7 +159,7 @@ impl PageTable {
     /// Lookup the page that virtual address va is mapped to
     ///
     /// # Returns
-    /// 
+    ///
     /// Ok((pte, page)) if page found valid
     /// * pte: &mut Pte, page table entry of va
     /// * page: Page, page of va
@@ -161,13 +178,10 @@ impl PageTable {
 
     /// unmap the page at virtual address va
     pub fn remove(&self, asid: usize, va: VA) {
-        match self.lookup(va) {
-            Some((pte, page)) => {
-                tlb_invalidate(asid, va);
-                PageTable::try_recycle(page);
-                *pte = Pte::empty();
-            }
-            None => {}
+        if let Some((pte, page)) = self.lookup(va) {
+            tlb_invalidate(asid, va);
+            PageTable::try_recycle(page);
+            *pte = Pte::empty();
         }
     }
 

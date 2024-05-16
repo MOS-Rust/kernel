@@ -43,6 +43,8 @@
 //! For more information, refer to the MOS `include/mmu.h` file.
 #![allow(dead_code)] // TODO: Remove this
 
+use crate::const_export_usize;
+
 /// Maximum number of Address Space Identifiers(ASIDs)
 pub const NASID: usize = 256;
 /// Bytes per page
@@ -57,7 +59,7 @@ pub const PGSHIFT: usize = 12;
 pub const PDSHIFT: usize = 22;
 
 bitflags! {
-    #[derive(Debug)]
+    #[derive(Clone, Copy, Debug)]
     pub struct PteFlags: usize {
         /// the 6 bits below are those stored in cp0.entry_lo
         const G = 1 << 0;
@@ -68,8 +70,8 @@ bitflags! {
         const C0 = 1 << 3;
         const C1 = 1 << 4;
         const C2 = 1 << 5;
-
-        const Cached = PteFlags::C2.bits() | PteFlags::C1.bits();
+        
+        const Cacheable = PteFlags::C2.bits() | PteFlags::C1.bits();
         const Uncached = PteFlags::C2.bits() & !PteFlags::C1.bits();
 
         /// the bits below are controlled by software
@@ -128,6 +130,7 @@ pub const KSEG0: usize = 0x8000_0000;
 pub const KSEG1: usize = 0xa000_0000;
 pub const KSEG2: usize = 0xc000_0000;
 
+const_export_usize!(KSTACKTOP, 0x80400000);
 pub const KERNBASE: usize = 0x8002_0000;
 pub const ULIM: usize = 0x8000_0000;
 

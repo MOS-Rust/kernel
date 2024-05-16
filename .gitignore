@@ -2,3 +2,6 @@ target/
 asm/
 
 Cargo.lock
+
+*.asm
+*.b
