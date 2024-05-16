@@ -4,8 +4,7 @@ pub mod clock;
 pub mod trapframe;
 mod handler;
 
-use core::{arch::global_asm, ptr::addr_of_mut};
-use mips::registers::cp0::ebase;
+use core::{arch::{asm, global_asm}, ptr::addr_of_mut};
 
 global_asm!(include_str!("../../asm/exception/exception_entry.S"));
 global_asm!(include_str!("../../asm/exception/handlers.S"));
@@ -65,6 +64,11 @@ pub fn init() {
         static mut _exception_entry: u8;
     }
     unsafe {
-        ebase::write(addr_of_mut!(_exception_entry) as u32);
+        asm!(
+            ".set noat",
+            "mtc0 {}, $15, 1",
+            ".set at",
+            in(reg) addr_of_mut!(_exception_entry) as u32,
+        );
     }
 }

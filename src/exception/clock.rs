@@ -1,9 +1,14 @@
-use mips::registers::cp0::{compare, count};
+use core::arch::asm;
 
 const TIMER_INTERVAL: u32 = 500000;
 
 #[inline]
 pub unsafe fn reset_kclock() {
-    compare::write(TIMER_INTERVAL);
-    count::write(0);
+    asm!(
+        ".set noat",
+        "mtc0 {}, $11",
+        "mtc0 $zero, $9",
+        ".set at",
+        in(reg) TIMER_INTERVAL,
+    )
 }

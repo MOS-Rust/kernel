@@ -1,7 +1,6 @@
 #![allow(dead_code)]
 
 use core::arch::asm;
-use core::arch::global_asm;
 use core::cell::RefCell;
 use core::mem::size_of;
 use core::panic;
@@ -29,7 +28,6 @@ use crate::round;
 use alloc::collections::VecDeque;
 use alloc::vec::Vec;
 use log::info;
-use mips::registers::cp0::entryhi;
 
 use super::elf::elf_load_seg;
 use super::elf::load_icode_mapper;
@@ -37,8 +35,6 @@ use super::elf::Elf32;
 use super::elf::PT_LOAD;
 
 use super::ipc::IpcInfo;
-
-global_asm!(include_str!("../../asm/pm/env_asm.S"));
 
 const NENV: usize = 1024;
 
@@ -325,9 +321,6 @@ impl EnvManager {
     }
 
     pub fn env_run(&mut self, env: &mut Env) -> ! {
-        extern "C" {
-            fn _env_pop_trapframe(tf: *mut Trapframe, asid: u32) -> !;
-        }
         assert!(env.status == EnvStatus::Runnable);
         if let Some(cur) = self.curenv() {
             cur.tf = unsafe { *Trapframe::from_memory(VA(KSTACKTOP - TF_SIZE)) };
@@ -408,7 +401,12 @@ unsafe fn env_pop_trapframe(tf: *mut Trapframe, asid: u32) -> ! {
     extern "C" {
         fn _ret_from_exception() -> !;
     }
-    entryhi::write(asid);
+    asm!(
+        ".set noat",
+        "mtc0 {}, $10",
+        ".set at",
+        in(reg) asid,
+    );
     reset_kclock();
     asm!("ori $sp, {}, 0",
         in(reg) tf,
