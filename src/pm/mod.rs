@@ -14,7 +14,7 @@ pub static mut ENV_MANAGER: EnvManager = EnvManager::new();
 pub fn init() {
     unsafe { ENV_MANAGER.init() };
     info!("Process manager initialized.");
-    test!(EnvTest);
+    test!(Env);
     test_loop();
     test_idle();
     schedule(true);

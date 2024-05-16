@@ -73,9 +73,9 @@ impl PageTable {
     pub fn init() -> Result<(PageTable, Page), MosError> {
         if let Some(page) = page_alloc(true) {
             page_inc_ref(page);
-            return Ok((PageTable { page }, page))
+            Ok((PageTable { page }, page))
         } else {
-            return Err(MosError::NoMem);
+            Err(MosError::NoMem)
         }
     }
 
@@ -90,6 +90,8 @@ impl PageTable {
     }
 
     /// return pte at this page's offset
+    // TODO: Find a better to deal with this
+    #[allow(clippy::mut_from_ref)]
     pub fn pte_at(&self, offset: usize) -> &mut Pte {
         let base_pd: *mut Pde = self.page.ppn().kaddr().as_mut_ptr::<Pde>();
         unsafe { &mut *base_pd.add(offset) }
@@ -176,13 +178,10 @@ impl PageTable {
 
     /// unmap the page at virtual address va
     pub fn remove(&self, asid: usize, va: VA) {
-        match self.lookup(va) {
-            Some((pte, page)) => {
-                tlb_invalidate(asid, va);
-                PageTable::try_recycle(page);
-                *pte = Pte::empty();
-            }
-            None => {}
+        if let Some((pte, page)) = self.lookup(va) {
+            tlb_invalidate(asid, va);
+            PageTable::try_recycle(page);
+            *pte = Pte::empty();
         }
     }
 

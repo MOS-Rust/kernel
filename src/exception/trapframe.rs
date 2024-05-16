@@ -34,19 +34,19 @@ impl Trapframe {
 
 impl Display for Trapframe {
     fn fmt(&self, f: &mut Formatter) -> Result {
-        write!(f, "Trapframe {{\n")?;
+        writeln!(f, "Trapframe {{")?;
         write!(f, "    regs: [")?;
         for i in 0..32 {
             write!(f, "{:08x}, ", self.regs[i])?;
         }
-        write!(f, "]\n")?;
-        write!(f, "    status: {:08x}\n", self.cp0_status)?;
-        write!(f, "    hi: {:08x}\n", self.hi)?;
-        write!(f, "    lo: {:08x}\n", self.lo)?;
-        write!(f, "    badvaddr: {:08x}\n", self.cp0_badvaddr)?;
-        write!(f, "    cause: {:08x}\n", self.cp0_cause)?;
-        write!(f, "    epc: {:08x}\n", self.cp0_epc)?;
-        write!(f, "}}")
+        writeln!(f, "]")?;
+        writeln!(f, "    status: {:08x}", self.cp0_status)?;
+        writeln!(f, "    hi: {:08x}", self.hi)?;
+        writeln!(f, "    lo: {:08x}", self.lo)?;
+        writeln!(f, "    badvaddr: {:08x}", self.cp0_badvaddr)?;
+        writeln!(f, "    cause: {:08x}", self.cp0_cause)?;
+        writeln!(f, "    epc: {:08x}", self.cp0_epc)?;
+        writeln!(f, "}}")
     }
 }
 

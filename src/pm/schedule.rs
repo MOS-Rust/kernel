@@ -9,8 +9,10 @@ pub extern "C" fn schedule(env_yield: bool) -> ! {
     unsafe {
         let mut env = ENV_MANAGER.curenv();
         if env_yield || COUNT == 0 || env.is_none() || !env.as_ref().unwrap().runnable() {
-            if env.is_some() && env.as_ref().unwrap().runnable() {
-                ENV_MANAGER.move_to_end(env.unwrap());
+            if let Some(env) = env {
+                if env.runnable() {
+                    ENV_MANAGER.move_to_end(env);
+                }
             }
             if TOTAL == 0 {
                 while let Some(new_env) = ENV_MANAGER.get_first() {

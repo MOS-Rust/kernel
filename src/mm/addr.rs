@@ -27,11 +27,13 @@ pub struct VA(pub usize);
 
 /// Physical Page Number
 #[repr(C)]
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
 pub struct PPN(pub usize);
 
 /// Virtual Page Number
 #[repr(C)]
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
 pub struct VPN(pub usize);
 

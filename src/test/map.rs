@@ -29,7 +29,10 @@ pub fn alloc_test() {
     dealloc(pages[3], 1);
     debug!("Page allocation test passed!");
 }
+
 impl PageTable {
+    // TODO: Find a better to deal with this
+    #[allow(clippy::mut_from_ref)]
     unsafe fn nth(&self, n: usize) -> &mut Pte {
         assert!(n < 1024);
         let base_ptr = self.page.ppn().kaddr().as_mut_ptr::<Pte>();
@@ -41,9 +44,9 @@ pub fn mapping_test() {
     let mut pages = [Page::new(PPN(0)); 3];
     let (pd, pd_page) = PageTable::init().unwrap();
     assert!(pd_page.ref_count() == 1);
-    for i in 0..3 {
-        pages[i] = page_alloc(true).expect("Failed to allocate a page.");
-    }
+    pages.iter_mut().for_each(|page| {
+        *page = page_alloc(true).expect("Failed to allocate a page.");
+    });
 
     // Test inserting into pd
     assert!(pd.insert(0, pages[0], VA(0x0), PteFlags::empty()).is_ok());
