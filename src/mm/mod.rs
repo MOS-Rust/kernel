@@ -36,10 +36,10 @@ pub fn init(memsize: usize) {
         get_pagenum()
     );
     heap::init();
-    test!(HeapTest);
+    test!(Heap);
     page::init();
-    test!(AllocTest);
-    test!(MappingTest);
+    test!(Alloc);
+    test!(Mapping);
 }
 
 /// Sets the total memory size.

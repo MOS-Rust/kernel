@@ -27,13 +27,13 @@ pub fn passive_alloc(va: VA, pgdir: &mut PageDirectory, asid: usize) {
     if va_val < UTEMP {
         panic!("Passive alloc: address too low.");
     }
-    if va_val >= USTACKTOP && va_val < USTACKTOP + PAGE_SIZE {
+    if (USTACKTOP..USTACKTOP + PAGE_SIZE).contains(&va_val) {
         panic!("Passive alloc: invalid address.");
     }
-    if va_val >= UENVS && va_val < UPAGES {
+    if (UENVS..UPAGES).contains(&va_val) {
         panic!("Passive alloc: envs zone.");
     }
-    if va_val >= UPAGES && va_val < UVPT {
+    if (UPAGES..UVPT).contains(&va_val) {
         panic!("Passive alloc: pages zone.");
     }
     if va_val >= ULIM {
@@ -41,7 +41,7 @@ pub fn passive_alloc(va: VA, pgdir: &mut PageDirectory, asid: usize) {
     }
 
     let page = page_alloc(true).unwrap();
-    let flags = if va_val >= UVPT && va_val < UVPT + PAGE_SIZE {
+    let flags = if (UVPT..UVPT + PAGE_SIZE).contains(&va_val) {
         PteFlags::empty()
     } else {
         PteFlags::D

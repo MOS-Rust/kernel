@@ -47,9 +47,9 @@ pub struct Elf32Ehdr {
 }
 
 pub const ELFMAG0: u8 = 0x7f;
-pub const ELFMAG1: u8 = 'E' as u8;
-pub const ELFMAG2: u8 = 'L' as u8;
-pub const ELFMAG3: u8 = 'F' as u8;
+pub const ELFMAG1: u8 = b'E';
+pub const ELFMAG2: u8 = b'L';
+pub const ELFMAG3: u8 = b'F';
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug)]
@@ -109,7 +109,7 @@ impl<'a> Elf32<'a> {
         let ph_num = ehdr.e_phnum as usize;
         let ph_start = ph_offset + n * ph_size;
         if n < ph_num {
-            unsafe { &*((self.binary.as_ptr() as *const u8).add(ph_start) as *const Elf32Phdr) }
+            unsafe { &*(self.binary.as_ptr().add(ph_start) as *const Elf32Phdr) }
         } else {
             panic!("phdr index out of range");
         }
@@ -133,9 +133,7 @@ pub fn elf_load_seg(
     let offset = va.0 - round_down!(va.0, PAGE_SIZE);
     if offset != 0 {
         let len = min(bin_size, PAGE_SIZE - offset);
-        if let Err(error) = map_page(env, va, offset, perm, Some(&bin[..len])) {
-            return Err(error);
-        }
+        map_page(env, va, offset, perm, Some(&bin[..len]))?
     }
 
     let mut i: usize = 0;
@@ -145,16 +143,12 @@ pub fn elf_load_seg(
 
     while i < bin_size {
         let len = min(sg_size - i, PAGE_SIZE);
-        if let Err(error) = map_page(env, va + i, 0, perm, Some(&bin[i..i + len])) {
-            return Err(error);
-        }
+        map_page(env, va + i, 0, perm, Some(&bin[i..i + len]))?;
         i += PAGE_SIZE;
     }
 
     while i < sg_size {
-        if let Err(error) = map_page(env, va + i, 0, perm, None) {
-            return Err(error);
-        }
+        map_page(env, va + i, 0, perm, None)?;
         i += PAGE_SIZE;
     }
 

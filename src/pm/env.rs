@@ -95,7 +95,7 @@ impl Env {
 
     fn load_icode(&mut self, binary: &[u8]) {
         if Elf32::is_elf32_format(binary) {
-            let elf = Elf32::from_bytes(&binary);
+            let elf = Elf32::from_bytes(binary);
             let ehdr = elf.ehdr();
             for i in 0..ehdr.e_phnum as usize {
                 let phdr = elf.phdr(i);
@@ -207,24 +207,18 @@ impl EnvManager {
         Ok(env_at(tracker.pos))
     }
 
-    pub fn from_id(&self, id: usize, check_perm: bool) -> Result<&mut Env, MosError> {
+    pub fn env_from_id(&self, id: usize, check_perm: bool) -> Result<&mut Env, MosError> {
         if id == 0 {
             Ok(self.curenv().unwrap())
         } else {
             let pos = Self::envx(id);
             let env = env_at(pos);
-
             if env.status == EnvStatus::Free || env.id != id {
                 return Err(MosError::BadEnv);
             }
-
-            if check_perm {
-                if self.curenv().unwrap().id != env.id && self.curenv().unwrap().id != env.parent_id
-                {
-                    return Err(MosError::BadEnv);
-                }
+            if check_perm && self.curenv().unwrap().id != env.id && self.curenv().unwrap().id != env.parent_id {
+                return Err(MosError::BadEnv);
             }
-
             Ok(env)
         }
     }
@@ -249,9 +243,7 @@ impl EnvManager {
 
     pub fn alloc(&self, parent_id: usize) -> Result<&mut Env, MosError> {
         if let Ok(env) = self.get_free_env() {
-            if let Err(error) = self.setup_vm(env) {
-                return Err(error);
-            }
+            self.setup_vm(env)?;
             env.user_tlb_mod_entry = 0;
             env.runs = 0;
             env.id = mkenvid(env);
@@ -265,7 +257,7 @@ impl EnvManager {
             env.tf.regs[29] = (USTACKTOP - size_of::<i32>() - size_of::<usize>()) as u32;
             Ok(env)
         } else {
-            return Err(MosError::NoFreeEnv);
+            Err(MosError::NoFreeEnv)
         }
     }
 
@@ -304,11 +296,11 @@ impl EnvManager {
             }
             unsafe { *pt = Pte::empty() };
             page_dec_ref(pa.into());
-            tlb_invalidate(env.asid, VA(UVPT + i << PGSHIFT));
+            tlb_invalidate(env.asid, VA(UVPT + (i << PGSHIFT)));
         }
         page_dec_ref(env.pgdir.page);
         asid_free(env.asid);
-        tlb_invalidate(env.asid, VA(UVPT + VA(UVPT).pdx() << PGSHIFT));
+        tlb_invalidate(env.asid, VA(UVPT + (VA(UVPT).pdx() << PGSHIFT)));
         env.status = EnvStatus::Free;
         self.free_list.borrow_mut().push(EnvTracker::new(env.pos));
         self.schedule_list

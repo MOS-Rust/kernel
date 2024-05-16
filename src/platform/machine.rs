@@ -80,5 +80,5 @@ pub fn halt() -> ! {
     unsafe {
         write_byte(KSEG1 + FPGA_HALT, 0x42);
     }
-    loop {}
+    unreachable!()
 }

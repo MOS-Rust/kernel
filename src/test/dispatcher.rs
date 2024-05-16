@@ -3,24 +3,24 @@
 use super::{env, heap, map};
 
 pub enum TestName {
-    HeapTest,
-    AllocTest,
-    MappingTest,
-    EnvTest,
+    Heap,
+    Alloc,
+    Mapping,
+    Env,
 }
 
 pub fn dispatcher(test_name: TestName) {
     match test_name {
-        TestName::HeapTest => {
+        TestName::Heap => {
             heap::heap_test();
         }
-        TestName::AllocTest => {
+        TestName::Alloc => {
             map::alloc_test();
         }
-        TestName::MappingTest => {
+        TestName::Mapping => {
             map::mapping_test();
         }
-        TestName::EnvTest => {
+        TestName::Env => {
             env::env_test();
         }
     }
