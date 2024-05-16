@@ -1,45 +1,36 @@
 #![allow(dead_code)]
 
-use core::arch::asm;
-use core::arch::global_asm;
-use core::cell::RefCell;
-use core::mem::size_of;
-use core::panic;
-use core::ptr;
-use core::ptr::addr_of_mut;
-
-use crate::error::MosError;
-use crate::exception::clock::reset_kclock;
-use crate::exception::trapframe::Trapframe;
-use crate::exception::trapframe::TF_SIZE;
-use crate::mm::addr::{PA, VA};
-use crate::mm::layout::KSTACKTOP;
-use crate::mm::layout::PDSHIFT;
-use crate::mm::layout::PGSHIFT;
-use crate::mm::layout::{PteFlags, NASID, PAGE_SIZE, UENVS, USTACKTOP, UTOP, UVPT};
-use crate::mm::map::PageDirectory;
-use crate::mm::map::PageTable;
-use crate::mm::map::Pte;
-use crate::mm::page::page_dec_ref;
-use crate::mm::page::{page_alloc, page_inc_ref, Page};
-use crate::mm::tlb::tlb_invalidate;
-use crate::platform::cp0reg::{STATUS_EXL, STATUS_IE, STATUS_IM7, STATUS_UM};
-use crate::pm::schedule::schedule;
-use crate::round;
-use alloc::collections::VecDeque;
-use alloc::vec::Vec;
+use super::{
+    elf::{elf_load_seg, load_icode_mapper, Elf32, PT_LOAD},
+    ipc::IpcInfo,
+    schedule::schedule,
+};
+use crate::{
+    error::MosError,
+    exception::{
+        clock::reset_kclock,
+        trapframe::{Trapframe, TF_SIZE},
+    },
+    mm::{
+        addr::{PA, VA},
+        layout::{
+            PteFlags, KSTACKTOP, NASID, PAGE_SIZE, PDSHIFT, PGSHIFT, UENVS, USTACKTOP, UTOP, UVPT,
+        },
+        map::{PageDirectory, PageTable, Pte},
+        page::{page_alloc, page_dec_ref, page_inc_ref, Page},
+        tlb::tlb_invalidate,
+    },
+    platform::cp0reg::{STATUS_EXL, STATUS_IE, STATUS_IM7, STATUS_UM},
+    round,
+};
+use alloc::{collections::VecDeque, vec::Vec};
+use core::{
+    arch::asm,
+    cell::RefCell,
+    mem::size_of,
+    ptr::{self, addr_of_mut},
+};
 use log::info;
-use mips::registers::cp0::entryhi;
-
-use super::elf::elf_load_seg;
-use super::elf::load_icode_mapper;
-use super::elf::Elf32;
-use super::elf::PT_LOAD;
-
-use super::ipc::IpcInfo;
-use super::ENV_MANAGER;
-
-global_asm!(include_str!("../../asm/pm/env_asm.S"));
 
 pub const NENV: usize = 1024;
 
@@ -245,7 +236,8 @@ impl EnvManager {
                 );
             }
 
-            *self.base_pgdir.pte_at(VA(UVPT).pdx()) = Pte::new(self.base_pgdir.page.ppn(), PteFlags::V);
+            *self.base_pgdir.pte_at(VA(UVPT).pdx()) =
+                Pte::new(self.base_pgdir.page.ppn(), PteFlags::V);
             Ok(())
         } else {
             return Err(MosError::NoFreeEnv);
@@ -300,7 +292,8 @@ impl EnvManager {
             for j in 0..PAGE_SIZE / size_of::<Pte>() {
                 let pte = unsafe { &mut *pt.add(j) };
                 if pte.is_valid() {
-                    env.pgdir.remove(env.asid, VA((i << PDSHIFT) + (j << PGSHIFT)));
+                    env.pgdir
+                        .remove(env.asid, VA((i << PDSHIFT) + (j << PGSHIFT)));
                 }
             }
             unsafe { *pt = Pte::empty() };
@@ -312,23 +305,21 @@ impl EnvManager {
         tlb_invalidate(env.asid, VA(UVPT + VA(UVPT).pdx() << PGSHIFT));
         env.status = EnvStatus::Free;
         self.free_list.borrow_mut().push(EnvTracker::new(env.pos));
-        self.schedule_list.borrow_mut().retain(|&x| x != env.tracker());
-        
+        self.schedule_list
+            .borrow_mut()
+            .retain(|&x| x != env.tracker());
     }
 
     pub fn env_destroy(&mut self, env: &mut Env) {
         self.env_free(env);
         if self.cur.is_some() && self.cur.unwrap().pos == env.pos {
             self.cur = None;
-            info!("{}: I am killed ...", env.id);
+            info!("{:x}: I am killed ...", env.id);
             schedule(true);
         }
     }
 
     pub fn env_run(&mut self, env: &mut Env) -> ! {
-        extern "C" {
-            fn _env_pop_trapframe(tf: *mut Trapframe, asid: u32) -> !;
-        }
         assert!(env.status == EnvStatus::Runnable);
         if let Some(cur) = self.curenv() {
             cur.tf = unsafe { *Trapframe::from_memory(VA(KSTACKTOP - TF_SIZE)) };
@@ -382,7 +373,9 @@ fn map_segment(pgdir: PageDirectory, asid: usize, pa: PA, va: VA, size: usize, f
     assert!(size % PAGE_SIZE == 0);
 
     for i in (0..size).step_by(PAGE_SIZE) {
-        pgdir.insert(asid, Page::from(pa + i), va + i, flags | PteFlags::V).expect("failed on mapping");
+        pgdir
+            .insert(asid, Page::from(pa + i), va + i, flags | PteFlags::V)
+            .expect("failed on mapping");
     }
 }
 
@@ -425,7 +418,12 @@ unsafe fn env_pop_trapframe(tf: *mut Trapframe, asid: u32) -> ! {
     extern "C" {
         fn _ret_from_exception() -> !;
     }
-    entryhi::write(asid);
+    asm!(
+        ".set noat",
+        "mtc0 {}, $10",
+        ".set at",
+        in(reg) asid,
+    );
     reset_kclock();
     asm!("ori $sp, {}, 0",
         in(reg) tf,

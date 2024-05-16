@@ -339,6 +339,8 @@ pub fn page_dec_ref(page: Page) {
     dec_ref(page.ppn())
 }
 
+/// Find the previous power of 2 of x
+#[inline]
 fn prev_power_of_2(x: usize) -> usize {
     1 << (usize::BITS - x.leading_zeros() - 1)
 }

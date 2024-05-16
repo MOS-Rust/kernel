@@ -1,5 +1,5 @@
-use crate::mm::layout::KSEG1;
 use super::malta::{FPGA_HALT, SERIAL_DATA, SERIAL_DATA_READY, SERIAL_LSR, SERIAL_THR_EMPTY};
+use crate::mm::layout::KSEG1;
 
 /// Reads a byte from the specified address.
 ///
@@ -58,7 +58,7 @@ pub fn print_char(c: char) {
 /// Reads a character from the serial port.
 ///
 /// Only characters that are ASCII printable are supported.
-/// 
+///
 /// # Returns
 ///
 /// The character read from the serial port, or '\0' if no character is available.

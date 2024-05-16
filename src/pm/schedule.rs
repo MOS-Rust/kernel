@@ -2,8 +2,6 @@ use crate::{pm::ENV_MANAGER, println};
 
 #[no_mangle]
 pub extern "C" fn schedule(env_yield: bool) -> ! {
-    println!("schedule");
-    unsafe { println!("TOTAL: {}", TOTAL); }
     static mut TOTAL: u32 = 100;
     static mut COUNT: u32 = 0;
     unsafe {
@@ -14,9 +12,9 @@ pub extern "C" fn schedule(env_yield: bool) -> ! {
             }
             if TOTAL == 0 {
                 if let Some(new_env) = ENV_MANAGER.get_first() {
+                    TOTAL = 100;
                     ENV_MANAGER.env_destroy(new_env);
                 }
-                TOTAL = 100;
             }
             if let Some(new_env) = ENV_MANAGER.get_first() {
                 COUNT = new_env.priority; 
@@ -26,6 +24,7 @@ pub extern "C" fn schedule(env_yield: bool) -> ! {
             }
         }
         COUNT -= 1;
+        println!("TOTAL: {}", TOTAL);
         TOTAL -= 1;
         ENV_MANAGER.env_run(env.unwrap());
     }
