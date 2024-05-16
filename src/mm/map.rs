@@ -70,15 +70,18 @@ impl PageTable {
     /// # Returns
     ///
     /// A tuple containing the page table and the page
-    pub fn init() -> (PageTable, Page) {
-        let page = page_alloc(true).expect("Failed to allocate a page for PageTable.");
-        page_inc_ref(page);
-        (PageTable { page }, page)
+    pub fn init() -> Result<(PageTable, Page), MosError> {
+        if let Some(page) = page_alloc(true) {
+            page_inc_ref(page);
+            return Ok((PageTable { page }, page))
+        } else {
+            return Err(MosError::NoMem);
+        }
     }
 
-    pub fn kaddr(&self) -> VA {
-        self.page.ppn().kaddr()
-    }
+    // pub fn kaddr(&self) -> VA {
+    //     self.page.ppn().kaddr()
+    // }
 
     pub const fn empty() -> PageTable {
         PageTable {

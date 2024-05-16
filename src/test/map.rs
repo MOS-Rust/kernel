@@ -39,7 +39,7 @@ impl PageTable {
 
 pub fn mapping_test() {
     let mut pages = [Page::new(PPN(0)); 3];
-    let (pd, pd_page) = PageTable::init();
+    let (pd, pd_page) = PageTable::init().unwrap();
     assert!(pd_page.ref_count() == 1);
     for i in 0..3 {
         pages[i] = page_alloc(true).expect("Failed to allocate a page.");

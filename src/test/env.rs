@@ -1,10 +1,10 @@
 #![allow(dead_code)]
 
-use core::{mem::size_of, ptr::addr_of_mut};
+use core::ptr::addr_of_mut;
 
 use log::debug;
 
-use crate::{mm::{addr::VA, layout::{PAGE_SIZE, UENVS, UTOP}}, pm::env::{env_alloc, env_free, get_base_pgdir, Env, ENVS, NENV}};
+use crate::{mm::{addr::VA, layout::UTOP}, pm::{env_alloc, env_free, get_base_pgdir}};
 
 pub fn env_test() {
     let e1 = env_alloc(0).unwrap();
@@ -17,9 +17,9 @@ pub fn env_test() {
 
     // how to check for NoFreeEnv
 
-    debug!("e1.id: {}\n", e1.id);
-    debug!("e2.id: {}\n", e2.id);
-    debug!("e3.id: {}\n", e3.id);
+    debug!("e1.id: {}", e1.id);
+    debug!("e2.id: {}", e2.id);
+    debug!("e3.id: {}", e3.id);
 
     assert!(e1.id == 2048);
     assert!(e2.id == 4097);
@@ -35,14 +35,14 @@ pub fn env_test() {
     //     }
     // }
 
-    debug!("e2.pgdir: {:x}\n", addr_of_mut!(e2.pgdir) as usize);
+    debug!("e2.pgdir: {:x}", addr_of_mut!(e2.pgdir) as usize);
 
-    debug!("e3: {:x}, base: {:x}\n", e3.pgdir.pte_at(VA(UTOP).pdx()).0, base_pgdir.pte_at(VA(UTOP).pdx()).0);
+    debug!("e3: {:x}, base: {:x}", e3.pgdir.pte_at(VA(UTOP).pdx()).0, base_pgdir.pte_at(VA(UTOP).pdx()).0);
     assert!(e3.pgdir.pte_at(VA(UTOP).pdx()).0 == base_pgdir.pte_at(VA(UTOP).pdx()).0);
     assert!(e3.pgdir.pte_at(VA(UTOP).pdx() - 1).0 == 0);
-    debug!("env_setup_vm passed!\n");
+    debug!("env_setup_vm passed!");
 
-    debug!("e3's sp reg {:x}\n", e3.tf.regs[29]);
+    debug!("e3's sp reg {:x}", e3.tf.regs[29]);
 
     env_free(e3);
     env_free(e2);

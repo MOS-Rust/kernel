@@ -17,7 +17,7 @@ use crate::{
             PteFlags, KSTACKTOP, NASID, PAGE_SIZE, PDSHIFT, PGSHIFT, UENVS, USTACKTOP, UTOP, UVPT,
         },
         map::{PageDirectory, PageTable, Pte},
-        page::{page_alloc, page_dec_ref, page_inc_ref, Page},
+        page::{page_dec_ref, Page},
         tlb::tlb_invalidate,
     },
     platform::cp0reg::{STATUS_EXL, STATUS_IE, STATUS_IM7, STATUS_UM},
@@ -164,7 +164,12 @@ impl EnvManager {
             }
             free_list.push(EnvTracker::new(i));
         }
-        let base_pgdir = PageDirectory::init().0;
+        let base_pgdir;
+        if let Ok((pgdir, _)) = PageDirectory::init() {
+            base_pgdir = pgdir;
+        } else {
+            panic!("failed to init base_pgdir");
+        }
         // TODO: Map mm::pages to UPAGES
         unsafe {
             map_segment(
@@ -225,22 +230,20 @@ impl EnvManager {
     }
 
     fn setup_vm(&self, env: &mut Env) -> Result<(), MosError> {
-        if let Some(page) = page_alloc(true) {
-            page_inc_ref(page);
-            env.pgdir = PageDirectory { page };
-            unsafe {
-                ptr::copy(
-                    (env.pgdir.kaddr() + VA(UTOP).pdx()).as_mut_ptr::<u8>(),
-                    (self.base_pgdir.kaddr() + VA(UTOP).pdx()).as_mut_ptr::<u8>(),
-                    size_of::<usize>() * (VA(UVPT).pdx() - VA(UTOP).pdx()),
-                );
+        match PageDirectory::init() {
+            Ok((pgdir, page)) => {
+                env.pgdir = pgdir;
+                unsafe {
+                    ptr::copy_nonoverlapping(
+                        (self.base_pgdir.pte_at(VA(UTOP).pdx()) as *const Pte).cast::<u8>(),
+                        (env.pgdir.pte_at(VA(UTOP).pdx()) as *mut Pte).cast::<u8>(),
+                        size_of::<usize>() * (VA(UVPT).pdx() - VA(UTOP).pdx()),
+                    );
+                }
+                *self.base_pgdir.pte_at(VA(UVPT).pdx()) = Pte::new(page.ppn(), PteFlags::V);
+                Ok(())
             }
-
-            *self.base_pgdir.pte_at(VA(UVPT).pdx()) =
-                Pte::new(self.base_pgdir.page.ppn(), PteFlags::V);
-            Ok(())
-        } else {
-            return Err(MosError::NoFreeEnv);
+            Err(error) => Err(error),
         }
     }
 
@@ -277,7 +280,7 @@ impl EnvManager {
         env
     }
 
-    fn env_free(&mut self, env: &mut Env) {
+    pub fn env_free(&mut self, env: &mut Env) {
         if let Some(curenv) = self.curenv() {
             info!("{:x} free env {:x}", curenv.id, env.id);
         } else {
@@ -353,18 +356,6 @@ impl EnvManager {
     pub fn base_pgdir(&mut self) -> &mut PageDirectory {
         &mut self.base_pgdir
     }
-}
-
-pub fn env_alloc(parent_id: usize) -> Result<&'static mut Env, MosError> {
-    unsafe {ENV_MANAGER.alloc(parent_id)}
-}
-
-pub fn env_free(env: &mut Env) {
-    unsafe {ENV_MANAGER.env_free(env)}
-}
-
-pub fn get_base_pgdir() -> &'static mut PageDirectory {
-    unsafe {&mut ENV_MANAGER.base_pgdir}
 }
 
 fn map_segment(pgdir: PageDirectory, asid: usize, pa: PA, va: VA, size: usize, flags: PteFlags) {
