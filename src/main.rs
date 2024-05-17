@@ -48,6 +48,7 @@ pub extern "C" fn kernel_init(
     ram_size: usize,
 ) -> ! {
     clear_bss();
+    display_banner();
     exception::init();
     logging::init();
     info!("MOS-Rust started!");
@@ -60,7 +61,7 @@ pub extern "C" fn kernel_init(
 ///
 /// This function clears the `.bss` section of the kernel.
 /// All memory locations in the `.bss` section (i.e. from __start_bss to __end_bss) are set to 0 in this function.
-pub fn clear_bss() {
+fn clear_bss() {
     extern "C" {
         static mut __start_bss: u8;
         static mut __end_bss: u8;
@@ -72,4 +73,16 @@ pub fn clear_bss() {
             addr_of_mut!(__end_bss) as usize - addr_of_mut!(__start_bss) as usize,
         );
     }
+}
+
+fn display_banner() {
+    const BANNER: &str = r#"
+     __  __    ___     ___              ___                     _     
+    |  \/  |  / _ \   / __|     o O O  | _ \   _  _     ___    | |_   
+    | |\/| | | (_) |  \__ \    o       |   /  | +| |   (_-<    |  _|  
+    |_|__|_|  \___/   |___/   TS__[O]  |_|_\   \_,_|   /__/_   _\__|  
+    _|"""""|_|"""""|_|"""""| {======|_|"""""|_|"""""|_|"""""|_|"""""| 
+    "`-0-0-'"`-0-0-'"`-0-0-'./o--000'"`-0-0-'"`-0-0-'"`-0-0-'"`-0-0-' 
+    "#;
+    println!("{}", BANNER)
 }
