@@ -138,6 +138,10 @@ impl Env {
     pub fn runnable(&self) -> bool {
         self.status == EnvStatus::Runnable
     }
+
+    pub fn set_tlb_mod_entry(&mut self, entry: usize) {
+        self.user_tlb_mod_entry = entry;
+    }
 }
 
 #[repr(C, align(4096))]

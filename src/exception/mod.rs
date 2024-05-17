@@ -1,7 +1,7 @@
 #![allow(dead_code)] // TODO: Remove this
 
 pub mod clock;
-mod handler;
+mod handlers;
 pub mod trapframe;
 
 use core::{

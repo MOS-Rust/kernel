@@ -80,6 +80,43 @@ bitflags! {
     }
 }
 
+impl PteFlags {
+    pub fn from_original_mos_perm(perm: u32) -> Self {
+        const PTE_HARDFLAG_SHIFT: usize = 6;
+        const PTE_G: usize = 0x1 << PTE_HARDFLAG_SHIFT;
+        const PTE_V: usize = 0x2 << PTE_HARDFLAG_SHIFT;
+        const PTE_D: usize = 0x4 << PTE_HARDFLAG_SHIFT;
+        const PTE_C_CACHEABLE: usize = 0x0018 << PTE_HARDFLAG_SHIFT;
+        const PTE_C_UNCACHED: usize = 0x0010 << PTE_HARDFLAG_SHIFT;
+        const PTE_COW: usize = 0x1;
+        const PTE_SHARED: usize = 0x2;
+        let perm = perm as usize;
+        
+        let mut flags = PteFlags::empty();
+        if perm & PTE_G != 0 {
+            flags |= PteFlags::G;
+        }
+        if perm & PTE_V != 0 {
+            flags |= PteFlags::V;
+        }
+        if perm & PTE_D != 0 {
+            flags |= PteFlags::D;
+        }
+        if perm & PTE_C_CACHEABLE == PTE_C_CACHEABLE {
+            flags |= PteFlags::Cacheable;
+        } else if perm & PTE_C_UNCACHED == PTE_C_UNCACHED {
+            flags |= PteFlags::Uncached;
+        }
+        if perm & PTE_COW != 0 {
+            flags |= PteFlags::COW;
+        }
+        if perm & PTE_SHARED != 0 {
+            flags |= PteFlags::SHARED;
+        }
+        flags
+
+    }
+}
 /*
  o     4G ----------->  +----------------------------+------------0x100000000
  o                      |       ...                  |  kseg2
