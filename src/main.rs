@@ -24,6 +24,7 @@ mod mm;
 mod panic;
 mod platform;
 mod pm;
+mod syscall;
 mod test;
 
 use core::{

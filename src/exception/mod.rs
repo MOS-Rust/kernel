@@ -20,7 +20,7 @@ pub struct Vector {
 extern "C" {
     fn _handle_int();
     fn _handle_tlb();
-    // fn handle_syscall();
+    fn _handle_syscall();
     fn _handle_unhandled();
 }
 
@@ -50,10 +50,9 @@ pub static exception_handlers: [Vector; 32] = [
     Vector {
         handler: _handle_unhandled,
     }, // 7
-    // Vector { handler: handle_syscall }, // 8: Syscall
     Vector {
-        handler: _handle_unhandled,
-    }, // 8
+        handler: _handle_syscall,
+    }, // 8: Syscall
     Vector {
         handler: _handle_unhandled,
     }, // 9
