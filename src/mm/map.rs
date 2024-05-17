@@ -3,7 +3,7 @@ use crate::error::MosError;
 
 use super::{
     addr::{PA, PPN, VA},
-    layout::PteFlags,
+    layout::{PteFlags, PTE_HARDFLAG_SHIFT},
     page::{find_page, inc_ref, page_alloc, page_dealloc, page_dec_ref, page_inc_ref, Page},
     tlb::tlb_invalidate,
 };
@@ -17,7 +17,7 @@ impl Pte {
     /// construct a page entry by page's ppn
     /// flags are set for this entry
     pub fn new(ppn: PPN, flags: PteFlags) -> Pte {
-        Pte(ppn.0 << 10 | flags.bits())
+        Pte(ppn.0 << 12 | flags.bits())
     }
 
     /// construct an empty entry
@@ -27,12 +27,12 @@ impl Pte {
 
     /// acquire ppn of this entry
     pub fn ppn(self) -> PPN {
-        PPN(self.0 >> 10)
+        PPN(self.0 >> 12)
     }
 
     /// acquire flags of this entry
     pub fn flags(self) -> PteFlags {
-        PteFlags::from_bits_truncate(self.0 & 0x3FF)
+        PteFlags::from_bits_truncate(self.0 & 0xFFF)
     }
 
     /// acquire address of this entry
@@ -55,10 +55,7 @@ impl Pte {
     }
 
     pub fn as_entrylo(&self) -> u32 {
-        let ppn = self.ppn().0 as u32;
-        let flags = self.flags().bits() as u32 & 0x3f;
-        (ppn << 6) | flags
-    
+        self.0 as u32 >> PTE_HARDFLAG_SHIFT
     }
 }
 

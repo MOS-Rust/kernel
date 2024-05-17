@@ -57,64 +57,28 @@ pub const PDMAP: usize = 0x0040_0000;
 pub const PGSHIFT: usize = 12;
 /// Page directory shift value
 pub const PDSHIFT: usize = 22;
+/// PTE flag shift
+pub const PTE_HARDFLAG_SHIFT: usize = 6;
 
 bitflags! {
     #[derive(Clone, Copy, Debug)]
     pub struct PteFlags: usize {
         /// the 6 bits below are those stored in cp0.entry_lo
-        const G = 1 << 0;
-        const V = 1 << 1;
-        const D = 1 << 2;
+        const G = 1 << 0 << PTE_HARDFLAG_SHIFT;
+        const V = 1 << 1 << PTE_HARDFLAG_SHIFT;
+        const D = 1 << 2 << PTE_HARDFLAG_SHIFT;
 
         // Only used internally
-        const C0 = 1 << 3;
-        const C1 = 1 << 4;
-        const C2 = 1 << 5;
+        const C0 = 1 << 3 << PTE_HARDFLAG_SHIFT;
+        const C1 = 1 << 4 << PTE_HARDFLAG_SHIFT;
+        const C2 = 1 << 5 << PTE_HARDFLAG_SHIFT;
         
         const Cacheable = PteFlags::C2.bits() | PteFlags::C1.bits();
         const Uncached = PteFlags::C2.bits() & !PteFlags::C1.bits();
 
         /// the bits below are controlled by software
-        const COW = 1 << 6;
-        const SHARED = 1 << 7;
-    }
-}
-
-impl PteFlags {
-    pub fn from_original_mos_perm(perm: u32) -> Self {
-        const PTE_HARDFLAG_SHIFT: usize = 6;
-        const PTE_G: usize = 0x1 << PTE_HARDFLAG_SHIFT;
-        const PTE_V: usize = 0x2 << PTE_HARDFLAG_SHIFT;
-        const PTE_D: usize = 0x4 << PTE_HARDFLAG_SHIFT;
-        const PTE_C_CACHEABLE: usize = 0x0018 << PTE_HARDFLAG_SHIFT;
-        const PTE_C_UNCACHED: usize = 0x0010 << PTE_HARDFLAG_SHIFT;
-        const PTE_COW: usize = 0x1;
-        const PTE_SHARED: usize = 0x2;
-        let perm = perm as usize;
-        
-        let mut flags = PteFlags::empty();
-        if perm & PTE_G != 0 {
-            flags |= PteFlags::G;
-        }
-        if perm & PTE_V != 0 {
-            flags |= PteFlags::V;
-        }
-        if perm & PTE_D != 0 {
-            flags |= PteFlags::D;
-        }
-        if perm & PTE_C_CACHEABLE == PTE_C_CACHEABLE {
-            flags |= PteFlags::Cacheable;
-        } else if perm & PTE_C_UNCACHED == PTE_C_UNCACHED {
-            flags |= PteFlags::Uncached;
-        }
-        if perm & PTE_COW != 0 {
-            flags |= PteFlags::COW;
-        }
-        if perm & PTE_SHARED != 0 {
-            flags |= PteFlags::SHARED;
-        }
-        flags
-
+        const COW = 0x1;
+        const SHARED = 0x2;
     }
 }
 /*
