@@ -174,5 +174,5 @@ pub fn load_icode_mapper(
         }
     }
     // debug!("KVA: {:x}, VA: {:x}, perm: {:?}, offset: {:?}", p.ppn().kaddr().0, va.0, perm, offset);
-    env.pgdir.insert(env.asid, p, va, perm)
+    env.pgdir().insert(env.asid, p, va, perm)
 }

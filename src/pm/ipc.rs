@@ -1,12 +1,14 @@
 #![allow(dead_code)]
 use crate::mm::addr::VA;
 
+#[repr(u32)]
 #[derive(Clone, Copy, Debug)]
 pub enum IpcStatus {
-    Receiving,
-    NotReceiving,
+    NotReceiving = 0,
+    Receiving = 1,
 }
 
+#[repr(C)]
 #[derive(Clone, Copy, Debug)]
 pub struct IpcInfo {
     value: u32,

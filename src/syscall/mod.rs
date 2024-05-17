@@ -15,4 +15,5 @@ pub unsafe extern "C" fn do_syscall(tf: *mut Trapframe) {
     let arg5: u32 = *(sp as *const u32).add(5);
     debug!("Syscall number: {}", syscall_num);
     debug!("Args: {:x} {:x} {:x} {:x} {:x}", arg1, arg2, arg3, arg4, arg5);
+
 }

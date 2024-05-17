@@ -1,7 +1,5 @@
 #![allow(dead_code)]
 
-use core::ptr::addr_of_mut;
-
 use log::debug;
 
 use crate::{mm::{addr::VA, layout::UTOP}, pm::{env_alloc, env_free, get_base_pgdir}};
@@ -35,11 +33,9 @@ pub fn env_test() {
     //     }
     // }
 
-    debug!("e2.pgdir: {:x}", addr_of_mut!(e2.pgdir) as usize);
-
-    debug!("e3: {:x}, base: {:x}", e3.pgdir.pte_at(VA(UTOP).pdx()).0, base_pgdir.pte_at(VA(UTOP).pdx()).0);
-    assert!(e3.pgdir.pte_at(VA(UTOP).pdx()).0 == base_pgdir.pte_at(VA(UTOP).pdx()).0);
-    assert!(e3.pgdir.pte_at(VA(UTOP).pdx() - 1).0 == 0);
+    debug!("e3: {:x}, base: {:x}", e3.pgdir().pte_at(VA(UTOP).pdx()).0, base_pgdir.pte_at(VA(UTOP).pdx()).0);
+    assert!(e3.pgdir().pte_at(VA(UTOP).pdx()).0 == base_pgdir.pte_at(VA(UTOP).pdx()).0);
+    assert!(e3.pgdir().pte_at(VA(UTOP).pdx() - 1).0 == 0);
     debug!("env_setup_vm passed!");
 
     debug!("e3's sp reg {:x}", e3.tf.regs[29]);

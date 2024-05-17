@@ -12,11 +12,11 @@ use crate::{
         trapframe::{Trapframe, TF_SIZE},
     },
     mm::{
-        addr::{PA, VA},
+        addr::{PA, PPN, VA},
         layout::{
             PteFlags, KSTACKTOP, NASID, PAGE_SIZE, PDSHIFT, PGSHIFT, UENVS, USTACKTOP, UTOP, UVPT,
         },
-        map::{PageDirectory, PageTable, Pte},
+        map::{PageDirectory, Pte},
         page::{page_dec_ref, Page},
         tlb::tlb_invalidate,
     },
@@ -34,30 +34,35 @@ use log::{info, warn};
 
 pub const NENV: usize = 1024;
 
-const NEW_ENV: Env = Env::new(0);
+const NEW_ENV: Env = Env::new();
 pub(crate) static mut ENVS: Envs = Envs {
     env_array: [NEW_ENV; NENV],
 };
 static mut ASID_BITMAP: [usize; NASID / 32] = [0; NASID / 32];
 
+#[repr(u32)]
 #[derive(Debug, PartialEq, Eq)]
 pub enum EnvStatus {
-    Free,
-    Runnable,
-    NotRunnable,
+    Free = 0,
+    Runnable = 1,
+    NotRunnable = 2,
 }
 
+#[repr(C)]
 #[derive(Debug)]
 pub struct Env {
-    pub pos: usize,
-
     pub tf: Trapframe,
+
+    __placeholder_1: [usize; 2], // env_link
 
     pub id: usize,
     pub asid: usize,
     pub parent_id: usize,
     pub status: EnvStatus,
-    pub pgdir: PageTable,
+    pub pgdir: VA,
+
+    __placeholder_2: [usize; 2], // env_sched_link
+
     pub priority: u32,
 
     // IPC
@@ -69,16 +74,20 @@ pub struct Env {
 }
 
 impl Env {
-    pub const fn new(pos: usize) -> Env {
+    pub const fn new() -> Env {
         Env {
-            pos,
             tf: Trapframe::new(),
+
+            __placeholder_1: [0; 2],
 
             id: 0,
             asid: 0,
             parent_id: 0,
             status: EnvStatus::Free,
-            pgdir: PageTable::empty(),
+            pgdir: VA(0),
+
+            __placeholder_2: [0; 2],
+
             priority: 0,
 
             ipc_info: IpcInfo::new(),
@@ -89,8 +98,18 @@ impl Env {
         }
     }
 
+    pub fn pos(&self) -> usize {
+        self.id & ((1 << 10) - 1)
+    }
+
+    pub fn pgdir(&self) -> PageDirectory {
+        PageDirectory {
+            page: Page::from(PPN::from(self.pgdir.paddr())),
+        }
+    }
+
     fn tracker(&self) -> EnvTracker {
-        EnvTracker::new(self.pos)
+        EnvTracker::new(self.pos())
     }
 
     fn load_icode(&mut self, binary: &[u8]) {
@@ -160,7 +179,7 @@ impl EnvManager {
         let mut free_list = Vec::with_capacity(NENV);
         for i in (0..NENV).rev() {
             unsafe {
-                ENVS.env_array[i] = Env::new(i);
+                ENVS.env_array[i] = Env::new();
             }
             free_list.push(EnvTracker::new(i));
         }
@@ -226,11 +245,11 @@ impl EnvManager {
     fn setup_vm(&self, env: &mut Env) -> Result<(), MosError> {
         match PageDirectory::init() {
             Ok((pgdir, page)) => {
-                env.pgdir = pgdir;
+                env.pgdir = pgdir.page.ppn().kaddr();
                 unsafe {
                     ptr::copy_nonoverlapping(
                         (self.base_pgdir.pte_at(VA(UTOP).pdx()) as *const Pte).cast::<u8>(),
-                        (env.pgdir.pte_at(VA(UTOP).pdx()) as *mut Pte).cast::<u8>(),
+                        (env.pgdir().pte_at(VA(UTOP).pdx()) as *mut Pte).cast::<u8>(),
                         size_of::<usize>() * (VA(UVPT).pdx() - VA(UTOP).pdx()),
                     );
                 }
@@ -268,7 +287,7 @@ impl EnvManager {
         env.load_icode(binary);
         self.schedule_list
             .borrow_mut()
-            .push_back(EnvTracker::new(env.pos));
+            .push_back(env.tracker());
         env
     }
 
@@ -282,15 +301,15 @@ impl EnvManager {
             info!("0 free env {:x}", env.id);
         }
         for i in 0..VA(UTOP).pdx() {
-            if !env.pgdir.pte_at(i).is_valid() {
+            if !env.pgdir().pte_at(i).is_valid() {
                 continue;
             }
-            let pa: PA = env.pgdir.pte_at(i).ppn().into();
+            let pa: PA = env.pgdir().pte_at(i).ppn().into();
             let pt = pa.kaddr().as_mut_ptr::<Pte>();
             for j in 0..PAGE_SIZE / size_of::<Pte>() {
                 let pte = unsafe { &mut *pt.add(j) };
                 if pte.is_valid() {
-                    env.pgdir
+                    env.pgdir()
                         .remove(env.asid, VA((i << PDSHIFT) + (j << PGSHIFT)));
                 }
             }
@@ -298,11 +317,11 @@ impl EnvManager {
             page_dec_ref(pa.into());
             tlb_invalidate(env.asid, VA(UVPT + (i << PGSHIFT)));
         }
-        page_dec_ref(env.pgdir.page);
+        page_dec_ref(env.pgdir().page);
         asid_free(env.asid);
         tlb_invalidate(env.asid, VA(UVPT + (VA(UVPT).pdx() << PGSHIFT)));
         env.status = EnvStatus::Free;
-        self.free_list.borrow_mut().push(EnvTracker::new(env.pos));
+        self.free_list.borrow_mut().push(env.tracker());
         self.schedule_list
             .borrow_mut()
             .retain(|&x| x != env.tracker());
@@ -310,7 +329,7 @@ impl EnvManager {
 
     pub fn env_destroy(&mut self, env: &mut Env) {
         self.env_free(env);
-        if self.cur.is_some() && self.cur.unwrap().pos == env.pos {
+        if self.cur.is_some() && self.cur.unwrap().pos == env.pos() {
             self.cur = None;
             info!("{:x}: I am killed ...", env.id);
             schedule(true);
@@ -325,7 +344,7 @@ impl EnvManager {
         self.cur = Some(env.tracker());
         env.runs += 1;
 
-        self.cur_pgdir = env.pgdir;
+        self.cur_pgdir = env.pgdir();
 
         unsafe { env_pop_trapframe(&mut env.tf, env.asid as u32) }
     }
@@ -367,8 +386,10 @@ fn map_segment(pgdir: PageDirectory, asid: usize, pa: PA, va: VA, size: usize, f
 
 fn mkenvid(env: &Env) -> usize {
     static mut ENV_COUNT: usize = 0;
-    unsafe { ENV_COUNT += 1 };
-    ((unsafe { ENV_COUNT }) << 11) | env.pos
+    unsafe { 
+        ENV_COUNT += 1;
+        (ENV_COUNT << 11) | ((env as *const Env as usize - addr_of_mut!(ENVS) as usize) / size_of::<Env>())
+    }
 }
 
 fn asid_alloc() -> Result<usize, MosError> {
