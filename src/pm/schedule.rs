@@ -27,9 +27,8 @@ pub extern "C" fn schedule(env_yield: bool) -> ! {
             }
         }
         COUNT -= 1;
-        trace!("TOTAL: {}", TOTAL);
         TOTAL -= 1;
-        trace!("Run:{}", env.as_ref().unwrap().id);
+        trace!("Scheduling env: {:x}, runs: {}", env.as_ref().unwrap().id, env.as_ref().unwrap().runs);
         ENV_MANAGER.env_run(env.unwrap());
     }
 }

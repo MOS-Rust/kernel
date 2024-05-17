@@ -1,6 +1,6 @@
 use core::arch::global_asm;
 
-use crate::{pm::ENV_MANAGER, println};
+use crate::pm::ENV_MANAGER;
 
 use super::{
     addr::{VA, VPN},
@@ -17,7 +17,6 @@ extern "C" {
 
 pub fn tlb_invalidate(asid: usize, va: VA) {
     let entryhi: u32 = (VPN::from(va).0 << 12 | asid) as u32;
-    println!("entryhi: {:x}", entryhi);
     unsafe {
         _tlb_out(entryhi);
     }
@@ -64,11 +63,6 @@ pub unsafe extern "C" fn do_tlb_refill(pentrylo: *mut u32, va: u32, asid: u32) {
         }
         passive_alloc(va, ENV_MANAGER.current_pgdir(), asid);
     }
-    println!("do_tlb_refill: pte_base = {:p}", pte_base);
-    println!("pte_1: {:x}", (*pte_base).0);
-    println!("write_1: {:x}", (*pte_base).as_entrylo());
-    println!("pte_2: {:x}", (*pte_base.add(1)).as_entrylo());
-    println!("write_2: {:x}", (*pte_base.add(1)).as_entrylo());
     pentrylo.write_volatile((*pte_base).as_entrylo());
     pentrylo
         .add(1)

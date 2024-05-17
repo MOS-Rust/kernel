@@ -38,6 +38,6 @@ fn test_loop() {
 }
 
 fn test_idle() {
-    let idle_bin = include_bytes!("../../loop.b");
+    let idle_bin = include_bytes!("../../idle.b");
     unsafe { ENV_MANAGER.create(idle_bin, 2) };
 }
