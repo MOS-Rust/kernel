@@ -53,6 +53,13 @@ impl Pte {
     pub fn is_valid(&self) -> bool {
         self.flags().contains(PteFlags::V)
     }
+
+    pub fn as_entrylo(&self) -> u32 {
+        let ppn = self.ppn().0 as u32;
+        let flags = self.flags().bits() as u32 & 0x3f;
+        (ppn << 6) | flags
+    
+    }
 }
 
 pub type Pde = Pte;

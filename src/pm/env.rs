@@ -30,7 +30,7 @@ use core::{
     mem::size_of,
     ptr::{self, addr_of_mut},
 };
-use log::{info, warn};
+use log::{debug, info, warn};
 
 pub const NENV: usize = 1024;
 
@@ -111,6 +111,7 @@ impl Env {
                 }
             }
             self.tf.cp0_epc = ehdr.e_entry;
+            debug!("load icode at 0x{:x}", ehdr.e_entry);
         } else {
             panic!("bad elf at 0x{:p}", binary);
         }

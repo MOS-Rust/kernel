@@ -33,11 +33,11 @@ pub fn get_base_pgdir() -> PageDirectory {
 }
 
 fn test_loop() {
-    let loop_bin = include_bytes!("../../idle.b");
+    let loop_bin = include_bytes!("../../loop.b");
     unsafe { ENV_MANAGER.create(loop_bin, 1) };
 }
 
 fn test_idle() {
-    let idle_bin = include_bytes!("../../idle.b");
+    let idle_bin = include_bytes!("../../loop.b");
     unsafe { ENV_MANAGER.create(idle_bin, 2) };
 }

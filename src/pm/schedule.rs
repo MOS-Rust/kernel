@@ -4,7 +4,7 @@ use crate::pm::ENV_MANAGER;
 
 #[no_mangle]
 pub extern "C" fn schedule(env_yield: bool) -> ! {
-    static mut TOTAL: u32 = 300;
+    static mut TOTAL: u32 = 100;
     static mut COUNT: u32 = 0;
     unsafe {
         let mut env = ENV_MANAGER.curenv();

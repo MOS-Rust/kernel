@@ -2,6 +2,8 @@
 
 use core::{cmp::min, ptr::copy_nonoverlapping};
 
+use log::debug;
+
 use crate::{mm::layout::PteFlags, round_down};
 
 use crate::{
@@ -173,6 +175,6 @@ pub fn load_icode_mapper(
             )
         }
     }
-
+    debug!("KVA: {:x}, VA: {:x}, perm: {:?}, offset: {:?}", p.ppn().kaddr().0, va.0, perm, offset);
     env.pgdir.insert(env.asid, p, va, perm)
 }
