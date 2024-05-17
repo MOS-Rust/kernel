@@ -9,6 +9,8 @@ use core::{
     ptr::addr_of_mut,
 };
 
+use log::info;
+
 global_asm!(include_str!("../../asm/exception/exception_entry.S"));
 global_asm!(include_str!("../../asm/exception/handlers.S"));
 
@@ -126,14 +128,14 @@ pub static exception_handlers: [Vector; 32] = [
 
 pub fn init() {
     extern "C" {
-        static mut _exception_entry: u8;
+        static mut _tlb_refill_entry: u8;
     }
     unsafe {
         asm!(
             ".set noat",
             "mtc0 {}, $15, 1",
             ".set at",
-            in(reg) addr_of_mut!(_exception_entry) as u32,
+            in(reg) addr_of_mut!(_tlb_refill_entry) as u32,
         );
     }
 }
