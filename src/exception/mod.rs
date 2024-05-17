@@ -137,5 +137,6 @@ pub fn init() {
             ".set at",
             in(reg) addr_of_mut!(_tlb_refill_entry) as u32,
         );
+        info!("Exception entry set at 0x{:x}", addr_of_mut!(_tlb_refill_entry) as u32);
     }
 }

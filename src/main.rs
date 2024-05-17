@@ -49,9 +49,9 @@ pub extern "C" fn kernel_init(
 ) -> ! {
     clear_bss();
     display_banner();
-    exception::init();
     logging::init();
     info!("MOS-Rust started!");
+    exception::init();
     mm::init(ram_size);
     pm::init();
     panic!("");
