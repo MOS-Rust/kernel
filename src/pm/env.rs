@@ -66,7 +66,7 @@ pub struct Env {
     pub priority: u32,
 
     // IPC
-    ipc_info: IpcInfo,
+    pub ipc_info: IpcInfo,
 
     user_tlb_mod_entry: usize,
 
@@ -209,10 +209,6 @@ impl EnvManager {
         self.schedule_list = RefCell::new(VecDeque::with_capacity(NENV));
     }
 
-    pub fn envx(id: usize) -> usize {
-        id & ((1 << 10) - 1)
-    }
-
     pub fn curenv(&self) -> Option<&mut Env> {
         if let Some(tracker) = self.cur {
             Some(env_at(tracker.pos))
@@ -234,7 +230,7 @@ impl EnvManager {
         if id == 0 {
             Ok(self.curenv().unwrap())
         } else {
-            let pos = Self::envx(id);
+            let pos = envx(id);
             let env = env_at(pos);
             if env.status == EnvStatus::Free || env.id != id {
                 return Err(MosError::BadEnv);
@@ -363,6 +359,17 @@ impl EnvManager {
             None
         }
     }
+
+    pub fn insert_to_end(&self, envid: usize) {
+        self.schedule_list.borrow_mut().push_back(env_at(envx(envid)).tracker());
+    }
+
+    pub fn remove_from_schedule(&self, envid: usize) {
+        self.schedule_list
+            .borrow_mut()
+            .retain(|&x| x != env_at(envx(envid)).tracker());
+    }
+    
     pub fn move_to_end(&self, env: &Env) {
         let tracker = env.tracker();
         // tracker should be the first element (?)
@@ -420,6 +427,10 @@ fn asid_free(asid: usize) {
     unsafe {
         ASID_BITMAP[index] &= !(1 << inner);
     }
+}
+
+pub fn envx(id: usize) -> usize {
+    id & ((1 << 10) - 1)
 }
 
 fn env_at(index: usize) -> &'static mut Env {

@@ -6,7 +6,7 @@ use self::env::{Env, EnvManager};
 
 mod elf;
 pub mod env;
-mod ipc;
+pub mod ipc;
 pub mod schedule;
 
 pub static mut ENV_MANAGER: EnvManager = EnvManager::new();
@@ -15,8 +15,10 @@ pub fn init() {
     unsafe { ENV_MANAGER.init() };
     info!("Process manager initialized.");
     test!(Env);
-    test_loop();
-    test_idle();
+    // test_loop();
+    // test_idle();
+    fs();
+    fs_test();
     unsafe { schedule(true); }
 }
 
@@ -41,4 +43,14 @@ fn test_loop() {
 fn test_idle() {
     let idle_bin = include_bytes!("../../idle.b");
     unsafe { ENV_MANAGER.create(idle_bin, 2) };
+}
+
+fn fs() {
+    let fs_bin = include_bytes!("../../serv.b");
+    unsafe { ENV_MANAGER.create(fs_bin, 1) };
+}
+
+fn fs_test() {
+    let fs_test_bin = include_bytes!("../../fs_strong_check.b");
+    unsafe { ENV_MANAGER.create(fs_test_bin, 1) };
 }

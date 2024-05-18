@@ -29,7 +29,7 @@ use crate::{error::MosError, exception::trapframe::Trapframe};
 
 type SyscallHandler = unsafe fn(u32, u32, u32, u32, u32) -> u32;
 
-const SYSCALL_NUM: usize = 8;
+const SYSCALL_NUM: usize = 18;
 
 const HANDLER_TABLE: [SyscallHandler; SYSCALL_NUM] = [
     handlers::sys_putchar,
@@ -40,6 +40,16 @@ const HANDLER_TABLE: [SyscallHandler; SYSCALL_NUM] = [
     handlers::sys_set_tlb_mod_entry,
     handlers::sys_mem_alloc,
     handlers::sys_mem_map,
+    handlers::sys_mem_unmap,
+    handlers::sys_exofork,
+    handlers::sys_set_env_status,
+    handlers::sys_set_trapframe,
+    handlers::sys_panic,
+    handlers::sys_ipc_try_send,
+    handlers::sys_ipc_recv,
+    handlers::sys_getchar,
+    handlers::sys_write_dev,
+    handlers::sys_read_dev,
 ];
 
 

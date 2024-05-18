@@ -2,20 +2,20 @@
 use crate::mm::addr::VA;
 
 #[repr(u32)]
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum IpcStatus {
     NotReceiving = 0,
     Receiving = 1,
 }
 
 #[repr(C)]
-#[derive(Clone, Copy, Debug)]
+#[derive(Debug)]
 pub struct IpcInfo {
-    value: u32,
-    from: usize,
-    recving: IpcStatus,
-    dstva: VA,
-    perm: usize,
+    pub value: u32,
+    pub from: usize,
+    pub recving: IpcStatus,
+    pub dstva: VA,
+    pub perm: usize,
 }
 
 impl IpcInfo {
