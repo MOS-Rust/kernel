@@ -256,7 +256,7 @@ impl EnvManager {
                         size_of::<usize>() * (VA(UVPT).pdx() - VA(UTOP).pdx()),
                     );
                 }
-                *self.base_pgdir.pte_at(VA(UVPT).pdx()) = Pte::new(page.ppn(), PteFlags::V);
+                *env.pgdir().pte_at(VA(UVPT).pdx()) = Pte::new(page.ppn(), PteFlags::V);
                 Ok(())
             }
             Err(error) => Err(error),
