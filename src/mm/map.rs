@@ -41,9 +41,8 @@ impl Pte {
     }
 
     /// set ppn and flags of this entry
-    // is this method necessary? (we can construct new entry instead modify old ones)
     pub fn set(&mut self, ppn: PPN, flags: PteFlags) {
-        self.0 = ppn.0 << 10 | flags.bits();
+        self.0 = ppn.0 << 12 | flags.bits();
     }
 
     pub fn flags_mut(&mut self) -> &mut PteFlags {
