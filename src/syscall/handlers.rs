@@ -226,7 +226,7 @@ pub unsafe fn sys_ipc_try_send(envid: u32, value: u32, srcva: u32, perm: u32, _a
             ipc_info.recving = IpcStatus::NotReceiving;
             ipc_info.value = value;
             ipc_info.from = ENV_MANAGER.curenv().unwrap().id;
-            ipc_info.perm = perm as usize;
+            ipc_info.perm = perm as usize | PteFlags::V.bits();
 
             env.status = EnvStatus::Runnable;
             ENV_MANAGER.insert_to_end(env.id);
