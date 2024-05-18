@@ -1,7 +1,7 @@
-use core::ptr::{self, read_volatile, write_volatile};
+use core::ptr;
 
 use alloc::string::String;
-use log::{debug, info};
+use log::info;
 
 use crate::{
     error::MosError,
@@ -291,7 +291,6 @@ pub unsafe fn sys_write_dev(va: u32, pa: u32, len: u32, _arg4: u32, _arg5: u32) 
     if !is_dev_va_range(pa as usize, len as usize) {
         return (-(MosError::Inval as i32)) as u32;
     }
-    // debug!("sys_write_dev: va: {:x}, pa: {:x}, len: {}, val: {:x}", va, pa, len, *(va as *const u32));
     match len {
         1 => iowrite_byte(pa as usize, *(va as *const u8)),
         2 => iowrite_half(pa as usize, *(va as *const u16)),
@@ -302,7 +301,6 @@ pub unsafe fn sys_write_dev(va: u32, pa: u32, len: u32, _arg4: u32, _arg5: u32) 
 }
 
 pub unsafe fn sys_read_dev(va: u32, pa: u32, len: u32, _arg4: u32, _arg5: u32) -> u32 {
-    // debug!("sys_read_dev: va: {:x}, pa: {:x}, len: {}", va, pa, len);
     if len != 1 && len != 2 && len != 4 {
         return (-(MosError::Inval as i32)) as u32;
     }

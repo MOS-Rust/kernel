@@ -1,5 +1,7 @@
 use core::arch::global_asm;
 
+use log::warn;
+
 use crate::pm::ENV_MANAGER;
 
 use super::{
@@ -34,6 +36,7 @@ pub fn passive_alloc(va: VA, pgdir: &mut PageDirectory, asid: usize) {
         panic!("Passive alloc: envs zone.");
     }
     if (UPAGES..UVPT).contains(&va_val) {
+        warn!("{:x}", va_val);
         panic!("Passive alloc: pages zone.");
     }
     if va_val >= ULIM {

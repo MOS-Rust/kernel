@@ -13,12 +13,6 @@ pub fn env_test() {
     assert!(e2.id != 0 && e2.id != e1.id);
     assert!(e3.id != 0 && e3.id != e2.id && e3.id != e1.id);
 
-    // how to check for NoFreeEnv
-
-    debug!("e1.id: {}", e1.id);
-    debug!("e2.id: {}", e2.id);
-    debug!("e3.id: {}", e3.id);
-
     assert!(e1.id == 2048);
     assert!(e2.id == 4097);
     assert!(e3.id == 6146);
@@ -33,12 +27,8 @@ pub fn env_test() {
     //     }
     // }
 
-    debug!("e3: {:x}, base: {:x}", e3.pgdir().pte_at(VA(UTOP).pdx()).0, base_pgdir.pte_at(VA(UTOP).pdx()).0);
     assert!(e3.pgdir().pte_at(VA(UTOP).pdx()).0 == base_pgdir.pte_at(VA(UTOP).pdx()).0);
     assert!(e3.pgdir().pte_at(VA(UTOP).pdx() - 1).0 == 0);
-    debug!("env_setup_vm passed!");
-
-    debug!("e3's sp reg {:x}", e3.tf.regs[29]);
 
     env_free(e3);
     env_free(e2);

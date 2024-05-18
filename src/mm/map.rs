@@ -1,4 +1,5 @@
 //! This module contains the implementation of page entry table, page directory table, and related functions.
+
 use crate::error::MosError;
 
 use super::{
@@ -108,20 +109,20 @@ impl PageTable {
     /// * create: create a new page if pte is not valid
     ///
     pub fn walk(&self, va: VA, create: bool) -> Result<Option<&mut Pte>, MosError> {
-        let pte = self.pte_at(va.pdx());
+        let pde = self.pte_at(va.pdx());
 
-        if !pte.flags().contains(PteFlags::V) {
+        if !pde.flags().contains(PteFlags::V) {
             if !create {
                 return Ok(None);
             }
             if let Some(page) = page_alloc(true) {
                 page_inc_ref(page);
-                pte.set(page.ppn(), PteFlags::V | PteFlags::Cacheable);
+                pde.set(page.ppn(), PteFlags::V | PteFlags::Cacheable);
             } else {
                 return Err(MosError::NoMem);
             }
         }
-        let base_pt = pte.addr().kaddr().as_mut_ptr::<Pte>();
+        let base_pt = pde.addr().kaddr().as_mut_ptr::<Pte>();
         let ret = unsafe { &mut *base_pt.add(va.ptx()) };
 
         Ok(Some(ret))

@@ -20,7 +20,7 @@ BUILD_HANDLER unhandled do_unhandled
 
 .globl _handle_int;            
 .align 2;                 
-.type _handle_int, @function;  
+.type _handle_int, @function;
 .ent _handle_int;              
 _handle_int:                   
 .frame SP, TF_SIZE, ZERO
