@@ -46,8 +46,12 @@ impl Pte {
         self.0 = ppn.0 << 12 | flags.bits();
     }
 
-    pub fn flags_mut(&mut self) -> &mut PteFlags {
-        unsafe { &mut *(self as *mut Pte as *mut PteFlags) }
+    // pub fn flags_mut(&mut self) -> &mut PteFlags {
+    //     unsafe { &mut *(self as *mut Pte as *mut PteFlags) }
+    // }
+    pub fn set_flags(&mut self, flags: PteFlags) {
+        self.0 &= !0xFFF;
+        self.0 |= flags.bits();
     }
 
     pub fn is_valid(&self) -> bool {
@@ -141,7 +145,7 @@ impl PageTable {
             if pte.flags().contains(PteFlags::V) {
                 if ppn == pte.ppn() {
                     tlb_invalidate(asid, va);
-                    *pte.flags_mut() = flags | PteFlags::V | PteFlags::Cacheable;
+                    pte.set_flags(flags | PteFlags::V | PteFlags::Cacheable);
                     return Ok(());
                 } else {
                     self.remove(asid, va);
