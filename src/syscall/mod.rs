@@ -2,7 +2,7 @@ mod handlers;
 
 use core::mem::size_of;
 
-use log::debug;
+// use log::debug;
 use crate::{error::MosError, exception::trapframe::Trapframe};
 
 // enum Syscall {
@@ -27,7 +27,7 @@ use crate::{error::MosError, exception::trapframe::Trapframe};
 //     Unhandled      = 18,
 // }
 
-type SyscallHandler = fn(u32, u32, u32, u32, u32) -> u32;
+type SyscallHandler = unsafe fn(u32, u32, u32, u32, u32) -> u32;
 
 const SYSCALL_NUM: usize = 8;
 

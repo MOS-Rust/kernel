@@ -5,7 +5,7 @@ use crate::{error::MosError, mm::map::PageDirectory, pm::schedule::schedule, tes
 use self::env::{Env, EnvManager};
 
 mod elf;
-mod env;
+pub mod env;
 mod ipc;
 pub mod schedule;
 
@@ -17,9 +17,10 @@ pub fn init() {
     test!(Env);
     test_loop();
     test_idle();
-    schedule(true);
+    unsafe { schedule(true); }
 }
 
+// TODO: Deprecated
 pub fn env_alloc(parent_id: usize) -> Result<&'static mut Env, MosError> {
     unsafe {ENV_MANAGER.alloc(parent_id)}
 }

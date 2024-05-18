@@ -239,7 +239,10 @@ impl EnvManager {
             if env.status == EnvStatus::Free || env.id != id {
                 return Err(MosError::BadEnv);
             }
-            if check_perm && self.curenv().unwrap().id != env.id && self.curenv().unwrap().id != env.parent_id {
+            if check_perm
+                && self.curenv().unwrap().id != env.id
+                && self.curenv().unwrap().id != env.parent_id
+            {
                 return Err(MosError::BadEnv);
             }
             Ok(env)
@@ -289,16 +292,17 @@ impl EnvManager {
         env.priority = priority;
         env.status = EnvStatus::Runnable;
         env.load_icode(binary);
-        self.schedule_list
-            .borrow_mut()
-            .push_back(env.tracker());
+        self.schedule_list.borrow_mut().push_back(env.tracker());
         env
     }
 
     pub fn env_free(&mut self, env: &mut Env) {
         if let Some(curenv) = self.curenv() {
             if curenv.id != env.id && curenv.id != env.parent_id {
-                warn!("{:x} try to free {:x} which is not its child", curenv.id, env.id);
+                warn!(
+                    "{:x} try to free {:x} which is not its child",
+                    curenv.id, env.id
+                );
             }
             info!("{:x} free env {:x}", curenv.id, env.id);
         } else {
@@ -331,7 +335,7 @@ impl EnvManager {
             .retain(|&x| x != env.tracker());
     }
 
-    pub fn env_destroy(&mut self, env: &mut Env) {
+    pub unsafe fn env_destroy(&mut self, env: &mut Env) {
         self.env_free(env);
         if self.cur.is_some() && self.cur.unwrap().pos == env.pos() {
             self.cur = None;
@@ -349,7 +353,6 @@ impl EnvManager {
         env.runs += 1;
 
         self.cur_pgdir = env.pgdir();
-
         unsafe { env_pop_trapframe(&mut env.tf, env.asid as u32) }
     }
 
@@ -390,9 +393,10 @@ fn map_segment(pgdir: PageDirectory, asid: usize, pa: PA, va: VA, size: usize, f
 
 fn mkenvid(env: &Env) -> usize {
     static mut ENV_COUNT: usize = 0;
-    unsafe { 
+    unsafe {
         ENV_COUNT += 1;
-        (ENV_COUNT << 11) | ((env as *const Env as usize - addr_of_mut!(ENVS) as usize) / size_of::<Env>())
+        (ENV_COUNT << 11)
+            | ((env as *const Env as usize - addr_of_mut!(ENVS) as usize) / size_of::<Env>())
     }
 }
 
