@@ -329,7 +329,7 @@ fn is_illegal_va_range(va: usize, len: usize) -> bool {
     if len == 0 {
         return false;
     }
-    va < UTEMP || va.checked_add(len).is_none() || va.checked_add(len).unwrap() >= UTOP
+    va < UTEMP || va.checked_add(len).is_none() || va.checked_add(len).unwrap() > UTOP
 }
 
 #[inline]
