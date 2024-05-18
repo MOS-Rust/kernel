@@ -73,8 +73,8 @@ bitflags! {
         const C1 = 1 << 4 << PTE_HARDFLAG_SHIFT;
         const C2 = 1 << 5 << PTE_HARDFLAG_SHIFT;
         
-        const Cacheable = PteFlags::C2.bits() | PteFlags::C1.bits();
-        const Uncached = PteFlags::C2.bits() & !PteFlags::C1.bits();
+        const Cacheable = PteFlags::C0.bits() | PteFlags::C1.bits();
+        const Uncached = PteFlags::C0.bits() & !PteFlags::C1.bits();
 
         /// the bits below are controlled by software
         const COW = 0x1;
