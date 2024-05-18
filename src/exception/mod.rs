@@ -22,6 +22,7 @@ pub struct Vector {
 extern "C" {
     fn _handle_int();
     fn _handle_tlb();
+    fn _handle_mod();
     fn _handle_syscall();
     fn _handle_unhandled();
 }
@@ -32,8 +33,8 @@ pub static exception_handlers: [Vector; 32] = [
         handler: _handle_int,
     }, // 0: Int
     Vector {
-        handler: _handle_unhandled,
-    }, // 1
+        handler: _handle_mod,
+    }, // 1: Mod
     Vector {
         handler: _handle_tlb,
     }, // 2: TLBL

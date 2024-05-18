@@ -1,12 +1,12 @@
-use core::arch::global_asm;
+use core::{arch::global_asm, mem::size_of};
 
-use log::warn;
+use log::{debug, warn};
 
-use crate::pm::ENV_MANAGER;
+use crate::{exception::trapframe::{Trapframe, TF_SIZE}, pm::ENV_MANAGER};
 
 use super::{
     addr::{VA, VPN},
-    layout::{PteFlags, PAGE_SIZE, UENVS, ULIM, UPAGES, USTACKTOP, UTEMP, UVPT},
+    layout::{PteFlags, PAGE_SIZE, UENVS, ULIM, UPAGES, USTACKTOP, UTEMP, UVPT, UXSTACKTOP},
     map::{PageDirectory, Pte},
     page::page_alloc,
 };
@@ -70,4 +70,23 @@ pub unsafe extern "C" fn do_tlb_refill(pentrylo: *mut u32, va: u32, asid: u32) {
     pentrylo
         .add(1)
         .write_volatile((*pte_base.add(1)).as_entrylo());
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn do_tlb_mod(tf: *mut Trapframe) {
+    let tmp_tf = *tf;
+
+    if !(USTACKTOP..UXSTACKTOP).contains(&((*tf).regs[29] as usize)) {
+        (*tf).regs[29] = UXSTACKTOP as u32;
+    }
+    (*tf).regs[29] -= TF_SIZE as u32;
+    *((*tf).regs[29] as *mut Trapframe) = tmp_tf;
+    let _ = ENV_MANAGER.current_pgdir().lookup(VA((*tf).cp0_badvaddr as usize));
+    if ENV_MANAGER.curenv().unwrap().user_tlb_mod_entry != 0 {
+        (*tf).regs[4] = (*tf).regs[29];
+        (*tf).regs[29] -= size_of::<u32>() as u32;
+        (*tf).cp0_epc = ENV_MANAGER.curenv().unwrap().user_tlb_mod_entry as u32;
+    } else {
+        panic!("do_tlb_mod: TLB Mod but no user handler registered");
+    }
 }

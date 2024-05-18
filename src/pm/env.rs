@@ -68,7 +68,7 @@ pub struct Env {
     // IPC
     pub ipc_info: IpcInfo,
 
-    user_tlb_mod_entry: usize,
+    pub user_tlb_mod_entry: usize,
 
     pub runs: u32,
 }

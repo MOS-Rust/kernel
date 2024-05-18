@@ -1,7 +1,7 @@
 use core::ptr;
 
 use alloc::string::String;
-use log::info;
+use log::{debug, info};
 
 use crate::{
     error::MosError,

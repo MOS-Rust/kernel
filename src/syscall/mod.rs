@@ -2,6 +2,8 @@ mod handlers;
 
 use core::mem::size_of;
 
+use log::trace;
+
 // use log::debug;
 use crate::{error::MosError, exception::trapframe::Trapframe};
 
@@ -32,24 +34,24 @@ type SyscallHandler = unsafe fn(u32, u32, u32, u32, u32) -> u32;
 const SYSCALL_NUM: usize = 18;
 
 const HANDLER_TABLE: [SyscallHandler; SYSCALL_NUM] = [
-    handlers::sys_putchar,
-    handlers::sys_print_console,
-    handlers::sys_get_env_id,
-    handlers::sys_yield,
-    handlers::sys_env_destroy,
-    handlers::sys_set_tlb_mod_entry,
-    handlers::sys_mem_alloc,
-    handlers::sys_mem_map,
-    handlers::sys_mem_unmap,
-    handlers::sys_exofork,
-    handlers::sys_set_env_status,
-    handlers::sys_set_trapframe,
-    handlers::sys_panic,
-    handlers::sys_ipc_try_send,
-    handlers::sys_ipc_recv,
-    handlers::sys_getchar,
-    handlers::sys_write_dev,
-    handlers::sys_read_dev,
+    /* 00 */ handlers::sys_putchar,
+    /* 01 */ handlers::sys_print_console,
+    /* 02 */ handlers::sys_get_env_id,
+    /* 03 */ handlers::sys_yield,
+    /* 04 */ handlers::sys_env_destroy,
+    /* 05 */ handlers::sys_set_tlb_mod_entry,
+    /* 06 */ handlers::sys_mem_alloc,
+    /* 07 */ handlers::sys_mem_map,
+    /* 08 */ handlers::sys_mem_unmap,
+    /* 09 */ handlers::sys_exofork,
+    /* 10 */ handlers::sys_set_env_status,
+    /* 11 */ handlers::sys_set_trapframe,
+    /* 12 */ handlers::sys_panic,
+    /* 13 */ handlers::sys_ipc_try_send,
+    /* 14 */ handlers::sys_ipc_recv,
+    /* 15 */ handlers::sys_getchar,
+    /* 16 */ handlers::sys_write_dev,
+    /* 17 */ handlers::sys_read_dev,
 ];
 
 
@@ -70,8 +72,8 @@ pub unsafe extern "C" fn do_syscall(tf: *mut Trapframe) {
     let arg4: u32 = *(sp as *const u32).add(4);
     let arg5: u32 = *(sp as *const u32).add(5);
 
-    // debug!("Syscall number: {}", syscall_num);
-    // debug!("Args: {:x} {:x} {:x} {:x} {:x}", arg1, arg2, arg3, arg4, arg5);
+    trace!("Syscall number: {}", syscall_num);
+    trace!("Args: {:x} {:x} {:x} {:x} {:x}", arg1, arg2, arg3, arg4, arg5);
     
     (*tf).regs[2] = handler(arg1, arg2, arg3, arg4, arg5);
 }

@@ -17,8 +17,9 @@ pub fn init() {
     test!(Env);
     // test_loop();
     // test_idle();
-    fs_test();
-    fs();
+    // fs_test();
+    // fs();
+    test_fk();
     unsafe { schedule(true); }
 }
 
@@ -53,4 +54,9 @@ fn fs() {
 fn fs_test() {
     let fs_test_bin = include_bytes!("../../fs_strong_check.b");
     unsafe { ENV_MANAGER.create(fs_test_bin, 1) };
+}
+
+fn test_fk() {
+    let fk_bin = include_bytes!("../../fktest.b");
+    unsafe { ENV_MANAGER.create(fk_bin, 1) };
 }

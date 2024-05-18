@@ -15,6 +15,7 @@ _handle_\exception:
 .endm
 
 BUILD_HANDLER tlb _do_tlb_refill
+BUILD_HANDLER mod do_tlb_mod
 BUILD_HANDLER syscall do_syscall
 BUILD_HANDLER unhandled do_unhandled
 
