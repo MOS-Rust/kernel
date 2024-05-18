@@ -41,7 +41,7 @@ pub fn passive_alloc(va: VA, pgdir: &mut PageDirectory, asid: usize) {
     }
 
     let page = page_alloc(true).unwrap();
-    let flags = if (UVPT..UVPT + PAGE_SIZE).contains(&va_val) {
+    let flags = if (UVPT..ULIM).contains(&va_val) {
         PteFlags::empty()
     } else {
         PteFlags::D
