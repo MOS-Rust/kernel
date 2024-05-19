@@ -1,7 +1,5 @@
 use log::info;
 
-use crate::pm::schedule::schedule;
-
 use self::env::EnvManager;
 
 mod elf;
@@ -14,7 +12,6 @@ pub static mut ENV_MANAGER: EnvManager = EnvManager::new();
 pub fn init() {
     unsafe { ENV_MANAGER.init() };
     info!("Process manager initialized.");
-    unsafe { schedule(true); }
 }
 
 

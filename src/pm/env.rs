@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use super::{
     elf::{elf_load_seg, load_icode_mapper, Elf32, PT_LOAD},
     ipc::IpcInfo,
@@ -256,7 +254,7 @@ impl EnvManager {
     fn setup_vm(&self, env: &mut Env) -> Result<(), MosError> {
         match PageDirectory::init() {
             Ok((pgdir, page)) => {
-                env.pgdir = pgdir.page.ppn().kaddr();
+                env.pgdir = pgdir.page.kaddr();
                 unsafe {
                     ptr::copy_nonoverlapping(
                         (self.base_pgdir.pte_at(VA(UTOP).pdx()) as *const Pte).cast::<u8>(),
@@ -389,10 +387,6 @@ impl EnvManager {
 
     pub fn current_pgdir(&mut self) -> &mut PageDirectory {
         &mut self.cur_pgdir
-    }
-
-    pub fn base_pgdir(&mut self) -> &mut PageDirectory {
-        &mut self.base_pgdir
     }
 }
 

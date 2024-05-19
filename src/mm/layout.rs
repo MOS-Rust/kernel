@@ -41,7 +41,6 @@
 //! The diagram also includes the address ranges for each section.
 //!
 //! For more information, refer to the MOS `include/mmu.h` file.
-#![allow(dead_code)] // TODO: Remove this
 
 use crate::const_export_usize;
 
@@ -126,13 +125,13 @@ bitflags! {
  o
 */
 
-pub const KUSEG: usize = 0x0000_0000;
+// pub const KUSEG: usize = 0x0000_0000;
 pub const KSEG0: usize = 0x8000_0000;
 pub const KSEG1: usize = 0xa000_0000;
-pub const KSEG2: usize = 0xc000_0000;
+// pub const KSEG2: usize = 0xc000_0000;
 
 const_export_usize!(KSTACKTOP, 0x80400000);
-pub const KERNBASE: usize = 0x8002_0000;
+// pub const KERNBASE: usize = 0x8002_0000;
 pub const ULIM: usize = 0x8000_0000;
 
 pub const UVPT: usize = ULIM - PDMAP;

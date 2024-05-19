@@ -35,7 +35,7 @@ impl PageTable {
     #[allow(clippy::mut_from_ref)]
     unsafe fn nth(&self, n: usize) -> &mut Pte {
         assert!(n < 1024);
-        let base_ptr = self.page.ppn().kaddr().as_mut_ptr::<Pte>();
+        let base_ptr = self.page.kaddr().as_mut_ptr::<Pte>();
         &mut *base_ptr.add(n)
     }   
 }

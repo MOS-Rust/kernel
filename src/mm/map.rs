@@ -84,10 +84,6 @@ impl PageTable {
         }
     }
 
-    // pub fn kaddr(&self) -> VA {
-    //     self.page.ppn().kaddr()
-    // }
-
     pub const fn empty() -> PageTable {
         PageTable {
             page: Page::new(PPN(0)),
@@ -98,7 +94,7 @@ impl PageTable {
     // TODO: Find a better to deal with this
     #[allow(clippy::mut_from_ref)]
     pub fn pte_at(&self, offset: usize) -> &mut Pte {
-        let base_pd: *mut Pde = self.page.ppn().kaddr().as_mut_ptr::<Pde>();
+        let base_pd: *mut Pde = self.page.kaddr().as_mut_ptr::<Pde>();
         unsafe { &mut *base_pd.add(offset) }
     }
 
@@ -213,7 +209,7 @@ pub type PageDirectory = PageTable;
 impl PageDirectory {
     /// convert virtual address va to physical address pa in current page directory
     pub fn va2pa(&self, va: VA) -> Option<PA> {
-        let base_pd = self.page.ppn().kaddr().as_mut_ptr::<Pte>();
+        let base_pd = self.page.kaddr().as_mut_ptr::<Pte>();
         let pde = unsafe { &*base_pd.add(va.pdx()) };
         if !pde.flags().contains(PteFlags::V) {
             return None;

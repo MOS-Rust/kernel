@@ -14,7 +14,7 @@ use crate::mm::layout::KSEG1;
 /// # Returns
 ///
 /// The byte read from the specified address.
-#[inline]
+#[inline(always)]
 pub unsafe fn ioread_byte(pa: usize) -> u8 {
     let pa = KSEG1 | pa;
     let ptr = pa as *const u8;
@@ -31,35 +31,35 @@ pub unsafe fn ioread_byte(pa: usize) -> u8 {
 ///
 /// * `addr` - The address to write to.
 /// * `data` - The byte to write.
-#[inline]
+#[inline(always)]
 pub unsafe fn iowrite_byte(pa: usize, data: u8) {
     let pa = KSEG1 | pa;
     let ptr = pa as *mut u8;
     ptr.write_volatile(data);
 }
 
-#[inline]
+#[inline(always)]
 pub unsafe fn ioread_half(pa: usize) -> u16 {
     let pa = KSEG1 | pa;
     let ptr = pa as *const u16;
     ptr.read_volatile()
 }
 
-#[inline]
+#[inline(always)]
 pub unsafe fn iowrite_half(pa: usize, data: u16) {
     let pa = KSEG1 | pa;
     let ptr = pa as *mut u16;
     ptr.write_volatile(data);
 }
 
-#[inline]
+#[inline(always)]
 pub unsafe fn ioread_word(pa: usize) -> u32 {
     let pa = KSEG1 | pa;
     let ptr = pa as *const u32;
     ptr.read_volatile()
 }
 
-#[inline]
+#[inline(always)]
 pub unsafe fn iowrite_word(pa: usize, data: u32) {
     let pa = KSEG1 | pa;
     let ptr = pa as *mut u32;

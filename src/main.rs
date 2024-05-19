@@ -28,10 +28,14 @@ mod syscall;
 mod test;
 
 use core::{
-    arch::global_asm, include_str, ptr::{addr_of_mut, write_bytes}
+    arch::global_asm,
+    include_str,
+    ptr::{addr_of_mut, write_bytes},
 };
 
 use log::info;
+
+use crate::pm::schedule::schedule;
 
 global_asm!(include_str!("../asm/init/entry.S"));
 
@@ -54,7 +58,11 @@ pub extern "C" fn kernel_init(
     exception::init();
     mm::init(ram_size);
     pm::init();
-    panic!("");
+    env_create!(fs_strong_check, "/home/iz0/Projects/Rust/mos/kernel/fs_strong_check.b", 1);
+    env_create!(fs_serv, "../serv.b", 1);
+    unsafe {
+        schedule(true);
+    }
 }
 
 /// Clear the .bss section

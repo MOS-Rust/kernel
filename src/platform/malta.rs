@@ -20,18 +20,18 @@ pub const SERIAL_THR_EMPTY: u8 = 0x20;
  * Intel PIIX4 IDE Controller device definitions.
  */
 pub const IDE_BASE: usize = PCIIO_BASE + 0x01f0;
-pub const IDE_DATA: usize = IDE_BASE;
-pub const IDE_ERR: usize = IDE_BASE + 0x01;
-pub const IDE_NSECT: usize = IDE_BASE + 0x02;
-pub const IDE_LBAL: usize = IDE_BASE + 0x03;
-pub const IDE_LBAM: usize = IDE_BASE + 0x04;
-pub const IDE_LBAH: usize = IDE_BASE + 0x05;
-pub const IDE_DEVICE: usize = IDE_BASE + 0x06;
-pub const IDE_STATUS: usize = IDE_BASE + 0x07;
-pub const IDE_LBA: u8 = 0xE0;
-pub const IDE_BUSY: u8 = 0x80;
-pub const IDE_CMD_PIO_READ: u8 = 0x20;
-pub const IDE_CMD_PIO_WRITE: u8 = 0x30;
+// pub const IDE_DATA: usize = IDE_BASE;
+// pub const IDE_ERR: usize = IDE_BASE + 0x01;
+// pub const IDE_NSECT: usize = IDE_BASE + 0x02;
+// pub const IDE_LBAL: usize = IDE_BASE + 0x03;
+// pub const IDE_LBAM: usize = IDE_BASE + 0x04;
+// pub const IDE_LBAH: usize = IDE_BASE + 0x05;
+// pub const IDE_DEVICE: usize = IDE_BASE + 0x06;
+// pub const IDE_STATUS: usize = IDE_BASE + 0x07;
+// pub const IDE_LBA: u8 = 0xE0;
+// pub const IDE_BUSY: u8 = 0x80;
+// pub const IDE_CMD_PIO_READ: u8 = 0x20;
+// pub const IDE_CMD_PIO_WRITE: u8 = 0x30;
 
 /*
  * MALTA Power Management device definitions.

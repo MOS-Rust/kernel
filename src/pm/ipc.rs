@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 use crate::mm::addr::VA;
 
 #[repr(u32)]

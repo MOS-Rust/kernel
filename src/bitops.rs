@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 /// Round up `a` to the nearest multiple of `n`.
 #[macro_export]
 macro_rules! round {

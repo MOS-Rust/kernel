@@ -38,7 +38,11 @@ impl Page {
 
     /// Acquire page's ref_count
     pub fn ref_count(self) -> u16 {
-        query_ref_count(self.ppn()).unwrap()
+        unsafe { PAGE_ALLOCATOR.tracker.ref_count(self.ppn).unwrap() }
+    }
+
+    pub fn kaddr(self) -> VA {
+        self.ppn.kaddr()
     }
 }
 
@@ -72,26 +76,26 @@ impl PageTracker {
         PageTracker { ppn: PPN(0), size: 0, page_count: 0 }
     }
 
-    fn init(&mut self, current: PPN, end: PPN) {
+    fn init(&mut self, start: PPN, end: PPN) {
         const RC_PER_PAGE: usize = PAGE_SIZE / size_of::<PageRc>();
         let actual_size = (end.0 + RC_PER_PAGE - 1) / RC_PER_PAGE;
         let alloc_count = actual_size.next_power_of_two();
         trace!(
             "PageTracker::init: current = {:?}, end = {:?}, alloc_count = {}, actual_size = {}",
-            current, end, alloc_count, ((end.0 + RC_PER_PAGE - 1) / RC_PER_PAGE)
+            start, end, alloc_count, ((end.0 + RC_PER_PAGE - 1) / RC_PER_PAGE)
         );
         if let Some(page) = page_alloc_contiguous(true, alloc_count) {
             self.ppn = page.ppn();
             self.size = end.0;
             self.page_count = actual_size;
-            for i in 0..current.0 {
+            for i in 0..start.0 {
                 unsafe {
                     let ptr = self.ppn.kaddr().as_mut_ptr::<PageRc>().add(i);
                     *ptr = PageRc::new();
                     (*ptr).inc_ref();
                 }
             }
-            for i in current.0..end.0 {
+            for i in start.0..end.0 {
                 unsafe {
                     let ptr = self.ppn.kaddr().as_mut_ptr::<PageRc>().add(i);
                     *ptr = PageRc::new();
@@ -269,7 +273,7 @@ impl PageAllocator {
     /// * `ppn` - The starting physical page number (PPN) of the block to deallocate.
     /// * `size` - The number of pages in the block, it will be rounded up to the nearest power of 2.
     fn dealloc(&mut self, ppn: PPN, size: usize) {
-        let size = size.next_power_of_two();
+        assert!(size.is_power_of_two());
         let order = size.trailing_zeros() as usize;
         self.free_list[order].push(ppn);
         let mut ppn = ppn;
@@ -299,7 +303,7 @@ impl PageAllocator {
     }
 }
 
-/// Write 0x00 to ppn's page
+/// Write 0 to ppn's page
 fn clear_page(ppn: PPN) {
     let va = ppn.kaddr();
     unsafe {
@@ -316,9 +320,9 @@ pub fn init() {
     extern "C" {
         static mut __end_kernel: u8;
     }
-    let current = PPN::from(VA(unsafe { addr_of_mut!(__end_kernel) as usize }).paddr());
+    let start = PPN::from(VA(unsafe { addr_of_mut!(__end_kernel) as usize }).paddr());
     let end = PPN(get_pagenum());
-    unsafe { PAGE_ALLOCATOR.init(current, end) }
+    unsafe { PAGE_ALLOCATOR.init(start, end) }
 }
 
 /// You should use page_alloc instead
@@ -339,7 +343,6 @@ pub fn page_alloc(clear: bool) -> Option<Page> {
 }
 
 #[inline]
-#[allow(dead_code)]
 pub fn page_alloc_contiguous(clear: bool, size: usize) -> Option<Page> {
     alloc(clear, size).map(Page::new)
 }
@@ -365,35 +368,16 @@ pub fn page_dealloc_contiguous(page: Page, size: usize) {
     dealloc(page.ppn(), size)
 }
 
-#[inline]
-fn query_ref_count(ppn: PPN) -> Option<u16> {
-    unsafe { PAGE_ALLOCATOR.tracker.ref_count(ppn) }
-}
-
-/// You should use page_inc_ref instead
-/// Increase page's ref_count by its ppn
-#[inline]
-fn inc_ref(ppn: PPN) {
-    unsafe { PAGE_ALLOCATOR.tracker.inc_ref(ppn) }
-}
-
 /// Increase page's ref_count
 #[inline]
 pub fn page_inc_ref(page: Page) {
-    inc_ref(page.ppn())
-}
-
-/// You should use page_dec_ref instead
-/// Decrease page's ref_count by its ppn
-#[inline]
-fn dec_ref(ppn: PPN) {
-    unsafe { PAGE_ALLOCATOR.tracker.dec_ref(ppn) }
+    unsafe { PAGE_ALLOCATOR.tracker.inc_ref(page.ppn()) }
 }
 
 /// Decrease page's ref_count
 #[inline]
 pub fn page_dec_ref(page: Page) {
-    dec_ref(page.ppn())
+    unsafe { PAGE_ALLOCATOR.tracker.dec_ref(page.ppn()) }
 }
 
 /// Find the previous power of 2 of x

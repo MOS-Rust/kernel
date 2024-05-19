@@ -2,7 +2,6 @@
 pub mod dispatcher;
 mod heap;
 mod map;
-mod env;
 
 /// A macro for running tests.
 ///

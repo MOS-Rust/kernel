@@ -1,5 +1,3 @@
-#![allow(dead_code)] // TODO: Remove this
-
 pub mod clock;
 mod handlers;
 pub mod trapframe;
