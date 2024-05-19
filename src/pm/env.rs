@@ -32,10 +32,9 @@ use core::{
 };
 use log::{info, warn};
 
-pub const NENV: usize = 1024;
-
+const NENV: usize = 1024;
 const NEW_ENV: Env = Env::new();
-pub(crate) static mut ENVS: Envs = Envs {
+static mut ENVS: Envs = Envs {
     env_array: [NEW_ENV; NENV],
 };
 static mut ASID_BITMAP: [usize; NASID / 32] = [0; NASID / 32];
@@ -200,7 +199,7 @@ impl EnvManager {
                 0,
                 VA(addr_of_mut!(ENVS) as usize).paddr(),
                 VA(UENVS),
-                round!(size_of::<Env>(), PAGE_SIZE),
+                round!(size_of::<Envs>(), PAGE_SIZE),
                 PteFlags::G,
             )
         }
