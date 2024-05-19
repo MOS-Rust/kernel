@@ -13,7 +13,7 @@ use log::error;
 use crate::{platform::halt, println};
 
 #[panic_handler]
-fn panic(_info: &core::panic::PanicInfo) -> ! {
+fn panic(info: &core::panic::PanicInfo) -> ! {
     let sp: u32;
     let ra: u32;
     let badva: u32;
@@ -39,16 +39,26 @@ fn panic(_info: &core::panic::PanicInfo) -> ! {
     }
     error!(
         "Kernel Panicked: \"{}\" at {}",
-         _info.message().unwrap(), _info.location().unwrap()
+        info.message().unwrap(),
+        info.location().unwrap()
     );
     println!(
         "ra:    0x{:08x}  sp:  0x{:08x}  Status: 0x{:08x}\nCause: 0x{:08x}  EPC: 0x{:08x}  BadVA:  0x{:08x}",
         ra, sp, sr, cause, epc, badva
     );
+    unsafe {
+        let envid = match crate::pm::ENV_MANAGER.curenv() {
+            Some(env) => env.id,
+            None => 0,
+        };
+        println!("envid: {:08x}", envid);
+        println!(
+            "cur_pgdir: 0x{:08x}",
+            crate::pm::ENV_MANAGER.current_pgdir().page.kaddr().0
+        );
+    }
     match option_env!("MOS_HANG_ON_PANIC") {
         Some("1") => loop {},
-        _ => {
-            halt()
-        }
+        _ => halt(),
     }
 }

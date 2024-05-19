@@ -41,7 +41,6 @@
 //! The diagram also includes the address ranges for each section.
 //!
 //! For more information, refer to the MOS `include/mmu.h` file.
-#![allow(dead_code)] // TODO: Remove this
 
 use crate::const_export_usize;
 
@@ -57,29 +56,30 @@ pub const PDMAP: usize = 0x0040_0000;
 pub const PGSHIFT: usize = 12;
 /// Page directory shift value
 pub const PDSHIFT: usize = 22;
+/// PTE flag shift
+pub const PTE_HARDFLAG_SHIFT: usize = 6;
 
 bitflags! {
     #[derive(Clone, Copy, Debug)]
     pub struct PteFlags: usize {
         /// the 6 bits below are those stored in cp0.entry_lo
-        const G = 1 << 0;
-        const V = 1 << 1;
-        const D = 1 << 2;
+        const G = 1 << 0 << PTE_HARDFLAG_SHIFT;
+        const V = 1 << 1 << PTE_HARDFLAG_SHIFT;
+        const D = 1 << 2 << PTE_HARDFLAG_SHIFT;
 
         // Only used internally
-        const C0 = 1 << 3;
-        const C1 = 1 << 4;
-        const C2 = 1 << 5;
+        const C0 = 1 << 3 << PTE_HARDFLAG_SHIFT;
+        const C1 = 1 << 4 << PTE_HARDFLAG_SHIFT;
+        const C2 = 1 << 5 << PTE_HARDFLAG_SHIFT;
         
-        const Cacheable = PteFlags::C2.bits() | PteFlags::C1.bits();
-        const Uncached = PteFlags::C2.bits() & !PteFlags::C1.bits();
+        const Cacheable = PteFlags::C0.bits() | PteFlags::C1.bits();
+        const Uncached = PteFlags::C0.bits() & !PteFlags::C1.bits();
 
         /// the bits below are controlled by software
-        const COW = 1 << 6;
-        const SHARED = 1 << 7;
+        const COW = 0x1;
+        const SHARED = 0x2;
     }
 }
-
 /*
  o     4G ----------->  +----------------------------+------------0x100000000
  o                      |       ...                  |  kseg2
@@ -125,13 +125,13 @@ bitflags! {
  o
 */
 
-pub const KUSEG: usize = 0x0000_0000;
+// pub const KUSEG: usize = 0x0000_0000;
 pub const KSEG0: usize = 0x8000_0000;
 pub const KSEG1: usize = 0xa000_0000;
-pub const KSEG2: usize = 0xc000_0000;
+// pub const KSEG2: usize = 0xc000_0000;
 
 const_export_usize!(KSTACKTOP, 0x80400000);
-pub const KERNBASE: usize = 0x8002_0000;
+// pub const KERNBASE: usize = 0x8002_0000;
 pub const ULIM: usize = 0x8000_0000;
 
 pub const UVPT: usize = ULIM - PDMAP;

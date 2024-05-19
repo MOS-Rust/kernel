@@ -119,8 +119,6 @@ _exception_entry:
     move    A1, T0
 	lw      T0, exception_handlers(T0)
 	jr      T0 
-    // move   A0, SP
-    // j exception_handler
 
 .globl _ret_from_exception
 .type _ret_from_exception, @function

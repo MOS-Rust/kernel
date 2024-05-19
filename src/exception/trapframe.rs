@@ -37,7 +37,7 @@ impl Display for Trapframe {
         writeln!(f, "Trapframe {{")?;
         write!(f, "    regs: [")?;
         for i in 0..32 {
-            write!(f, "{:08x}, ", self.regs[i])?;
+            write!(f, "${:2}: {:08x}, ", i, self.regs[i])?;
         }
         writeln!(f, "]")?;
         writeln!(f, "    status: {:08x}", self.cp0_status)?;

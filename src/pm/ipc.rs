@@ -1,19 +1,20 @@
-#![allow(dead_code)]
 use crate::mm::addr::VA;
 
-#[derive(Clone, Copy, Debug)]
+#[repr(u32)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum IpcStatus {
-    Receiving,
-    NotReceiving,
+    NotReceiving = 0,
+    Receiving = 1,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[repr(C)]
+#[derive(Debug)]
 pub struct IpcInfo {
-    value: u32,
-    from: usize,
-    recving: IpcStatus,
-    dstva: VA,
-    perm: usize,
+    pub value: u32,
+    pub from: usize,
+    pub recving: IpcStatus,
+    pub dstva: VA,
+    pub perm: usize,
 }
 
 impl IpcInfo {

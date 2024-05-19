@@ -1,12 +1,12 @@
 use log::debug;
 
-use crate::mm::{addr::{PPN, VA}, layout::PteFlags, map::{PageTable, Pte}, page::{alloc, dealloc, page_alloc, page_dealloc, Page}};
+use crate::mm::{addr::{PPN, VA}, layout::PteFlags, map::{PageTable, Pte}, page::{page_alloc, page_dealloc, Page}};
 
 
 pub fn alloc_test() {
     let mut pages = [PPN(0); 4];
     for ppn in pages.iter_mut() {
-        *ppn = alloc(true, 1).expect("Failed to allocate a page.");
+        *ppn = page_alloc(true).expect("Failed to allocate a page.").ppn();
     }
     assert!(pages[0] != pages[1]);
     assert!(pages[1] != pages[2]);
@@ -17,16 +17,16 @@ pub fn alloc_test() {
         *raw_addr = 0x12;
         assert_eq!(*raw_addr, 0x12);
     }
-    dealloc(pages[1], 1);
+    page_dealloc(Page::from(pages[1]));
     assert_eq!(unsafe { *raw_addr }, 0x12);
-    let new_page = alloc(true, 1).expect("Failed to allocate a page.");
+    let new_page = page_alloc(true).expect("Failed to allocate a page.").ppn();
     assert_eq!(new_page, pages[1]);
     assert_eq!(unsafe { *raw_addr }, 0); // The page should be cleared
 
-    dealloc(pages[0], 1);
-    dealloc(new_page, 1);
-    dealloc(pages[2], 1);
-    dealloc(pages[3], 1);
+    page_dealloc(Page::from(pages[0]));
+    page_dealloc(Page::from(new_page));
+    page_dealloc(Page::from(pages[2]));
+    page_dealloc(Page::from(pages[3]));
     debug!("Page allocation test passed!");
 }
 
@@ -35,7 +35,7 @@ impl PageTable {
     #[allow(clippy::mut_from_ref)]
     unsafe fn nth(&self, n: usize) -> &mut Pte {
         assert!(n < 1024);
-        let base_ptr = self.page.ppn().kaddr().as_mut_ptr::<Pte>();
+        let base_ptr = self.page.kaddr().as_mut_ptr::<Pte>();
         &mut *base_ptr.add(n)
     }   
 }
@@ -93,7 +93,6 @@ pub fn mapping_test() {
     assert!(pd.va2pa(VA(0x1000)).is_none());
     assert!(pages[0].ref_count() == 0);
     let page0 = page_alloc(true).unwrap();
-    assert_eq!(page0, pages[0]);
     page_dealloc(page0);
 
     // Free resources

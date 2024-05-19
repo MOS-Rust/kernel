@@ -13,7 +13,7 @@ use core::cmp::{Eq, Ord, PartialEq};
 use core::ops::{Add, Sub};
 
 use super::get_pagenum;
-use super::layout::{PDSHIFT, PGSHIFT, ULIM};
+use super::layout::{KSEG0, PDSHIFT, PGSHIFT};
 
 /// Physical Address
 #[repr(C)]
@@ -90,7 +90,7 @@ impl PA {
         if ppn.0 >= get_pagenum() {
             panic!("PA::kaddr: Invalid physical address");
         }
-        VA(self.0 + ULIM)
+        VA(self.0 + KSEG0)
     }
 }
 
@@ -115,10 +115,10 @@ impl VA {
     ///
     /// The physical address
     pub fn paddr(&self) -> PA {
-        if self.0 < ULIM {
+        if self.0 < KSEG0 {
             panic!("VA::paddr: Invalid virtual address");
         }
-        PA(self.0 - ULIM)
+        PA(self.0 - KSEG0)
     }
 
     /// Get the page table entry address from the virtual address
@@ -126,10 +126,10 @@ impl VA {
         VA(self.0 & !0xFFF)
     }
 
-    // /// Get the pointer from the virtual address
-    // pub fn as_ptr<T>(&self) -> *const T {
-    //     self.0 as *const T
-    // }
+    /// Get the pointer from the virtual address
+    pub fn as_ptr<T>(&self) -> *const T {
+        self.0 as *const T
+    }
 
     /// Get the mutable pointer from the virtual address
     pub fn as_mut_ptr<T>(&self) -> *mut T {

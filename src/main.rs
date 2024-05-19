@@ -24,13 +24,18 @@ mod mm;
 mod panic;
 mod platform;
 mod pm;
+mod syscall;
 mod test;
 
 use core::{
-    arch::global_asm, include_str, ptr::{addr_of_mut, write_bytes}
+    arch::global_asm,
+    include_str,
+    ptr::{addr_of_mut, write_bytes},
 };
 
 use log::info;
+
+use crate::pm::schedule::schedule;
 
 global_asm!(include_str!("../asm/init/entry.S"));
 
@@ -48,12 +53,14 @@ pub extern "C" fn kernel_init(
 ) -> ! {
     clear_bss();
     display_banner();
-    exception::init();
     logging::init();
     info!("MOS-Rust started!");
+    exception::init();
     mm::init(ram_size);
     pm::init();
-    panic!("");
+    unsafe {
+        schedule(true);
+    }
 }
 
 /// Clear the .bss section

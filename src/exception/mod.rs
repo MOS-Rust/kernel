@@ -1,13 +1,13 @@
-#![allow(dead_code)] // TODO: Remove this
-
 pub mod clock;
-mod handler;
+mod handlers;
 pub mod trapframe;
 
 use core::{
     arch::{asm, global_asm},
     ptr::addr_of_mut,
 };
+
+use log::info;
 
 global_asm!(include_str!("../../asm/exception/exception_entry.S"));
 global_asm!(include_str!("../../asm/exception/handlers.S"));
@@ -20,7 +20,8 @@ pub struct Vector {
 extern "C" {
     fn _handle_int();
     fn _handle_tlb();
-    // fn handle_syscall();
+    fn _handle_mod();
+    fn _handle_syscall();
     fn _handle_unhandled();
 }
 
@@ -30,8 +31,8 @@ pub static exception_handlers: [Vector; 32] = [
         handler: _handle_int,
     }, // 0: Int
     Vector {
-        handler: _handle_unhandled,
-    }, // 1
+        handler: _handle_mod,
+    }, // 1: Mod
     Vector {
         handler: _handle_tlb,
     }, // 2: TLBL
@@ -50,10 +51,9 @@ pub static exception_handlers: [Vector; 32] = [
     Vector {
         handler: _handle_unhandled,
     }, // 7
-    // Vector { handler: handle_syscall }, // 8: Syscall
     Vector {
-        handler: _handle_unhandled,
-    }, // 8
+        handler: _handle_syscall,
+    }, // 8: Syscall
     Vector {
         handler: _handle_unhandled,
     }, // 9
@@ -127,14 +127,15 @@ pub static exception_handlers: [Vector; 32] = [
 
 pub fn init() {
     extern "C" {
-        static mut _exception_entry: u8;
+        static mut _tlb_refill_entry: u8;
     }
     unsafe {
         asm!(
             ".set noat",
             "mtc0 {}, $15, 1",
             ".set at",
-            in(reg) addr_of_mut!(_exception_entry) as u32,
+            in(reg) addr_of_mut!(_tlb_refill_entry) as u32,
         );
+        info!("Exception entry set at 0x{:x}", addr_of_mut!(_tlb_refill_entry) as u32);
     }
 }

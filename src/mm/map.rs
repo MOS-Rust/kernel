@@ -1,10 +1,11 @@
 //! This module contains the implementation of page entry table, page directory table, and related functions.
+
 use crate::error::MosError;
 
 use super::{
     addr::{PA, PPN, VA},
-    layout::PteFlags,
-    page::{find_page, inc_ref, page_alloc, page_dealloc, page_dec_ref, page_inc_ref, Page},
+    layout::{PteFlags, PTE_HARDFLAG_SHIFT},
+    page::{page_alloc, page_dealloc, page_dec_ref, page_inc_ref, Page},
     tlb::tlb_invalidate,
 };
 
@@ -17,7 +18,7 @@ impl Pte {
     /// construct a page entry by page's ppn
     /// flags are set for this entry
     pub fn new(ppn: PPN, flags: PteFlags) -> Pte {
-        Pte(ppn.0 << 10 | flags.bits())
+        Pte(ppn.0 << 12 | flags.bits())
     }
 
     /// construct an empty entry
@@ -27,12 +28,12 @@ impl Pte {
 
     /// acquire ppn of this entry
     pub fn ppn(self) -> PPN {
-        PPN(self.0 >> 10)
+        PPN(self.0 >> 12)
     }
 
     /// acquire flags of this entry
     pub fn flags(self) -> PteFlags {
-        PteFlags::from_bits_truncate(self.0 & 0x3FF)
+        PteFlags::from_bits_truncate(self.0 & 0xFFF)
     }
 
     /// acquire address of this entry
@@ -41,13 +42,13 @@ impl Pte {
     }
 
     /// set ppn and flags of this entry
-    // is this method necessary? (we can construct new entry instead modify old ones)
     pub fn set(&mut self, ppn: PPN, flags: PteFlags) {
-        self.0 = ppn.0 << 10 | flags.bits();
+        self.0 = ppn.0 << 12 | flags.bits();
     }
 
-    pub fn flags_mut(&mut self) -> &mut PteFlags {
-        unsafe { &mut *(self as *mut Pte as *mut PteFlags) }
+    pub fn set_flags(&mut self, flags: PteFlags) {
+        self.0 &= !0xFFF;
+        self.0 |= flags.bits();
     }
 
     pub fn is_valid(&self) -> bool {
@@ -55,10 +56,7 @@ impl Pte {
     }
 
     pub fn as_entrylo(&self) -> u32 {
-        let ppn = self.ppn().0 as u32;
-        let flags = self.flags().bits() as u32 & 0x3f;
-        (ppn << 6) | flags
-    
+        self.0 as u32 >> PTE_HARDFLAG_SHIFT
     }
 }
 
@@ -86,10 +84,6 @@ impl PageTable {
         }
     }
 
-    // pub fn kaddr(&self) -> VA {
-    //     self.page.ppn().kaddr()
-    // }
-
     pub const fn empty() -> PageTable {
         PageTable {
             page: Page::new(PPN(0)),
@@ -100,7 +94,7 @@ impl PageTable {
     // TODO: Find a better to deal with this
     #[allow(clippy::mut_from_ref)]
     pub fn pte_at(&self, offset: usize) -> &mut Pte {
-        let base_pd: *mut Pde = self.page.ppn().kaddr().as_mut_ptr::<Pde>();
+        let base_pd: *mut Pde = self.page.kaddr().as_mut_ptr::<Pde>();
         unsafe { &mut *base_pd.add(offset) }
     }
 
@@ -112,20 +106,20 @@ impl PageTable {
     /// * create: create a new page if pte is not valid
     ///
     pub fn walk(&self, va: VA, create: bool) -> Result<Option<&mut Pte>, MosError> {
-        let pte = self.pte_at(va.pdx());
+        let pde = self.pte_at(va.pdx());
 
-        if !pte.flags().contains(PteFlags::V) {
+        if !pde.flags().contains(PteFlags::V) {
             if !create {
                 return Ok(None);
             }
             if let Some(page) = page_alloc(true) {
                 page_inc_ref(page);
-                pte.set(page.ppn(), PteFlags::V | PteFlags::Cacheable);
+                pde.set(page.ppn(), PteFlags::V | PteFlags::Cacheable);
             } else {
                 return Err(MosError::NoMem);
             }
         }
-        let base_pt = pte.addr().kaddr().as_mut_ptr::<Pte>();
+        let base_pt = pde.addr().kaddr().as_mut_ptr::<Pte>();
         let ret = unsafe { &mut *base_pt.add(va.ptx()) };
 
         Ok(Some(ret))
@@ -144,7 +138,7 @@ impl PageTable {
             if pte.flags().contains(PteFlags::V) {
                 if ppn == pte.ppn() {
                     tlb_invalidate(asid, va);
-                    *pte.flags_mut() = flags | PteFlags::V | PteFlags::Cacheable;
+                    pte.set_flags(flags | PteFlags::V | PteFlags::Cacheable);
                     return Ok(());
                 } else {
                     self.remove(asid, va);
@@ -156,7 +150,7 @@ impl PageTable {
 
         if let Ok(Some(pte)) = self.walk(va, true) {
             *pte = Pte::new(ppn, flags | PteFlags::V | PteFlags::Cacheable);
-            inc_ref(ppn);
+            page_inc_ref(page);
             Ok(())
         } else {
             Err(MosError::NoMem)
@@ -195,18 +189,16 @@ impl PageTable {
     /// decrease the ref_count of page
     /// if page's ref_count is set to 0, deallocate the page
     pub fn try_recycle(page: Page) {
-        if let Some(tracker) = find_page(page) {
-            match tracker.ref_count() {
-                0 => {
-                    panic!("PageTable::try_recycle: page is not referenced.");
-                }
-                1 => {
-                    page_dec_ref(page);
-                    page_dealloc(page);
-                }
-                _ => {
-                    page_dec_ref(page);
-                }
+        match page.ref_count() {
+            0 => {
+                panic!("PageTable::try_recycle: page is not referenced.");
+            }
+            1 => {
+                page_dec_ref(page);
+                page_dealloc(page);
+            }
+            _ => {
+                page_dec_ref(page);
             }
         }
     }
@@ -217,7 +209,7 @@ pub type PageDirectory = PageTable;
 impl PageDirectory {
     /// convert virtual address va to physical address pa in current page directory
     pub fn va2pa(&self, va: VA) -> Option<PA> {
-        let base_pd = self.page.ppn().kaddr().as_mut_ptr::<Pte>();
+        let base_pd = self.page.kaddr().as_mut_ptr::<Pte>();
         let pde = unsafe { &*base_pd.add(va.pdx()) };
         if !pde.flags().contains(PteFlags::V) {
             return None;

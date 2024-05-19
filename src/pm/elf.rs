@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 
 use core::{cmp::min, ptr::copy_nonoverlapping};
 
@@ -15,13 +14,13 @@ pub const EI_INDENT: usize = 16;
 
 pub type Elf32Half = u16;
 pub type Elf32Word = u32;
-pub type Elf32Sword = i32;
-pub type Elf32Xword = u64;
-pub type Elf32Sxword = i64;
+// pub type Elf32Sword = i32;
+// pub type Elf32Xword = u64;
+// pub type Elf32Sxword = i64;
 pub type Elf32Addr = u32;
 pub type Elf32Off = u32;
-pub type Elf32Section = u16;
-pub type Elf32Symndx = u32;
+// pub type Elf32Section = u16;
+// pub type Elf32Symndx = u32;
 
 pub struct Elf32<'a> {
     binary: &'a [u8],
@@ -64,33 +63,33 @@ pub struct Elf32Phdr {
     pub p_align: Elf32Word,
 }
 
-pub const PT_NULL: usize = 0;
+// pub const PT_NULL: usize = 0;
 pub const PT_LOAD: usize = 1;
-pub const PT_DYNAMIC: usize = 2;
-pub const PT_INTERP: usize = 3;
-pub const PT_NOTE: usize = 4;
-pub const PT_SHLIB: usize = 5;
-pub const PT_PHDR: usize = 6;
-pub const PT_NUM: usize = 7;
-pub const PT_LOOS: usize = 0x60000000;
-pub const PT_HIOS: usize = 0x6fffffff;
-pub const PT_LOPROC: usize = 0x70000000;
-pub const PT_HIPROC: usize = 0x7fffffff;
+// pub const PT_DYNAMIC: usize = 2;
+// pub const PT_INTERP: usize = 3;
+// pub const PT_NOTE: usize = 4;
+// pub const PT_SHLIB: usize = 5;
+// pub const PT_PHDR: usize = 6;
+// pub const PT_NUM: usize = 7;
+// pub const PT_LOOS: usize = 0x60000000;
+// pub const PT_HIOS: usize = 0x6fffffff;
+// pub const PT_LOPROC: usize = 0x70000000;
+// pub const PT_HIPROC: usize = 0x7fffffff;
 
-pub const PF_X: u32 = 1 << 0;
+// pub const PF_X: u32 = 1 << 0;
 pub const PF_W: u32 = 1 << 1;
-pub const PF_R: u32 = 1 << 2;
-pub const PF_MASKPROC: u32 = 0xf0000000;
+// pub const PF_R: u32 = 1 << 2;
+// pub const PF_MASKPROC: u32 = 0xf0000000;
 
 pub type ElfMapperFn = fn(&mut Env, VA, usize, PteFlags, Option<&[u8]>) -> Result<(), MosError>;
 
 impl<'a> Elf32<'a> {
     pub fn is_elf32_format(data: &[u8]) -> bool {
         data.len() >= 5
-            && data[0] == 0x7f
-            && data[1] == b'E'
-            && data[2] == b'L'
-            && data[3] == b'F'
+            && data[0] == ELFMAG0
+            && data[1] == ELFMAG1
+            && data[2] == ELFMAG2
+            && data[3] == ELFMAG3
             && data[4] == 1
     }
 
@@ -162,17 +161,16 @@ pub fn load_icode_mapper(
     perm: PteFlags,
     src: Option<&[u8]>,
 ) -> Result<(), MosError> {
-    let p = page_alloc(true).unwrap();
+    let page = page_alloc(true).unwrap();
 
     if let Some(data) = src {
         unsafe {
             copy_nonoverlapping(
                 data.as_ptr(),
-                (p.ppn().kaddr() + offset).0 as *mut u8,
+                (page.kaddr() + offset).0 as *mut u8,
                 data.len(),
             )
         }
     }
-    // debug!("KVA: {:x}, VA: {:x}, perm: {:?}, offset: {:?}", p.ppn().kaddr().0, va.0, perm, offset);
-    env.pgdir.insert(env.asid, p, va, perm)
+    env.pgdir().insert(env.asid, page, va, perm)
 }

@@ -1,12 +1,10 @@
 use log::info;
 
-use crate::{error::MosError, mm::map::PageDirectory, pm::schedule::schedule, test};
-
-use self::env::{Env, EnvManager};
+use self::env::EnvManager;
 
 mod elf;
-mod env;
-mod ipc;
+pub mod env;
+pub mod ipc;
 pub mod schedule;
 
 pub static mut ENV_MANAGER: EnvManager = EnvManager::new();
@@ -14,30 +12,37 @@ pub static mut ENV_MANAGER: EnvManager = EnvManager::new();
 pub fn init() {
     unsafe { ENV_MANAGER.init() };
     info!("Process manager initialized.");
-    test!(Env);
-    test_loop();
-    test_idle();
-    schedule(true);
 }
 
-pub fn env_alloc(parent_id: usize) -> Result<&'static mut Env, MosError> {
-    unsafe {ENV_MANAGER.alloc(parent_id)}
+
+#[repr(C)]
+pub struct AlignedAs<Align, Bytes: ?Sized> {
+    pub _align: [Align; 0],
+    pub bytes: Bytes,
 }
 
-pub fn env_free(env: &mut Env) {
-    unsafe {ENV_MANAGER.env_free(env)}
+/// Include a file as a byte slice aligned as a specific type.
+#[macro_export]
+macro_rules! include_bytes_align_as {
+    ($align_ty:ty, $path:literal) => {{
+        use $crate::pm::AlignedAs;
+
+        static ALIGNED: &AlignedAs<$align_ty, [u8]> = &AlignedAs {
+            _align: [],
+            bytes: *include_bytes!($path),
+        };
+
+        &ALIGNED.bytes
+    }};
 }
 
-pub fn get_base_pgdir() -> PageDirectory {
-    unsafe {*ENV_MANAGER.base_pgdir() }
-}
-
-fn test_loop() {
-    let loop_bin = include_bytes!("../../loop.b");
-    unsafe { ENV_MANAGER.create(loop_bin, 1) };
-}
-
-fn test_idle() {
-    let idle_bin = include_bytes!("../../idle.b");
-    unsafe { ENV_MANAGER.create(idle_bin, 2) };
+/// Create an environment from a ELF file.
+#[macro_export]
+macro_rules! env_create {
+    ($name: ident, $path: expr, $priority: expr) => {
+        let $name = include_bytes_align_as!(usize, $path);
+        unsafe {
+            $crate::pm::ENV_MANAGER.create($name, $priority);
+        }
+    };
 }
