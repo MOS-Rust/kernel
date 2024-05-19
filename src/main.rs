@@ -58,8 +58,6 @@ pub extern "C" fn kernel_init(
     exception::init();
     mm::init(ram_size);
     pm::init();
-    env_create!(fs_strong_check, "/home/iz0/Projects/Rust/mos/kernel/fs_strong_check.b", 1);
-    env_create!(fs_serv, "../serv.b", 1);
     unsafe {
         schedule(true);
     }
