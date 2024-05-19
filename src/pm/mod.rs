@@ -14,7 +14,7 @@ pub static mut ENV_MANAGER: EnvManager = EnvManager::new();
 pub fn init() {
     unsafe { ENV_MANAGER.init() };
     info!("Process manager initialized.");
-    test!(Env);
+    // test!(Env);
     // test_loop();
     // test_idle();
     // fs_test();
@@ -28,10 +28,12 @@ pub fn env_alloc(parent_id: usize) -> Result<&'static mut Env, MosError> {
     unsafe {ENV_MANAGER.alloc(parent_id)}
 }
 
+// TODO: Deprecated
 pub fn env_free(env: &mut Env) {
     unsafe {ENV_MANAGER.env_free(env)}
 }
 
+// TODO: Deprecated
 pub fn get_base_pgdir() -> PageDirectory {
     unsafe {*ENV_MANAGER.base_pgdir() }
 }

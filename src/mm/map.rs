@@ -46,9 +46,6 @@ impl Pte {
         self.0 = ppn.0 << 12 | flags.bits();
     }
 
-    // pub fn flags_mut(&mut self) -> &mut PteFlags {
-    //     unsafe { &mut *(self as *mut Pte as *mut PteFlags) }
-    // }
     pub fn set_flags(&mut self, flags: PteFlags) {
         self.0 &= !0xFFF;
         self.0 |= flags.bits();
