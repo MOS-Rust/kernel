@@ -1,8 +1,8 @@
 use log::info;
 
-use crate::{error::MosError, mm::map::PageDirectory, pm::schedule::schedule};
+use crate::pm::schedule::schedule;
 
-use self::env::{Env, EnvManager};
+use self::env::EnvManager;
 
 mod elf;
 pub mod env;
@@ -26,19 +26,3 @@ pub fn init() {
     env_create!(test, "../../user/bare/overflow.b", 1);
     unsafe { schedule(true); }
 }
-
-// TODO: Deprecated
-pub fn env_alloc(parent_id: usize) -> Result<&'static mut Env, MosError> {
-    unsafe {ENV_MANAGER.alloc(parent_id)}
-}
-
-// TODO: Deprecated
-pub fn env_free(env: &mut Env) {
-    unsafe {ENV_MANAGER.env_free(env)}
-}
-
-// TODO: Deprecated
-pub fn get_base_pgdir() -> PageDirectory {
-    unsafe {*ENV_MANAGER.base_pgdir() }
-}
-
