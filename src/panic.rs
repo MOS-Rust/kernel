@@ -47,12 +47,11 @@ fn panic(info: &core::panic::PanicInfo) -> ! {
         ra, sp, sr, cause, epc, badva
     );
     unsafe {
-        println!(
-            "curenv:    {:?}",
-            crate::pm::ENV_MANAGER.curenv().map(
-                |env| env.id,
-            )
-        );
+        let envid = match crate::pm::ENV_MANAGER.curenv() {
+            Some(env) => env.id,
+            None => 0,
+        };
+        println!("envid: {:08x}", envid);
         println!(
             "cur_pgdir: 0x{:08x}",
             crate::pm::ENV_MANAGER.current_pgdir().page.ppn().kaddr().0
