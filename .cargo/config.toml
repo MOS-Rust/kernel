@@ -2,7 +2,7 @@
 target = "mipsel-unknown-none"
 
 [target.mipsel-unknown-none]
-runner = "qemu-system-mipsel -cpu 24Kc -m 64 -nographic -M malta -drive id=ide0,file=target/fs.img,if=ide,format=raw -drive id=ide1,file=target/empty.img,if=ide,format=raw -no-reboot -kernel"
+runner = "qemu-system-mipsel -cpu 24Kc -m 64 -vga std -serial mon:stdio -M malta -drive id=ide0,file=target/fs.img,if=ide,format=raw -drive id=ide1,file=target/empty.img,if=ide,format=raw -no-reboot -kernel"
 rustflags = [
     "-C", "link-arg=-Tsrc/kernel.ld",
     "-C", "force-frame-pointers=yes",
