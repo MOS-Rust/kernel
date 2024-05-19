@@ -14,12 +14,11 @@ extern crate alloc;
 
 #[macro_use]
 extern crate bitflags;
-mod bitops;
 mod console;
 mod error;
 mod exception;
-mod export;
 mod logging;
+mod macros;
 mod mm;
 mod panic;
 mod platform;

@@ -14,28 +14,6 @@ pub fn init() {
     info!("Process manager initialized.");
 }
 
-
-#[repr(C)]
-pub struct AlignedAs<Align, Bytes: ?Sized> {
-    pub _align: [Align; 0],
-    pub bytes: Bytes,
-}
-
-/// Include a file as a byte slice aligned as a specific type.
-#[macro_export]
-macro_rules! include_bytes_align_as {
-    ($align_ty:ty, $path:literal) => {{
-        use $crate::pm::AlignedAs;
-
-        static ALIGNED: &AlignedAs<$align_ty, [u8]> = &AlignedAs {
-            _align: [],
-            bytes: *include_bytes!($path),
-        };
-
-        &ALIGNED.bytes
-    }};
-}
-
 /// Create an environment from a ELF file.
 #[macro_export]
 macro_rules! env_create {
