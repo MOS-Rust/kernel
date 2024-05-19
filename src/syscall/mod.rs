@@ -54,13 +54,11 @@ const HANDLER_TABLE: [SyscallHandler; SYSCALL_NUM] = [
     /* 17 */ handlers::sys_read_dev,
 ];
 
-
-
 #[no_mangle]
 pub unsafe extern "C" fn do_syscall(tf: *mut Trapframe) {
     let syscall_num: u32 = (*tf).regs[4];
     if !(0..SYSCALL_NUM as i32).contains(&(syscall_num as i32)) {
-        (*tf).regs[2] = (- (MosError::NoSys as i32)) as u32;
+        (*tf).regs[2] = (-(MosError::NoSys as i32)) as u32;
         return;
     }
     (*tf).cp0_epc += size_of::<usize>() as u32;
@@ -73,7 +71,14 @@ pub unsafe extern "C" fn do_syscall(tf: *mut Trapframe) {
     let arg5: u32 = *(sp as *const u32).add(5);
 
     trace!("Syscall number: {}", syscall_num);
-    trace!("Args: {:x} {:x} {:x} {:x} {:x}", arg1, arg2, arg3, arg4, arg5);
-    
+    trace!(
+        "Args: {:x} {:x} {:x} {:x} {:x}",
+        arg1,
+        arg2,
+        arg3,
+        arg4,
+        arg5
+    );
+
     (*tf).regs[2] = handler(arg1, arg2, arg3, arg4, arg5);
 }

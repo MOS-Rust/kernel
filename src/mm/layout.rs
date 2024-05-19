@@ -71,7 +71,7 @@ bitflags! {
         const C0 = 1 << 3 << PTE_HARDFLAG_SHIFT;
         const C1 = 1 << 4 << PTE_HARDFLAG_SHIFT;
         const C2 = 1 << 5 << PTE_HARDFLAG_SHIFT;
-        
+
         const Cacheable = PteFlags::C0.bits() | PteFlags::C1.bits();
         const Uncached = PteFlags::C0.bits() & !PteFlags::C1.bits();
 

@@ -41,14 +41,14 @@ impl Log for Logger {
 ///
 /// If `LOG_LEVEL` is not set, the default log level is `Info` in release mode
 /// and `Debug` in debug mode.
-/// 
+///
 /// The log level can be set to one of the following values:
 /// - `error`
 /// - `warn`
 /// - `info`
 /// - `debug`
 /// - `trace`
-/// 
+///
 /// Usage:
 /// LOG_LEVEL=trace cargo run
 pub fn init() {

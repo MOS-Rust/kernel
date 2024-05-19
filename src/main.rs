@@ -57,6 +57,7 @@ pub extern "C" fn kernel_init(
     exception::init();
     mm::init(ram_size);
     pm::init();
+    env_create!(fktest, "../fktest.b", 1);
     unsafe {
         schedule(true);
     }

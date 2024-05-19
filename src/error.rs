@@ -1,6 +1,5 @@
 //! OS Error Codes
 
-
 #[allow(dead_code)]
 #[derive(Debug)]
 pub enum MosError {

@@ -11,7 +11,11 @@ use crate::{
         layout::{PteFlags, KSTACKTOP, UTEMP, UTOP},
         page::{page_alloc, page_dealloc},
     },
-    platform::{malta::{IDE_BASE, SERIAL_BASE}, print_char, ioread_byte, read_char, ioread_half, ioread_word, iowrite_byte, iowrite_half, iowrite_word},
+    platform::{
+        ioread_byte, ioread_half, ioread_word, iowrite_byte, iowrite_half, iowrite_word,
+        malta::{IDE_BASE, SERIAL_BASE},
+        print_char, read_char,
+    },
     pm::{env::EnvStatus, ipc::IpcStatus, schedule::schedule, ENV_MANAGER},
 };
 
@@ -54,7 +58,12 @@ pub unsafe fn sys_env_destroy(envid: u32, _arg2: u32, _arg3: u32, _arg4: u32, _a
     }
 }
 
-pub unsafe fn sys_set_tlb_mod_entry(envid: u32, func: u32, _arg3: u32, _arg4: u32, _arg5: u32,
+pub unsafe fn sys_set_tlb_mod_entry(
+    envid: u32,
+    func: u32,
+    _arg3: u32,
+    _arg4: u32,
+    _arg5: u32,
 ) -> u32 {
     let env = ENV_MANAGER.env_from_id(envid as usize, false);
     match env {
@@ -149,7 +158,13 @@ pub unsafe fn sys_exofork(_arg1: u32, _arg2: u32, _arg3: u32, _arg4: u32, _arg5:
     }
 }
 
-pub unsafe fn sys_set_env_status(envid: u32, status: u32, _arg3: u32, _arg4: u32, _arg5: u32) -> u32 {
+pub unsafe fn sys_set_env_status(
+    envid: u32,
+    status: u32,
+    _arg3: u32,
+    _arg4: u32,
+    _arg5: u32,
+) -> u32 {
     let status = match status {
         0 => EnvStatus::NotRunnable,
         1 => EnvStatus::Runnable,
@@ -232,7 +247,12 @@ pub unsafe fn sys_ipc_try_send(envid: u32, value: u32, srcva: u32, perm: u32, _a
             ENV_MANAGER.insert_to_end(env.id);
 
             if srcva != 0 {
-                if let Some((_, page)) = ENV_MANAGER.curenv().unwrap().pgdir().lookup(VA(srcva as usize)) {
+                if let Some((_, page)) = ENV_MANAGER
+                    .curenv()
+                    .unwrap()
+                    .pgdir()
+                    .lookup(VA(srcva as usize))
+                {
                     let dstva = ipc_info.dstva;
                     match env.pgdir().insert(
                         env.asid,
@@ -252,7 +272,6 @@ pub unsafe fn sys_ipc_try_send(envid: u32, value: u32, srcva: u32, perm: u32, _a
         }
 
         Err(err) => (-(err as i32)) as u32,
-        
     }
 }
 
@@ -311,7 +330,7 @@ pub unsafe fn sys_read_dev(va: u32, pa: u32, len: u32, _arg4: u32, _arg5: u32) -
         return (-(MosError::Inval as i32)) as u32;
     }
     match len {
-        1 => *(va as *mut u8 ) = ioread_byte(pa as usize),
+        1 => *(va as *mut u8) = ioread_byte(pa as usize),
         2 => *(va as *mut u16) = ioread_half(pa as usize),
         4 => *(va as *mut u32) = ioread_word(pa as usize),
         _ => unreachable!(),
@@ -336,6 +355,6 @@ fn is_illegal_va_range(va: usize, len: usize) -> bool {
 fn is_dev_va_range(va: usize, len: usize) -> bool {
     const CONOLE_ADDR_LEN: usize = 0x20;
     const IDE_ADDR_LEN: usize = 0x8;
-    (va >= SERIAL_BASE && va + len <= SERIAL_BASE + CONOLE_ADDR_LEN) || 
-    (va >= IDE_BASE && va + len <= IDE_BASE + IDE_ADDR_LEN)
+    (va >= SERIAL_BASE && va + len <= SERIAL_BASE + CONOLE_ADDR_LEN)
+        || (va >= IDE_BASE && va + len <= IDE_BASE + IDE_ADDR_LEN)
 }

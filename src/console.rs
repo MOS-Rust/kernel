@@ -1,5 +1,5 @@
-use core::fmt::{self, Write};
 use crate::platform::print_char;
+use core::fmt::{self, Write};
 
 struct Stdout;
 
@@ -24,7 +24,7 @@ impl Write for Stdout {
 
 /// Print a formatted string to the console.
 ///
-/// You may not need to use this function directly. 
+/// You may not need to use this function directly.
 /// Instead, you can use the `print!` and `println!` macros.
 pub fn print(args: fmt::Arguments) {
     Stdout.write_fmt(args).unwrap();

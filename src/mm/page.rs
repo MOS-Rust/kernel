@@ -73,7 +73,11 @@ pub struct PageTracker {
 
 impl PageTracker {
     const fn new() -> Self {
-        PageTracker { ppn: PPN(0), size: 0, page_count: 0 }
+        PageTracker {
+            ppn: PPN(0),
+            size: 0,
+            page_count: 0,
+        }
     }
 
     fn init(&mut self, start: PPN, end: PPN) {
@@ -82,7 +86,10 @@ impl PageTracker {
         let alloc_count = actual_size.next_power_of_two();
         trace!(
             "PageTracker::init: current = {:?}, end = {:?}, alloc_count = {}, actual_size = {}",
-            start, end, alloc_count, ((end.0 + RC_PER_PAGE - 1) / RC_PER_PAGE)
+            start,
+            end,
+            alloc_count,
+            ((end.0 + RC_PER_PAGE - 1) / RC_PER_PAGE)
         );
         if let Some(page) = page_alloc_contiguous(true, alloc_count) {
             self.ppn = page.ppn();
@@ -119,7 +126,11 @@ impl PageTracker {
         if ppn.0 < self.size {
             unsafe {
                 let ptr = self.ppn.kaddr().as_ptr::<PageRc>().add(ppn.0);
-                trace!("PageTracker::ref_count: ppn = {:?}, ref_count = {}", ppn, (*ptr).ref_count());
+                trace!(
+                    "PageTracker::ref_count: ppn = {:?}, ref_count = {}",
+                    ppn,
+                    (*ptr).ref_count()
+                );
                 Some((*ptr).ref_count())
             }
         } else {
@@ -143,8 +154,6 @@ impl PageTracker {
             (*ptr).dec_ref();
         }
     }
-
-
 }
 
 #[repr(C)]
