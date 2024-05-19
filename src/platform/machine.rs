@@ -77,10 +77,14 @@ pub fn print_char(c: char) {
     }
     unsafe {
         while ioread_byte(SERIAL_LSR) & SERIAL_THR_EMPTY == 0 {}
-        let mut buf = [0; 4];
-        c.encode_utf8(&mut buf);
-        for byte in buf {
-            iowrite_byte(SERIAL_DATA, byte);
+        if c.is_ascii() {
+            iowrite_byte(SERIAL_DATA, c as u8);
+        } else {
+            let mut dst = [0; 4];
+            c.encode_utf8(&mut dst);
+            for &byte in dst.iter() {
+                iowrite_byte(SERIAL_DATA, byte);
+            }
         }
     }
 }
