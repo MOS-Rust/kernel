@@ -126,10 +126,10 @@ impl VA {
         VA(self.0 & !0xFFF)
     }
 
-    // /// Get the pointer from the virtual address
-    // pub fn as_ptr<T>(&self) -> *const T {
-    //     self.0 as *const T
-    // }
+    /// Get the pointer from the virtual address
+    pub fn as_ptr<T>(&self) -> *const T {
+        self.0 as *const T
+    }
 
     /// Get the mutable pointer from the virtual address
     pub fn as_mut_ptr<T>(&self) -> *mut T {

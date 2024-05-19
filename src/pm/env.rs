@@ -14,10 +14,11 @@ use crate::{
     mm::{
         addr::{PA, PPN, VA},
         layout::{
-            PteFlags, KSTACKTOP, NASID, PAGE_SIZE, PDSHIFT, PGSHIFT, UENVS, USTACKTOP, UTOP, UVPT,
+            PteFlags, KSTACKTOP, NASID, PAGE_SIZE, PDSHIFT, PGSHIFT, UENVS, UPAGES, USTACKTOP,
+            UTOP, UVPT,
         },
         map::{PageDirectory, Pte},
-        page::{page_dec_ref, Page},
+        page::{page_dec_ref, Page, PAGE_ALLOCATOR},
         tlb::tlb_invalidate,
     },
     platform::cp0reg::{STATUS_EXL, STATUS_IE, STATUS_IM7, STATUS_UM},
@@ -192,8 +193,16 @@ impl EnvManager {
         } else {
             panic!("failed to init base_pgdir");
         }
-        // TODO: Map mm::pages to UPAGES
         unsafe {
+            let (ppn, page_count) = PAGE_ALLOCATOR.get_tracker_info();
+            map_segment(
+                base_pgdir,
+                0,
+                ppn.into(),
+                VA(UPAGES),
+                page_count * PAGE_SIZE,
+                PteFlags::G,
+            );
             map_segment(
                 base_pgdir,
                 0,
@@ -360,7 +369,9 @@ impl EnvManager {
     }
 
     pub fn insert_to_end(&self, envid: usize) {
-        self.schedule_list.borrow_mut().push_back(env_at(envx(envid)).tracker());
+        self.schedule_list
+            .borrow_mut()
+            .push_back(env_at(envx(envid)).tracker());
     }
 
     pub fn remove_from_schedule(&self, envid: usize) {
@@ -368,7 +379,7 @@ impl EnvManager {
             .borrow_mut()
             .retain(|&x| x != env_at(envx(envid)).tracker());
     }
-    
+
     pub fn move_to_end(&self, env: &Env) {
         let tracker = env.tracker();
         // tracker should be the first element (?)

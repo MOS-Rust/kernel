@@ -17,9 +17,9 @@ pub fn init() {
     // test!(Env);
     // test_loop();
     // test_idle();
-    // fs_test();
-    // fs();
-    test_fk();
+    fs_test();
+    fs();
+    // test_fk();
     unsafe { schedule(true); }
 }
 

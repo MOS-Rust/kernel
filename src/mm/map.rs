@@ -5,7 +5,7 @@ use crate::error::MosError;
 use super::{
     addr::{PA, PPN, VA},
     layout::{PteFlags, PTE_HARDFLAG_SHIFT},
-    page::{find_page, inc_ref, page_alloc, page_dealloc, page_dec_ref, page_inc_ref, Page},
+    page::{page_alloc, page_dealloc, page_dec_ref, page_inc_ref, Page},
     tlb::tlb_invalidate,
 };
 
@@ -154,7 +154,7 @@ impl PageTable {
 
         if let Ok(Some(pte)) = self.walk(va, true) {
             *pte = Pte::new(ppn, flags | PteFlags::V | PteFlags::Cacheable);
-            inc_ref(ppn);
+            page_inc_ref(page);
             Ok(())
         } else {
             Err(MosError::NoMem)
@@ -193,18 +193,16 @@ impl PageTable {
     /// decrease the ref_count of page
     /// if page's ref_count is set to 0, deallocate the page
     pub fn try_recycle(page: Page) {
-        if let Some(tracker) = find_page(page) {
-            match tracker.ref_count() {
-                0 => {
-                    panic!("PageTable::try_recycle: page is not referenced.");
-                }
-                1 => {
-                    page_dec_ref(page);
-                    page_dealloc(page);
-                }
-                _ => {
-                    page_dec_ref(page);
-                }
+        match page.ref_count() {
+            0 => {
+                panic!("PageTable::try_recycle: page is not referenced.");
+            }
+            1 => {
+                page_dec_ref(page);
+                page_dealloc(page);
+            }
+            _ => {
+                page_dec_ref(page);
             }
         }
     }
