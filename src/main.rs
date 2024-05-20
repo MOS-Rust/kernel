@@ -53,7 +53,6 @@ pub extern "C" fn kernel_init(
     exception::init();
     mm::init(ram_size);
     pm::init();
-    env_create!(pool_test, "../pool_test.b", 1);
     unsafe {
         schedule(true);
     }

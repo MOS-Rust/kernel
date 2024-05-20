@@ -1,33 +1,62 @@
 mod handlers;
 mod mempool;
 
-use crate::{error::MosError, exception::Trapframe};
+use crate::{error::MosError, exception::Trapframe, pm::ENV_MANAGER};
 use core::mem::size_of;
 use log::trace;
 
 pub use mempool::pool_remove_user_on_exit;
 
-// enum Syscall {
-//     Putchar        = 0,
-//     PrintConsole   = 1,
-//     GetEnvId       = 2,
-//     Yield          = 3,
-//     EnvDestroy     = 4,
-//     SetTlbModEntry = 5,
-//     MemAlloc       = 6,
-//     MemMap         = 7,
-//     MemUnmap       = 8,
-//     Exofork        = 9,
-//     SetEnvStatus   = 10,
-//     SetTrapframe   = 11,
-//     Panic          = 12,
-//     IpcTrySend     = 13,
-//     IpcRecv        = 14,
-//     Getchar        = 15,
-//     WriteDev       = 16,
-//     ReadDev        = 17,
-//     Unhandled      = 18,
-// }
+#[derive(Debug)]
+enum Syscall {
+    Putchar        = 0,
+    PrintConsole   = 1,
+    GetEnvId       = 2,
+    Yield          = 3,
+    EnvDestroy     = 4,
+    SetTlbModEntry = 5,
+    MemAlloc       = 6,
+    MemMap         = 7,
+    MemUnmap       = 8,
+    Exofork        = 9,
+    SetEnvStatus   = 10,
+    SetTrapframe   = 11,
+    Panic          = 12,
+    IpcTrySend     = 13,
+    IpcRecv        = 14,
+    Getchar        = 15,
+    WriteDev       = 16,
+    ReadDev        = 17,
+    MempoolOp      = 18,
+    Unhandled      = 19,
+}
+
+impl Syscall {
+    fn from_u32(num: u32) -> Self {
+        match num {
+            0 => Syscall::Putchar,
+            1 => Syscall::PrintConsole,
+            2 => Syscall::GetEnvId,
+            3 => Syscall::Yield,
+            4 => Syscall::EnvDestroy,
+            5 => Syscall::SetTlbModEntry,
+            6 => Syscall::MemAlloc,
+            7 => Syscall::MemMap,
+            8 => Syscall::MemUnmap,
+            9 => Syscall::Exofork,
+            10 => Syscall::SetEnvStatus,
+            11 => Syscall::SetTrapframe,
+            12 => Syscall::Panic,
+            13 => Syscall::IpcTrySend,
+            14 => Syscall::IpcRecv,
+            15 => Syscall::Getchar,
+            16 => Syscall::WriteDev,
+            17 => Syscall::ReadDev,
+            18 => Syscall::MempoolOp,
+            _ => Syscall::Unhandled,
+        }
+    }
+}
 
 type SyscallHandler = unsafe fn(u32, u32, u32, u32, u32) -> u32;
 
@@ -71,7 +100,7 @@ pub unsafe extern "C" fn do_syscall(tf: *mut Trapframe) {
     let arg4: u32 = *(sp as *const u32).add(4);
     let arg5: u32 = *(sp as *const u32).add(5);
 
-    trace!("Syscall number: {}", syscall_num);
+    trace!("Env: {:08x}, Syscall: {} \"{:?}\"", ENV_MANAGER.curenv().unwrap().id, syscall_num, Syscall::from_u32(syscall_num));
     trace!(
         "Args: {:08x} {:08x} {:08x} {:08x} {:08x}",
         arg1,

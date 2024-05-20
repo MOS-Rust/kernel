@@ -124,11 +124,11 @@ impl PageTracker {
         if ppn.0 < self.size {
             unsafe {
                 let ptr = self.ppn.kaddr().as_ptr::<PageRc>().add(ppn.0);
-                trace!(
-                    "PageTracker::ref_count: ppn = {:?}, ref_count = {}",
-                    ppn,
-                    (*ptr).ref_count()
-                );
+                // trace!(
+                //     "PageTracker::ref_count: ppn = {:?}, ref_count = {}",
+                //     ppn,
+                //     (*ptr).ref_count()
+                // );
                 Some((*ptr).ref_count())
             }
         } else {
@@ -137,7 +137,7 @@ impl PageTracker {
     }
 
     fn inc_ref(&mut self, ppn: PPN) {
-        trace!("PageTracker::inc_ref: ppn = {:?}", ppn);
+        // trace!("PageTracker::inc_ref: ppn = {:?}", ppn);
         assert!(ppn.0 < self.size);
         unsafe {
             let ptr = self.ppn.kaddr().as_mut_ptr::<PageRc>().add(ppn.0);
@@ -146,7 +146,7 @@ impl PageTracker {
     }
 
     fn dec_ref(&mut self, ppn: PPN) {
-        trace!("PageTracker::dec_ref: ppn = {:?}", ppn);
+        // trace!("PageTracker::dec_ref: ppn = {:?}", ppn);
         assert!(ppn.0 < self.size);
         unsafe {
             let ptr = self.ppn.kaddr().as_mut_ptr::<PageRc>().add(ppn.0);
