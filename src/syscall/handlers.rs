@@ -339,6 +339,34 @@ pub unsafe fn sys_read_dev(va: u32, pa: u32, len: u32, _arg4: u32, _arg5: u32) -
     0
 }
 
+/// Operations on memory pools
+/// 
+/// Available operations:
+/// - `0`: Create a memory pool
+///     Parameter(s): page_count
+/// - '1': Join an existing memory pool
+///     Parameter(s): poolid, va, page_count
+/// - '2': Leave a memory pool
+///     Parameter(s): poolid
+/// - '3': Destroy a memory pool 
+///     Parameter(s): poolid
+/// - '4': Acquire write access to a memory pool
+///     Parameter(s): poolid
+/// - '5': Release write access to a memory pool
+///     Parameter(s): poolid
+/// - '6': Acquire read access to a memory pool
+///     Parameter(s): poolid
+/// - '7': Release read access to a memory pool
+///     Parameter(s): poolid
+/// 
+/// # Parameters
+/// 
+/// - `op`: The operation to be performed
+/// - `poolid`: The ID of the memory pool
+/// - `va`: The virtual address to be mapped to the pool
+/// - `page_count`: The number of pages to be allocated
+/// 
+/// 
 pub fn sys_mempool_op(op: u32, poolid: u32, va: u32, page_count: u32, _arg5: u32) -> u32 {
     do_mempool_op(op, poolid, va, page_count)
 }

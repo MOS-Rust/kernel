@@ -38,7 +38,7 @@ enum MemPoolOp {
     Create,
     Join,
     Leave,
-    Free,
+    Destroy,
     AcquireWriteLock,
     ReleaseWriteLock,
     AcquireReadLock,
@@ -51,7 +51,7 @@ impl MemPoolOp {
             0 => Some(MemPoolOp::Create),
             1 => Some(MemPoolOp::Join),
             2 => Some(MemPoolOp::Leave),
-            3 => Some(MemPoolOp::Free),
+            3 => Some(MemPoolOp::Destroy),
             4 => Some(MemPoolOp::AcquireWriteLock),
             5 => Some(MemPoolOp::ReleaseWriteLock),
             6 => Some(MemPoolOp::AcquireReadLock),
@@ -67,10 +67,10 @@ pub fn do_mempool_op(op: u32, poolid: u32, va: u32, page_count: u32) -> u32 {
         None => return (-(MosError::Inval as i32)) as u32,
     };
     match op {
-        MemPoolOp::Create => mempool_alloc(page_count),
+        MemPoolOp::Create => mempool_create(page_count),
         MemPoolOp::Join => mempool_join(poolid, va, page_count),
         MemPoolOp::Leave => mempool_leave(poolid),
-        MemPoolOp::Free => mempool_free(poolid),
+        MemPoolOp::Destroy => mempool_destroy(poolid),
         MemPoolOp::AcquireWriteLock => mempool_acquire_write_lock(poolid),
         MemPoolOp::ReleaseWriteLock => mempool_release_write_lock(poolid),
         MemPoolOp::AcquireReadLock => mempool_achuire_read_lock(poolid),
@@ -78,7 +78,7 @@ pub fn do_mempool_op(op: u32, poolid: u32, va: u32, page_count: u32) -> u32 {
     }
 }
 
-fn mempool_alloc(page_count: u32) -> u32 {
+fn mempool_create(page_count: u32) -> u32 {
     let id = unsafe { POOL_MANAGER.current_id };
     let mut pool = MemPool {
         id,
@@ -143,7 +143,7 @@ fn mempool_leave(poolid: u32) -> u32 {
     }
 }
 
-fn mempool_free(poolid: u32) -> u32 {
+fn mempool_destroy(poolid: u32) -> u32 {
     if let Some(pool) = unsafe { POOL_MANAGER.pools.get_mut(&poolid) } {
         if !pool.users.is_empty() {
             return (-(MosError::PoolBusy as i32)) as u32;
@@ -172,7 +172,7 @@ fn mempool_acquire_write_lock(poolid: u32) -> u32 {
         if (va.0..va.0 + pool.page_count as usize * PAGE_SIZE)
             .step_by(PAGE_SIZE)
             .enumerate()
-            .try_fold((), |res, (va, i)| {
+            .try_fold((), |res, (i, va)| {
                 let va = VA(va);
                 let page = pool.pages[i];
                 match env.pgdir().insert(asid, page, va, flags) {
@@ -235,7 +235,7 @@ fn mempool_achuire_read_lock(poolid: u32) -> u32 {
         if (va.0..va.0 + pool.page_count as usize * PAGE_SIZE)
             .step_by(PAGE_SIZE)
             .enumerate()
-            .try_fold((), |res, (va, i)| {
+            .try_fold((), |res, (i, va)| {
                 let va = VA(va);
                 let page = pool.pages[i];
                 match env.pgdir().insert(asid, page, va, flags) {
