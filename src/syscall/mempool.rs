@@ -46,25 +46,24 @@ enum MemPoolOp {
 }
 
 impl MemPoolOp {
-    fn from_u32(op: u32) -> Option<MemPoolOp> {
+    const fn from_u32(op: u32) -> Option<Self> {
         match op {
-            0 => Some(MemPoolOp::Create),
-            1 => Some(MemPoolOp::Join),
-            2 => Some(MemPoolOp::Leave),
-            3 => Some(MemPoolOp::Destroy),
-            4 => Some(MemPoolOp::AcquireWriteLock),
-            5 => Some(MemPoolOp::ReleaseWriteLock),
-            6 => Some(MemPoolOp::AcquireReadLock),
-            7 => Some(MemPoolOp::ReleaseReadLock),
+            0 => Some(Self::Create),
+            1 => Some(Self::Join),
+            2 => Some(Self::Leave),
+            3 => Some(Self::Destroy),
+            4 => Some(Self::AcquireWriteLock),
+            5 => Some(Self::ReleaseWriteLock),
+            6 => Some(Self::AcquireReadLock),
+            7 => Some(Self::ReleaseReadLock),
             _ => None,
         }
     }
 }
 
 pub fn do_mempool_op(op: u32, poolid: u32, va: u32, page_count: u32) -> u32 {
-    let op = match MemPoolOp::from_u32(op) {
-        Some(op) => op,
-        None => return (-(MosError::Inval as i32)) as u32,
+    let Some(op) = MemPoolOp::from_u32(op) else {
+        return (-(MosError::Inval as i32)) as u32;
     };
     match op {
         MemPoolOp::Create => mempool_create(page_count),
@@ -93,12 +92,9 @@ fn mempool_create(page_count: u32) -> u32 {
         readers: Vec::new(),
     };
     for _ in 0..page_count {
-        let page = match page_alloc(true) {
-            Some(page) => page,
-            None => {
-                pool.pages.iter().for_each(|&page| try_recycle(page));
-                return (-(MosError::NoMem as i32)) as u32;
-            }
+        let Some(page) = page_alloc(true) else {
+            pool.pages.iter().for_each(|&page| try_recycle(page));
+            return (-(MosError::NoMem as i32)) as u32;
         };
         page_inc_ref(page);
         pool.pages.push(page);
@@ -163,22 +159,22 @@ fn mempool_acquire_write_lock(poolid: u32) -> u32 {
         if !pool.users.contains_key(&env.id) {
             return (-(MosError::Inval as i32)) as u32;
         }
-        match pool
+
+        if pool
             .write_mutex
             .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
+            .is_err()
         {
-            Ok(_) => (),
-            Err(_) => return (-(MosError::PoolBusy as i32)) as u32,
+            pool.read_mutex.store(false, Ordering::Relaxed);
+            return (-(MosError::PoolBusy as i32)) as u32;
         };
-        match pool
+        if pool
             .read_mutex
             .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
+            .is_err()
         {
-            Ok(_) => (),
-            Err(_) => {
-                pool.write_mutex.store(false, Ordering::Relaxed);
-                return (-(MosError::PoolBusy as i32)) as u32;
-            }
+            pool.write_mutex.store(false, Ordering::Relaxed);
+            return (-(MosError::PoolBusy as i32)) as u32;
         };
         if pool.write_lock || pool.read_lock > 0 {
             pool.write_mutex.store(false, Ordering::Relaxed);
@@ -194,16 +190,15 @@ fn mempool_acquire_write_lock(poolid: u32) -> u32 {
         if (va.0..va.0 + pool.page_count as usize * PAGE_SIZE)
             .step_by(PAGE_SIZE)
             .enumerate()
-            .try_fold((), |res, (i, va)| {
+            .try_fold((), |(), (i, va)| {
                 let va = VA(va);
                 let page = pool.pages[i];
-                match env.pgdir().insert(asid, page, va, flags) {
-                    Ok(()) => Ok(res),
-                    Err(_) => {
-                        warn!("mempool_acquire_write_lock: insert failed");
-                        (0..i).for_each(|j| env.pgdir().remove(asid, VA(va.0 + j * PAGE_SIZE)));
-                        Err(())
-                    }
+                if env.pgdir().insert(asid, page, va, flags).is_err() {
+                    warn!("mempool_acquire_write_lock: insert failed");
+                    (0..i).for_each(|j| env.pgdir().remove(asid, VA(va.0 + j * PAGE_SIZE)));
+                    Err(())
+                } else {
+                    Ok(())
                 }
             })
             .is_err()
@@ -257,27 +252,26 @@ fn mempool_acquire_read_lock(poolid: u32) -> u32 {
         if !pool.users.contains_key(&env.id) {
             return (-(MosError::Inval as i32)) as u32;
         }
-        match pool
+        if pool
             .write_mutex
             .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
+            .is_err()
         {
-            Ok(_) => (),
-            Err(_) => {
-                return (-(MosError::PoolBusy as i32)) as u32;
-            }
-        };
+            return (-(MosError::PoolBusy as i32)) as u32;
+        }
         if pool.write_lock {
             pool.write_mutex.store(false, Ordering::Relaxed);
             return (-(MosError::PoolBusy as i32)) as u32;
         }
         pool.write_mutex.store(false, Ordering::Relaxed);
-        match pool
+        if pool
             .read_mutex
             .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
+            .is_err()
         {
-            Ok(_) => (),
-            Err(_) => return (-(MosError::PoolBusy as i32)) as u32,
-        };
+            return (-(MosError::PoolBusy as i32)) as u32;
+        }
+
         pool.read_lock += 1;
         pool.readers.push(env.id);
         let asid = env.asid;
@@ -286,16 +280,15 @@ fn mempool_acquire_read_lock(poolid: u32) -> u32 {
         if (va.0..va.0 + pool.page_count as usize * PAGE_SIZE)
             .step_by(PAGE_SIZE)
             .enumerate()
-            .try_fold((), |res, (i, va)| {
+            .try_fold((), |(), (i, va)| {
                 let va = VA(va);
                 let page = pool.pages[i];
-                match env.pgdir().insert(asid, page, va, flags) {
-                    Ok(()) => Ok(res),
-                    Err(_) => {
-                        warn!("mempool_acquire_read_lock: insert failed");
-                        (0..i).for_each(|j| env.pgdir().remove(asid, VA(va.0 + j * PAGE_SIZE)));
-                        Err(())
-                    }
+                if env.pgdir().insert(asid, page, va, flags).is_err() {
+                    warn!("mempool_acquire_read_lock: insert failed");
+                    (0..i).for_each(|j| env.pgdir().remove(asid, VA(va.0 + j * PAGE_SIZE)));
+                    Err(())
+                } else {
+                    Ok(())
                 }
             })
             .is_err()
@@ -357,22 +350,18 @@ pub fn pool_remove_user_on_exit(env_id: usize) {
     for pool in unsafe { POOL_MANAGER.pools.values_mut() } {
         if pool.users.contains_key(&env_id) {
             pool.users.remove(&env_id);
-            match pool.write_mutex.compare_exchange(
-                false,
-                true,
-                Ordering::Relaxed,
-                Ordering::Relaxed,
-            ) {
-                Ok(_) => (),
-                Err(_) => {
-                    // TODO: find a better way to handle this
-                    // cause kernel itself to hang
-                    // maybe a watchdog is needed
-                    while pool.write_mutex.load(Ordering::Relaxed) {
-                        core::hint::spin_loop()
-                    }
-                    pool.write_mutex.store(true, Ordering::Relaxed);
+            if pool
+                .write_mutex
+                .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
+                .is_err()
+            {
+                // TODO: find a better way to handle this
+                // cause kernel itself to hang
+                // maybe a watchdog is needed
+                while pool.write_mutex.load(Ordering::Relaxed) {
+                    core::hint::spin_loop();
                 }
+                pool.write_mutex.store(true, Ordering::Relaxed);
             };
             if pool.write_lock && pool.writer == env_id {
                 pool.write_lock = false;
@@ -380,19 +369,15 @@ pub fn pool_remove_user_on_exit(env_id: usize) {
             }
             pool.write_mutex.store(false, Ordering::Relaxed);
 
-            match pool.read_mutex.compare_exchange(
-                false,
-                true,
-                Ordering::Relaxed,
-                Ordering::Relaxed,
-            ) {
-                Ok(_) => (),
-                Err(_) => {
-                    while pool.read_mutex.load(Ordering::Relaxed) {
-                        core::hint::spin_loop()
-                    }
-                    pool.read_mutex.store(true, Ordering::Relaxed);
+            if pool
+                .read_mutex
+                .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
+                .is_err()
+            {
+                while pool.read_mutex.load(Ordering::Relaxed) {
+                    core::hint::spin_loop();
                 }
+                pool.read_mutex.store(true, Ordering::Relaxed);
             };
             if pool.read_lock > 0 && pool.readers.contains(&env_id) {
                 pool.read_lock -= 1;

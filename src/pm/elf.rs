@@ -84,7 +84,7 @@ pub const PF_W: u32 = 1 << 1;
 pub type ElfMapperFn = fn(&mut Env, VA, usize, PteFlags, Option<&[u8]>) -> Result<(), MosError>;
 
 impl<'a> Elf32<'a> {
-    pub fn is_elf32_format(data: &[u8]) -> bool {
+    pub const fn is_elf32_format(data: &[u8]) -> bool {
         data.len() >= 5
             && data[0] == ELFMAG0
             && data[1] == ELFMAG1
@@ -93,11 +93,11 @@ impl<'a> Elf32<'a> {
             && data[4] == 1
     }
 
-    pub fn from_bytes(data: &'a [u8]) -> Self {
+    pub const fn from_bytes(data: &'a [u8]) -> Self {
         Self { binary: data }
     }
 
-    pub fn ehdr(&self) -> &Elf32Ehdr {
+    pub const fn ehdr(&self) -> &Elf32Ehdr {
         unsafe { &*(self.binary.as_ptr() as *const Elf32Ehdr) }
     }
 
@@ -132,13 +132,14 @@ pub fn elf_load_seg(
     let offset = va.0 - round_down!(va.0, PAGE_SIZE);
     if offset != 0 {
         let len = min(bin_size, PAGE_SIZE - offset);
-        map_page(env, va, offset, perm, Some(&bin[..len]))?
+        map_page(env, va, offset, perm, Some(&bin[..len]))?;
     }
 
-    let mut i: usize = 0;
-    if offset != 0 {
-        i = min(bin_size, PAGE_SIZE - offset);
-    }
+    let mut i: usize = if offset != 0 {
+        min(bin_size, PAGE_SIZE - offset)
+    } else {
+        0
+    };
 
     while i < bin_size {
         let len = min(sg_size - i, PAGE_SIZE);
@@ -169,7 +170,7 @@ pub fn load_icode_mapper(
                 data.as_ptr(),
                 (page.kaddr() + offset).0 as *mut u8,
                 data.len(),
-            )
+            );
         }
     }
     env.pgdir().insert(env.asid, page, va, perm)

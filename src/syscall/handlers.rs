@@ -196,7 +196,7 @@ pub unsafe fn sys_set_trapframe(envid: u32, tf: u32, _arg3: u32, _arg4: u32, _ar
             if env.id == ENV_MANAGER.curenv().unwrap().id {
                 ptr::copy_nonoverlapping(
                     tf as *const u8,
-                    Trapframe::from_memory(VA(KSTACKTOP - TF_SIZE)) as *mut u8,
+                    (KSTACKTOP - TF_SIZE) as *mut u8,
                     TF_SIZE,
                 );
                 (*(tf as *const Trapframe)).regs[2]
@@ -343,21 +343,21 @@ pub unsafe fn sys_read_dev(va: u32, pa: u32, len: u32, _arg4: u32, _arg5: u32) -
 ///
 /// Available operations:
 /// - `0`: Create a memory pool
-///     Parameter(s): page_count
+///     Parameter(s): `page_count`
 /// - '1': Join an existing memory pool
-///     Parameter(s): poolid, va, page_count
+///     Parameter(s): `poolid`, `va`, `page_count`
 /// - '2': Leave a memory pool
-///     Parameter(s): poolid
+///     Parameter(s): `poolid`
 /// - '3': Destroy a memory pool
-///     Parameter(s): poolid
+///     Parameter(s): `poolid`
 /// - '4': Acquire write access to a memory pool
-///     Parameter(s): poolid
+///     Parameter(s): `poolid`
 /// - '5': Release write access to a memory pool
-///     Parameter(s): poolid
+///     Parameter(s): `poolid`
 /// - '6': Acquire read access to a memory pool
-///     Parameter(s): poolid
+///     Parameter(s): `poolid`
 /// - '7': Release read access to a memory pool
-///     Parameter(s): poolid
+///     Parameter(s): `poolid`
 ///
 /// # Parameters
 ///

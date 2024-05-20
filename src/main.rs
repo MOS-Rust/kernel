@@ -36,7 +36,7 @@ global_asm!(include_str!("../asm/init/entry.S"));
 
 /// Kernel initialization function
 ///
-/// This function is the entry point of the kernel. It is called by _entry() in init/entry.S when the kernel starts and is responsible
+/// This function is the entry point of the kernel. It is called by ``_entry()`` in init/entry.S when the kernel starts and is responsible
 /// for initializing various modules of the kernel.
 ///
 #[no_mangle]
@@ -53,6 +53,7 @@ pub extern "C" fn kernel_init(
     exception::init();
     mm::init(ram_size);
     pm::init();
+    // env_create!(pool_test, "../pool_test.b"); 
     unsafe {
         schedule(true);
     }
@@ -61,7 +62,7 @@ pub extern "C" fn kernel_init(
 /// Clear the .bss section
 ///
 /// This function clears the `.bss` section of the kernel.
-/// All memory locations in the `.bss` section (i.e. from __start_bss to __end_bss) are set to 0 in this function.
+/// All memory locations in the `.bss` section (i.e. from ``__start_bss`` to ``__end_bss``) are set to 0 in this function.
 fn clear_bss() {
     extern "C" {
         static mut __start_bss: u8;
@@ -85,5 +86,5 @@ fn display_banner() {
     _|"""""|_|"""""|_|"""""| {======|_|"""""|_|"""""|_|"""""|_|"""""| 
     "`-0-0-'"`-0-0-'"`-0-0-'./o--000'"`-0-0-'"`-0-0-'"`-0-0-'"`-0-0-' 
     "#;
-    println!("{}", BANNER)
+    println!("{}", BANNER);
 }

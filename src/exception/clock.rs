@@ -1,6 +1,6 @@
 use core::arch::asm;
 
-const TIMER_INTERVAL: u32 = 500000;
+const TIMER_INTERVAL: u32 = 500_000;
 
 #[inline(always)]
 pub unsafe fn reset_kclock() {
@@ -10,5 +10,5 @@ pub unsafe fn reset_kclock() {
         "mtc0 $zero, $9",
         ".set at",
         in(reg) TIMER_INTERVAL,
-    )
+    );
 }

@@ -32,28 +32,28 @@ enum Syscall {
 }
 
 impl Syscall {
-    fn from_u32(num: u32) -> Self {
+    const fn from_u32(num: u32) -> Self {
         match num {
-            0 => Syscall::Putchar,
-            1 => Syscall::PrintConsole,
-            2 => Syscall::GetEnvId,
-            3 => Syscall::Yield,
-            4 => Syscall::EnvDestroy,
-            5 => Syscall::SetTlbModEntry,
-            6 => Syscall::MemAlloc,
-            7 => Syscall::MemMap,
-            8 => Syscall::MemUnmap,
-            9 => Syscall::Exofork,
-            10 => Syscall::SetEnvStatus,
-            11 => Syscall::SetTrapframe,
-            12 => Syscall::Panic,
-            13 => Syscall::IpcTrySend,
-            14 => Syscall::IpcRecv,
-            15 => Syscall::Getchar,
-            16 => Syscall::WriteDev,
-            17 => Syscall::ReadDev,
-            18 => Syscall::MempoolOp,
-            _ => Syscall::Unhandled,
+            0 => Self::Putchar,
+            1 => Self::PrintConsole,
+            2 => Self::GetEnvId,
+            3 => Self::Yield,
+            4 => Self::EnvDestroy,
+            5 => Self::SetTlbModEntry,
+            6 => Self::MemAlloc,
+            7 => Self::MemMap,
+            8 => Self::MemUnmap,
+            9 => Self::Exofork,
+            10 => Self::SetEnvStatus,
+            11 => Self::SetTrapframe,
+            12 => Self::Panic,
+            13 => Self::IpcTrySend,
+            14 => Self::IpcRecv,
+            15 => Self::Getchar,
+            16 => Self::WriteDev,
+            17 => Self::ReadDev,
+            18 => Self::MempoolOp,
+            _ => Self::Unhandled,
         }
     }
 }

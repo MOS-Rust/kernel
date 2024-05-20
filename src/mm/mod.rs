@@ -51,9 +51,7 @@ pub fn init(memsize: usize) {
 ///
 /// Panics if the memory size has already been set.
 unsafe fn set_memsize(memsize: usize) {
-    if MEMSIZE != 0 {
-        panic!("Memory size has been set.");
-    }
+    assert!(MEMSIZE == 0, "Memory size has been set.");
     MEMSIZE = memsize;
     PAGENUM = memsize / layout::PAGE_SIZE;
 }

@@ -108,7 +108,7 @@ pub fn read_char() -> char {
 
 /// Halts the system.
 ///
-/// This function writes a specific value to the FPGA_HALT address, causing the system to halt.
+/// This function writes a specific value to the `FPGA_HALT` address, causing the system to halt.
 /// If halting is not supported on the current platform, this function will loop indefinitely.
 pub fn halt() -> ! {
     unsafe {

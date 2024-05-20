@@ -18,8 +18,8 @@ pub struct IpcInfo {
 }
 
 impl IpcInfo {
-    pub const fn new() -> IpcInfo {
-        IpcInfo {
+    pub const fn new() -> Self {
+        Self {
             value: 0,
             from: 0,
             recving: IpcStatus::NotReceiving,

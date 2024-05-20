@@ -50,7 +50,7 @@ impl Log for Logger {
 /// - `trace`
 ///
 /// Usage:
-/// LOG_LEVEL=trace cargo run
+/// ``LOG_LEVEL=trace cargo run``
 pub fn init() {
     static LOGGER: Logger = Logger;
     log::set_logger(&LOGGER).unwrap();

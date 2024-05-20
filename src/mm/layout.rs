@@ -13,7 +13,7 @@
 //! - `PGSHIFT`: Page shift value (12).
 //! - `PDSHIFT`: Page directory shift value (22).
 //!
-//! # PteFlags
+//! # `PteFlags`
 //!
 //! The `PteFlags` bitflags struct represents the flags for a page table entry.
 //!
@@ -163,7 +163,7 @@ pub fn is_illegal_user_va_range(va: usize, len: usize) -> bool {
 }
 
 #[inline]
-pub fn is_dev_va_range(va: usize, len: usize) -> bool {
+pub const fn is_dev_va_range(va: usize, len: usize) -> bool {
     const CONOLE_ADDR_LEN: usize = 0x20;
     const IDE_ADDR_LEN: usize = 0x8;
     (va >= SERIAL_BASE && va + len <= SERIAL_BASE + CONOLE_ADDR_LEN)

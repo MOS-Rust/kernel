@@ -72,8 +72,8 @@ pub struct Env {
 }
 
 impl Env {
-    pub const fn new() -> Env {
-        Env {
+    pub const fn new() -> Self {
+        Self {
             tf: Trapframe::new(),
 
             __placeholder_1: [0; 2],
@@ -96,7 +96,7 @@ impl Env {
         }
     }
 
-    pub fn pos(&self) -> usize {
+    pub const fn pos(&self) -> usize {
         self.id & ((1 << 10) - 1)
     }
 
@@ -106,7 +106,7 @@ impl Env {
         }
     }
 
-    fn tracker(&self) -> EnvTracker {
+    const fn tracker(&self) -> EnvTracker {
         EnvTracker::new(self.pos())
     }
 
@@ -153,8 +153,8 @@ pub struct EnvTracker {
 }
 
 impl EnvTracker {
-    pub const fn new(pos: usize) -> EnvTracker {
-        EnvTracker { pos }
+    pub const fn new(pos: usize) -> Self {
+        Self { pos }
     }
 }
 
@@ -167,8 +167,8 @@ pub struct EnvManager {
 }
 
 impl EnvManager {
-    pub const fn new() -> EnvManager {
-        EnvManager {
+    pub const fn new() -> Self {
+        Self {
             base_pgdir: PageDirectory::empty(),
             free_list: RefCell::new(Vec::new()),
             schedule_list: RefCell::new(VecDeque::new()),
@@ -208,7 +208,7 @@ impl EnvManager {
                 VA(UENVS),
                 round!(size_of::<Envs>(), PAGE_SIZE),
                 PteFlags::G,
-            )
+            );
         }
         self.base_pgdir = base_pgdir;
         self.free_list = RefCell::new(free_list);
@@ -216,11 +216,7 @@ impl EnvManager {
     }
 
     pub fn curenv(&self) -> Option<&mut Env> {
-        if let Some(tracker) = self.cur {
-            Some(env_at(tracker.pos))
-        } else {
-            None
-        }
+        self.cur.map(|tracker| env_at(tracker.pos))
     }
 
     pub fn get_free_env(&self) -> Result<&mut Env, MosError> {
@@ -298,7 +294,7 @@ impl EnvManager {
         env
     }
 
-    pub fn env_free(&mut self, env: &mut Env) {
+    pub fn env_free(&self, env: &mut Env) {
         if let Some(curenv) = self.curenv() {
             if curenv.id != env.id && curenv.id != env.parent_id {
                 warn!(
@@ -360,11 +356,7 @@ impl EnvManager {
     }
 
     pub fn get_first(&self) -> Option<&mut Env> {
-        if let Some(tracker) = self.schedule_list.borrow().front() {
-            Some(env_at(tracker.pos))
-        } else {
-            None
-        }
+        self.schedule_list.borrow().front().map(|tracker| env_at(tracker.pos))
     }
 
     pub fn insert_to_end(&self, envid: usize) {
@@ -438,7 +430,7 @@ fn asid_free(asid: usize) {
     }
 }
 
-pub fn envx(id: usize) -> usize {
+pub const fn envx(id: usize) -> usize {
     id & ((1 << 10) - 1)
 }
 

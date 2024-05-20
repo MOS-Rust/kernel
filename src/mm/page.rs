@@ -1,4 +1,4 @@
-//! Page structure and PageAllocator for memory management
+//! Page structure and `PageAllocator` for memory management
 use super::{
     addr::{PA, PPN, VA},
     get_pagenum,
@@ -26,15 +26,15 @@ pub struct Page {
 impl Page {
     /// Construct a Page from ppn
     pub const fn new(ppn: PPN) -> Self {
-        Page { ppn }
+        Self { ppn }
     }
 
     /// Acquire page's ppn
-    pub fn ppn(self) -> PPN {
+    pub const fn ppn(self) -> PPN {
         self.ppn
     }
 
-    /// Acquire page's ref_count
+    /// Acquire page's `ref_count`
     pub fn ref_count(self) -> u16 {
         unsafe { PAGE_ALLOCATOR.tracker.ref_count(self.ppn).unwrap() }
     }
@@ -46,7 +46,7 @@ impl Page {
 
 impl From<PPN> for Page {
     fn from(value: PPN) -> Self {
-        Page { ppn: value }
+        Self { ppn: value }
     }
 }
 
@@ -58,7 +58,7 @@ impl From<Page> for PA {
 
 impl From<PA> for Page {
     fn from(value: PA) -> Self {
-        Page::new(value.into())
+        Self::new(value.into())
     }
 }
 
@@ -71,7 +71,7 @@ pub struct PageTracker {
 
 impl PageTracker {
     const fn new() -> Self {
-        PageTracker {
+        Self {
             ppn: PPN(0),
             size: 0,
             page_count: 0,
@@ -157,7 +157,7 @@ impl PageTracker {
 
 #[repr(C)]
 #[derive(Debug)]
-/// Tracker storing page's ref_count
+/// Tracker storing page's `ref_count`
 pub struct PageRc {
     __placeholder: [usize; 2],
     ref_count: u16,
@@ -165,25 +165,25 @@ pub struct PageRc {
 
 impl PageRc {
     /// Construct a tracker with no reference
-    fn new() -> PageRc {
-        PageRc {
+    const fn new() -> Self {
+        Self {
             __placeholder: [0; 2],
             ref_count: 0,
         }
     }
 
-    /// Acquire this tracker's ref_count
-    fn ref_count(&self) -> u16 {
+    /// Acquire this tracker's `ref_count`
+    const fn ref_count(&self) -> u16 {
         self.ref_count
     }
 
-    /// Increase tracker's ref_count
+    /// Increase tracker's `ref_count`
     fn inc_ref(&mut self) {
         self.ref_count += 1;
     }
 
-    /// Decrease tracker's ref_count
-    /// This function will NOT decrease ref_count
+    /// Decrease tracker's `ref_count`
+    /// This function will NOT decrease `ref_count`
     /// if it is less than 0
     fn dec_ref(&mut self) {
         if self.ref_count > 0 {
@@ -200,11 +200,11 @@ pub struct PageAllocator {
 }
 
 impl PageAllocator {
-    /// Construct a new PageAllocator
-    /// with empty pages and free_list
+    /// Construct a new `PageAllocator`
+    /// with empty pages and `free_list`
     const fn new() -> Self {
         const NEW_VEC: Vec<PPN> = Vec::new();
-        PageAllocator {
+        Self {
             tracker: PageTracker::new(),
             free_list: [NEW_VEC; ORDER],
         }
@@ -219,7 +219,7 @@ impl PageAllocator {
     ///
     /// # Note
     ///
-    /// PPNs in the range [0, current) are considered used and their ref_count is set to 1.
+    /// PPNs in the range [0, current) are considered used and their `ref_count` is set to 1.
     ///
     /// PPNS in the range [current, end) are considered free and are added to the free list.
     ///
@@ -254,7 +254,7 @@ impl PageAllocator {
         let order = size.trailing_zeros() as usize;
         for i in order..ORDER {
             if !self.free_list[i].is_empty() {
-                for j in (order + 1..i + 1).rev() {
+                for j in ((order + 1)..=i).rev() {
                     if let Some(ppn) = self.free_list[j].pop() {
                         self.free_list[j - 1].push(ppn);
                         self.free_list[j - 1].push(ppn + (1 << (j - 1)));
@@ -289,7 +289,7 @@ impl PageAllocator {
         while order < ORDER - 1 {
             let mut flag = false;
             let buddy = ppn.0 ^ (1 << order);
-            for block in self.free_list[order].iter() {
+            for block in &self.free_list[order] {
                 if block.0 == buddy {
                     flag = true;
                     break;
@@ -306,7 +306,7 @@ impl PageAllocator {
         }
     }
 
-    pub fn get_tracker_info(&self) -> (PPN, usize) {
+    pub const fn get_tracker_info(&self) -> (PPN, usize) {
         (self.tracker.ppn, self.tracker.page_count)
     }
 }
@@ -333,7 +333,7 @@ pub fn init() {
     unsafe { PAGE_ALLOCATOR.init(start, end) }
 }
 
-/// You should use page_alloc instead
+/// You should use `page_alloc` instead
 /// Utility function, alloc a page and return its ppn,
 /// return None if there's no free page,
 /// clear page if argument clear is set
@@ -355,41 +355,41 @@ pub fn page_alloc_contiguous(clear: bool, size: usize) -> Option<Page> {
     alloc(clear, size).map(Page::new)
 }
 
-/// You should use page_dealloc instead
+/// You should use `page_dealloc` instead
 /// Utility function, dealloc a page by its ppn,
-/// panic if its ref_count is not 0
+/// panic if its `ref_count` is not 0
 #[inline]
 fn dealloc(ppn: PPN, size: usize) {
     unsafe { PAGE_ALLOCATOR.dealloc(ppn, size) }
 }
 
 /// Utility function, dealloc a page,
-/// panic if its ref_count is not 0
+/// panic if its `ref_count` is not 0
 #[inline]
 pub fn page_dealloc(page: Page) {
-    dealloc(page.ppn(), 1)
+    dealloc(page.ppn(), 1);
 }
 
 #[inline]
 #[allow(dead_code)]
 pub fn page_dealloc_contiguous(page: Page, size: usize) {
-    dealloc(page.ppn(), size)
+    dealloc(page.ppn(), size);
 }
 
-/// Increase page's ref_count
+/// Increase page's `ref_count`
 #[inline]
 pub fn page_inc_ref(page: Page) {
     unsafe { PAGE_ALLOCATOR.tracker.inc_ref(page.ppn()) }
 }
 
-/// Decrease page's ref_count
+/// Decrease page's `ref_count`
 #[inline]
 pub fn page_dec_ref(page: Page) {
     unsafe { PAGE_ALLOCATOR.tracker.dec_ref(page.ppn()) }
 }
 
-/// decrease the ref_count of page
-/// if page's ref_count is set to 0, deallocate the page
+/// decrease the `ref_count` of page
+/// if page's `ref_count` is set to 0, deallocate the page
 pub fn try_recycle(page: Page) {
     match page.ref_count() {
         0 => {
@@ -407,6 +407,6 @@ pub fn try_recycle(page: Page) {
 
 /// Find the previous power of 2 of x
 #[inline]
-fn prev_power_of_2(x: usize) -> usize {
+const fn prev_power_of_2(x: usize) -> usize {
     1 << (usize::BITS - x.leading_zeros() - 1)
 }

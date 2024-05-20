@@ -41,40 +41,40 @@ pub struct PPN(pub usize);
 pub struct VPN(pub usize);
 
 impl Add<usize> for PA {
-    type Output = PA;
+    type Output = Self;
     fn add(self, rhs: usize) -> Self::Output {
-        PA(self.0 + rhs)
+        Self(self.0 + rhs)
     }
 }
 
 impl Add<usize> for VA {
-    type Output = VA;
+    type Output = Self;
     fn add(self, rhs: usize) -> Self::Output {
-        VA(self.0 + rhs)
+        Self(self.0 + rhs)
     }
 }
 
 impl From<PA> for PPN {
     fn from(pa: PA) -> Self {
-        PPN(pa.0 >> PGSHIFT)
+        Self(pa.0 >> PGSHIFT)
     }
 }
 
 impl From<PPN> for PA {
     fn from(ppn: PPN) -> Self {
-        PA(ppn.0 << PGSHIFT)
+        Self(ppn.0 << PGSHIFT)
     }
 }
 
 impl From<VA> for VPN {
     fn from(va: VA) -> Self {
-        VPN(va.0 >> PGSHIFT)
+        Self(va.0 >> PGSHIFT)
     }
 }
 
 impl From<VPN> for VA {
     fn from(vpn: VPN) -> Self {
-        VA(vpn.0 << PGSHIFT)
+        Self(vpn.0 << PGSHIFT)
     }
 }
 
@@ -88,23 +88,21 @@ impl PA {
     /// # Returns
     ///
     /// The kernel virtual address
-    pub fn kaddr(&self) -> VA {
-        let ppn = PPN::from(*self);
-        if ppn.0 >= get_pagenum() {
-            panic!("PA::kaddr: Invalid physical address");
-        }
+    pub fn kaddr(self) -> VA {
+        let ppn = PPN::from(self);
+        assert!(ppn.0 < get_pagenum(), "PA::kaddr: Invalid physical address");
         VA(self.0 + KSEG0)
     }
 }
 
 impl VA {
     /// Page Directory Index
-    pub fn pdx(&self) -> usize {
+    pub const fn pdx(self) -> usize {
         (self.0 >> PDSHIFT) & 0x3ff
     }
 
     /// Page Table Index
-    pub fn ptx(&self) -> usize {
+    pub const fn ptx(self) -> usize {
         (self.0 >> PGSHIFT) & 0x3ff
     }
 
@@ -117,53 +115,51 @@ impl VA {
     /// # Returns
     ///
     /// The physical address
-    pub fn paddr(&self) -> PA {
-        if self.0 < KSEG0 {
-            panic!("VA::paddr: Invalid virtual address");
-        }
+    pub fn paddr(self) -> PA {
+        assert!(self.0 >= KSEG0, "VA::paddr: Invalid virtual address");
         PA(self.0 - KSEG0)
     }
 
     /// Get the page table entry address from the virtual address
-    pub fn pte_addr(&self) -> VA {
-        VA(self.0 & !0xFFF)
+    pub const fn pte_addr(self) -> Self {
+        Self(self.0 & !0xFFF)
     }
 
     /// Get the pointer from the virtual address
-    pub fn as_ptr<T>(&self) -> *const T {
+    pub const fn as_ptr<T>(&self) -> *const T {
         self.0 as *const T
     }
 
     /// Get the mutable pointer from the virtual address
-    pub fn as_mut_ptr<T>(&self) -> *mut T {
+    pub const fn as_mut_ptr<T>(&self) -> *mut T {
         self.0 as *mut T
     }
 }
 
 impl Add<usize> for PPN {
-    type Output = PPN;
+    type Output = Self;
     fn add(self, rhs: usize) -> Self::Output {
-        PPN(self.0 + rhs)
+        Self(self.0 + rhs)
     }
 }
 
 impl Add<usize> for VPN {
-    type Output = VPN;
+    type Output = Self;
     fn add(self, rhs: usize) -> Self::Output {
-        VPN(self.0 + rhs)
+        Self(self.0 + rhs)
     }
 }
 
-impl Sub<PPN> for PPN {
+impl Sub<Self> for PPN {
     type Output = usize;
-    fn sub(self, rhs: PPN) -> Self::Output {
+    fn sub(self, rhs: Self) -> Self::Output {
         self.0 - rhs.0
     }
 }
 
-impl Sub<VPN> for VPN {
+impl Sub<Self> for VPN {
     type Output = usize;
-    fn sub(self, rhs: VPN) -> Self::Output {
+    fn sub(self, rhs: Self) -> Self::Output {
         self.0 - rhs.0
     }
 }
@@ -178,7 +174,7 @@ impl PPN {
     /// # Returns
     ///
     /// The kernel virtual address
-    pub fn kaddr(&self) -> VA {
-        PA::from(*self).kaddr()
+    pub fn kaddr(self) -> VA {
+        PA::from(self).kaddr()
     }
 }

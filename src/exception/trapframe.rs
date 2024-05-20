@@ -15,8 +15,8 @@ pub struct Trapframe {
 }
 
 impl Trapframe {
-    pub const fn new() -> Trapframe {
-        Trapframe {
+    pub const fn new() -> Self {
+        Self {
             regs: [0; 32],
             cp0_status: 0,
             hi: 0,
@@ -27,8 +27,8 @@ impl Trapframe {
         }
     }
 
-    pub unsafe fn from_memory(addr: VA) -> *mut Trapframe {
-        addr.0 as *mut Trapframe
+    pub const unsafe fn from_memory(addr: VA) -> *mut Self {
+        addr.0 as *mut Self
     }
 }
 
