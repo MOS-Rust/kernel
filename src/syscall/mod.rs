@@ -72,7 +72,7 @@ pub unsafe extern "C" fn do_syscall(tf: *mut Trapframe) {
 
     trace!("Syscall number: {}", syscall_num);
     trace!(
-        "Args: {:x} {:x} {:x} {:x} {:x}",
+        "Args: {:08x} {:08x} {:08x} {:08x} {:08x}",
         arg1,
         arg2,
         arg3,

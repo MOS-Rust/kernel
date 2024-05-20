@@ -23,6 +23,7 @@ extern "C" {
     fn _handle_mod();
     fn _handle_syscall();
     fn _handle_unhandled();
+    fn _handle_ade();
 }
 
 #[no_mangle]
@@ -40,11 +41,11 @@ pub static exception_handlers: [Vector; 32] = [
         handler: _handle_tlb,
     }, // 3: TLBS
     Vector {
-        handler: _handle_unhandled,
-    }, // 4
+        handler: _handle_ade,
+    }, // 4: AdEL
     Vector {
-        handler: _handle_unhandled,
-    }, // 5
+        handler: _handle_ade,
+    }, // 5: AdES
     Vector {
         handler: _handle_unhandled,
     }, // 6
@@ -137,7 +138,7 @@ pub fn init() {
             in(reg) addr_of_mut!(_tlb_refill_entry) as u32,
         );
         info!(
-            "Exception entry set at 0x{:x}",
+            "Exception entry set at 0x{:08x}",
             addr_of_mut!(_tlb_refill_entry) as u32
         );
     }
