@@ -263,7 +263,6 @@ fn mempool_acquire_read_lock(poolid: u32) -> u32 {
         {
             Ok(_) => (),
             Err(_) => {
-                pool.read_mutex.store(false, Ordering::Relaxed);
                 return (-(MosError::PoolBusy as i32)) as u32;
             }
         };
