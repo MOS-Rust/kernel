@@ -302,13 +302,13 @@ impl EnvManager {
         if let Some(curenv) = self.curenv() {
             if curenv.id != env.id && curenv.id != env.parent_id {
                 warn!(
-                    "{:x} try to free {:x} which is not its child",
+                    "{:08x} try to free {:08x} which is not its child",
                     curenv.id, env.id
                 );
             }
-            info!("{:x} free env {:x}", curenv.id, env.id);
+            info!("{:08x} free env {:08x}", curenv.id, env.id);
         } else {
-            info!("0 free env {:x}", env.id);
+            info!("kernel free env {:08x}", env.id);
         }
         for i in 0..VA(UTOP).pdx() {
             if !env.pgdir().pte_at(i).is_valid() {
@@ -341,7 +341,7 @@ impl EnvManager {
         self.env_free(env);
         if self.cur.is_some() && self.cur.unwrap().pos == env.pos() {
             self.cur = None;
-            info!("{:x}: I am killed ...", env.id);
+            info!("{:08x}: I am killed ...", env.id);
             schedule(true);
         }
     }
@@ -387,6 +387,10 @@ impl EnvManager {
 
     pub fn current_pgdir(&mut self) -> &mut PageDirectory {
         &mut self.cur_pgdir
+    }
+
+    pub fn clear_curenv(&mut self) {
+        self.cur = None;
     }
 }
 

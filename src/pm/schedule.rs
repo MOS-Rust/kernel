@@ -21,7 +21,7 @@ pub unsafe extern "C" fn schedule(env_yield: bool) -> ! {
     }
     COUNT -= 1;
     trace!(
-        "Scheduling env: {:x}, runs: {}",
+        "Scheduling env: {:08x}, runs: {}",
         env.as_ref().unwrap().id,
         env.as_ref().unwrap().runs
     );
