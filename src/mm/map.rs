@@ -5,7 +5,7 @@ use crate::error::MosError;
 use super::{
     addr::{PA, PPN, VA},
     layout::{PteFlags, PTE_HARDFLAG_SHIFT},
-    page::{page_alloc, page_dealloc, page_dec_ref, page_inc_ref, Page},
+    page::{page_alloc, page_inc_ref, try_recycle, Page},
     tlb::tlb_invalidate,
 };
 
@@ -75,10 +75,10 @@ impl PageTable {
     /// # Returns
     ///
     /// A tuple containing the page table and the page
-    pub fn init() -> Result<(PageTable, Page), MosError> {
+    pub fn init() -> Result<(PageDirectory, Page), MosError> {
         if let Some(page) = page_alloc(true) {
             page_inc_ref(page);
-            Ok((PageTable { page }, page))
+            Ok((PageDirectory { page }, page))
         } else {
             Err(MosError::NoMem)
         }
@@ -188,37 +188,3 @@ impl PageTable {
 }
 
 pub type PageDirectory = PageTable;
-
-impl PageDirectory {
-    /// convert virtual address va to physical address pa in current page directory
-    pub fn va2pa(&self, va: VA) -> Option<PA> {
-        let base_pd = self.page.kaddr().as_mut_ptr::<Pte>();
-        let pde = unsafe { &*base_pd.add(va.pdx()) };
-        if !pde.flags().contains(PteFlags::V) {
-            return None;
-        }
-        let base_pt = pde.addr().kaddr().as_mut_ptr::<Pte>();
-        let pte = unsafe { &*base_pt.add(va.ptx()) };
-        if !pte.flags().contains(PteFlags::V) {
-            return None;
-        }
-        Some(pte.addr())
-    }
-}
-
-/// decrease the ref_count of page
-/// if page's ref_count is set to 0, deallocate the page
-pub fn try_recycle(page: Page) {
-    match page.ref_count() {
-        0 => {
-            panic!("try_recycle: page is not referenced.");
-        }
-        1 => {
-            page_dec_ref(page);
-            page_dealloc(page);
-        }
-        _ => {
-            page_dec_ref(page);
-        }
-    }
-}

@@ -1,6 +1,6 @@
 use log::warn;
 
-use crate::pm::{schedule::schedule, ENV_MANAGER};
+use crate::pm::{schedule, ENV_MANAGER};
 
 use super::trapframe::Trapframe;
 

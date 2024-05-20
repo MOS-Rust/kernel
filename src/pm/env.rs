@@ -6,8 +6,7 @@ use super::{
 use crate::{
     error::MosError,
     exception::{
-        clock::reset_kclock,
-        trapframe::{Trapframe, TF_SIZE},
+        reset_kclock, Trapframe, TF_SIZE,
     },
     mm::{
         addr::{PA, PPN, VA},
@@ -17,10 +16,11 @@ use crate::{
         },
         map::{PageDirectory, Pte},
         page::{page_dec_ref, Page, PAGE_ALLOCATOR},
-        tlb::tlb_invalidate,
+        tlb_invalidate,
     },
     platform::cp0reg::{STATUS_EXL, STATUS_IE, STATUS_IM7, STATUS_UM},
-    round, syscall::pool_remove_user_on_exit,
+    round,
+    syscall::pool_remove_user_on_exit,
 };
 use alloc::{collections::VecDeque, vec::Vec};
 use core::{
@@ -386,7 +386,7 @@ impl EnvManager {
         self.schedule_list.borrow_mut().push_back(tracker);
     }
 
-    pub fn current_pgdir(&mut self) -> &mut PageDirectory {
+    pub fn cur_pgdir(&mut self) -> &mut PageDirectory {
         &mut self.cur_pgdir
     }
 

@@ -1,17 +1,15 @@
-use core::sync::atomic::{AtomicBool, Ordering};
-
-use alloc::{collections::BTreeMap, vec::Vec};
-use log::warn;
-
 use crate::{
     error::MosError,
     mm::{
         addr::VA,
         layout::{is_illegal_user_va_range, PteFlags, PAGE_SIZE},
-        map::try_recycle,
-        page::{page_alloc, page_inc_ref, Page},
+        page::{page_alloc, page_inc_ref, try_recycle, Page},
     },
+    pm::ENV_MANAGER,
 };
+use alloc::{collections::BTreeMap, vec::Vec};
+use core::sync::atomic::{AtomicBool, Ordering};
+use log::warn;
 
 static mut POOL_MANAGER: MemPoolManager = MemPoolManager {
     current_id: 1,
@@ -116,7 +114,7 @@ fn mempool_join(poolid: u32, va: u32, page_count: u32) -> u32 {
     if is_illegal_user_va_range(va as usize, page_count as usize * PAGE_SIZE) {
         return (-(MosError::Inval as i32)) as u32;
     }
-    let env = unsafe { crate::pm::ENV_MANAGER.curenv().unwrap() };
+    let env = unsafe { ENV_MANAGER.curenv().unwrap() };
     if let Some(pool) = unsafe { POOL_MANAGER.pools.get_mut(&poolid) } {
         if pool.page_count != page_count || pool.users.contains_key(&env.id) {
             return (-(MosError::Inval as i32)) as u32;
@@ -129,7 +127,7 @@ fn mempool_join(poolid: u32, va: u32, page_count: u32) -> u32 {
 }
 
 fn mempool_leave(poolid: u32) -> u32 {
-    let env = unsafe { crate::pm::ENV_MANAGER.curenv().unwrap() };
+    let env = unsafe { ENV_MANAGER.curenv().unwrap() };
     if let Some(pool) = unsafe { POOL_MANAGER.pools.get_mut(&poolid) } {
         if !pool.users.contains_key(&env.id) {
             return (-(MosError::Inval as i32)) as u32;
@@ -160,16 +158,22 @@ fn mempool_destroy(poolid: u32) -> u32 {
 }
 
 fn mempool_acquire_write_lock(poolid: u32) -> u32 {
-    let env = unsafe { crate::pm::ENV_MANAGER.curenv().unwrap() };
+    let env = unsafe { ENV_MANAGER.curenv().unwrap() };
     if let Some(pool) = unsafe { POOL_MANAGER.pools.get_mut(&poolid) } {
         if !pool.users.contains_key(&env.id) {
             return (-(MosError::Inval as i32)) as u32;
         }
-        match pool.write_mutex.compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed) {
+        match pool
+            .write_mutex
+            .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
+        {
             Ok(_) => (),
             Err(_) => return (-(MosError::PoolBusy as i32)) as u32,
         };
-        match pool.read_mutex.compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed) {
+        match pool
+            .read_mutex
+            .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
+        {
             Ok(_) => (),
             Err(_) => {
                 pool.write_mutex.store(false, Ordering::Relaxed);
@@ -217,12 +221,15 @@ fn mempool_acquire_write_lock(poolid: u32) -> u32 {
 }
 
 fn mempool_release_write_lock(poolid: u32) -> u32 {
-    let env = unsafe { crate::pm::ENV_MANAGER.curenv().unwrap() };
+    let env = unsafe { ENV_MANAGER.curenv().unwrap() };
     if let Some(pool) = unsafe { POOL_MANAGER.pools.get_mut(&poolid) } {
         if !pool.users.contains_key(&env.id) {
             return (-(MosError::Inval as i32)) as u32;
         }
-        match pool.write_mutex.compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed) {
+        match pool
+            .write_mutex
+            .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
+        {
             Ok(_) => (),
             Err(_) => return (-(MosError::PoolBusy as i32)) as u32,
         };
@@ -245,12 +252,15 @@ fn mempool_release_write_lock(poolid: u32) -> u32 {
 }
 
 fn mempool_acquire_read_lock(poolid: u32) -> u32 {
-    let env = unsafe { crate::pm::ENV_MANAGER.curenv().unwrap() };
+    let env = unsafe { ENV_MANAGER.curenv().unwrap() };
     if let Some(pool) = unsafe { POOL_MANAGER.pools.get_mut(&poolid) } {
         if !pool.users.contains_key(&env.id) {
             return (-(MosError::Inval as i32)) as u32;
         }
-        match pool.write_mutex.compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed) {
+        match pool
+            .write_mutex
+            .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
+        {
             Ok(_) => (),
             Err(_) => {
                 pool.read_mutex.store(false, Ordering::Relaxed);
@@ -262,7 +272,10 @@ fn mempool_acquire_read_lock(poolid: u32) -> u32 {
             return (-(MosError::PoolBusy as i32)) as u32;
         }
         pool.write_mutex.store(false, Ordering::Relaxed);
-        match pool.read_mutex.compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed) {
+        match pool
+            .read_mutex
+            .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
+        {
             Ok(_) => (),
             Err(_) => return (-(MosError::PoolBusy as i32)) as u32,
         };
@@ -301,12 +314,15 @@ fn mempool_acquire_read_lock(poolid: u32) -> u32 {
 }
 
 fn mempool_release_read_lock(poolid: u32) -> u32 {
-    let env = unsafe { crate::pm::ENV_MANAGER.curenv().unwrap() };
+    let env = unsafe { ENV_MANAGER.curenv().unwrap() };
     if let Some(pool) = unsafe { POOL_MANAGER.pools.get_mut(&poolid) } {
         if !pool.users.contains_key(&env.id) {
             return (-(MosError::Inval as i32)) as u32;
         }
-        match pool.read_mutex.compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed) {
+        match pool
+            .read_mutex
+            .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
+        {
             Ok(_) => (),
             Err(_) => return (-(MosError::PoolBusy as i32)) as u32,
         };
@@ -342,13 +358,20 @@ pub fn pool_remove_user_on_exit(env_id: usize) {
     for pool in unsafe { POOL_MANAGER.pools.values_mut() } {
         if pool.users.contains_key(&env_id) {
             pool.users.remove(&env_id);
-            match pool.write_mutex.compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed) {
+            match pool.write_mutex.compare_exchange(
+                false,
+                true,
+                Ordering::Relaxed,
+                Ordering::Relaxed,
+            ) {
                 Ok(_) => (),
                 Err(_) => {
                     // TODO: find a better way to handle this
                     // cause kernel itself to hang
                     // maybe a watchdog is needed
-                    while pool.write_mutex.load(Ordering::Relaxed) { core::hint::spin_loop() }
+                    while pool.write_mutex.load(Ordering::Relaxed) {
+                        core::hint::spin_loop()
+                    }
                     pool.write_mutex.store(true, Ordering::Relaxed);
                 }
             };
@@ -358,10 +381,17 @@ pub fn pool_remove_user_on_exit(env_id: usize) {
             }
             pool.write_mutex.store(false, Ordering::Relaxed);
 
-            match pool.read_mutex.compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed) {
+            match pool.read_mutex.compare_exchange(
+                false,
+                true,
+                Ordering::Relaxed,
+                Ordering::Relaxed,
+            ) {
                 Ok(_) => (),
                 Err(_) => {
-                    while pool.read_mutex.load(Ordering::Relaxed) { core::hint::spin_loop() }
+                    while pool.read_mutex.load(Ordering::Relaxed) {
+                        core::hint::spin_loop()
+                    }
                     pool.read_mutex.store(true, Ordering::Relaxed);
                 }
             };

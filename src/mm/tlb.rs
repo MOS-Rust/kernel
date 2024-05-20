@@ -1,16 +1,14 @@
-use core::{arch::global_asm, mem::size_of};
-
-use crate::{
-    exception::trapframe::{Trapframe, TF_SIZE},
-    pm::ENV_MANAGER,
-};
-
 use super::{
     addr::{VA, VPN},
     layout::{PteFlags, PAGE_SIZE, UENVS, ULIM, UPAGES, USTACKTOP, UTEMP, UVPT, UXSTACKTOP},
     map::{PageDirectory, Pte},
     page::page_alloc,
 };
+use crate::{
+    exception::{Trapframe, TF_SIZE},
+    pm::ENV_MANAGER,
+};
+use core::{arch::global_asm, mem::size_of};
 
 global_asm!(include_str!("../../asm/mm/tlb.S"));
 
@@ -60,11 +58,11 @@ pub unsafe extern "C" fn do_tlb_refill(pentrylo: *mut u32, va: u32, asid: u32) {
 
     let pte_base: *mut Pte;
     loop {
-        if let Some((pte, _)) = ENV_MANAGER.current_pgdir().lookup(va) {
+        if let Some((pte, _)) = ENV_MANAGER.cur_pgdir().lookup(va) {
             pte_base = ((pte as *mut Pte as usize) & !0x7) as *mut Pte;
             break;
         }
-        passive_alloc(va, ENV_MANAGER.current_pgdir(), asid);
+        passive_alloc(va, ENV_MANAGER.cur_pgdir(), asid);
     }
     pentrylo.write_volatile((*pte_base).as_entrylo());
     pentrylo
@@ -82,7 +80,7 @@ pub unsafe extern "C" fn do_tlb_mod(tf: *mut Trapframe) {
     (*tf).regs[29] -= TF_SIZE as u32;
     *((*tf).regs[29] as *mut Trapframe) = tmp_tf;
     let _ = ENV_MANAGER
-        .current_pgdir()
+        .cur_pgdir()
         .lookup(VA((*tf).cp0_badvaddr as usize));
     if ENV_MANAGER.curenv().unwrap().user_tlb_mod_entry != 0 {
         (*tf).regs[4] = (*tf).regs[29];

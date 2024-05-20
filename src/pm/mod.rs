@@ -1,11 +1,14 @@
+mod elf;
+mod env;
+mod ipc;
+mod schedule;
+
 use log::info;
 
-use self::env::EnvManager;
-
-mod elf;
-pub mod env;
-pub mod ipc;
-pub mod schedule;
+use env::EnvManager;
+pub use env::EnvStatus;
+pub use ipc::IpcStatus;
+pub use schedule::schedule;
 
 pub static mut ENV_MANAGER: EnvManager = EnvManager::new();
 

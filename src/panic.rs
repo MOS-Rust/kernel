@@ -54,7 +54,7 @@ fn panic(info: &core::panic::PanicInfo) -> ! {
         println!("envid: {:08x}", envid);
         println!(
             "cur_pgdir: 0x{:08x}",
-            crate::pm::ENV_MANAGER.current_pgdir().page.kaddr().0
+            crate::pm::ENV_MANAGER.cur_pgdir().page.kaddr().0
         );
     }
     match option_env!("MOS_HANG_ON_PANIC") {

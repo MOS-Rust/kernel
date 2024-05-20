@@ -1,14 +1,11 @@
 mod handlers;
 mod mempool;
 
+use crate::{error::MosError, exception::Trapframe};
 use core::mem::size_of;
-
 use log::trace;
 
 pub use mempool::pool_remove_user_on_exit;
-
-// use log::debug;
-use crate::{error::MosError, exception::trapframe::Trapframe};
 
 // enum Syscall {
 //     Putchar        = 0,

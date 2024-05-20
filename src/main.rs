@@ -11,7 +11,6 @@
 #![feature(asm_const)]
 
 extern crate alloc;
-
 #[macro_use]
 extern crate bitflags;
 mod console;
@@ -24,17 +23,14 @@ mod panic;
 mod platform;
 mod pm;
 mod syscall;
-mod test;
 
 use core::{
     arch::global_asm,
     include_str,
     ptr::{addr_of_mut, write_bytes},
 };
-
 use log::info;
-
-use crate::pm::schedule::schedule;
+use pm::schedule;
 
 global_asm!(include_str!("../asm/init/entry.S"));
 
@@ -57,6 +53,7 @@ pub extern "C" fn kernel_init(
     exception::init();
     mm::init(ram_size);
     pm::init();
+    env_create!(pool_test, "../pool_test.b", 1);
     unsafe {
         schedule(true);
     }

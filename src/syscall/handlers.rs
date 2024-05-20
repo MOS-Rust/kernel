@@ -1,24 +1,24 @@
-use core::ptr;
-
-use alloc::string::String;
-use log::info;
-
+use super::mempool::do_mempool_op;
 use crate::{
     error::MosError,
-    exception::trapframe::{Trapframe, TF_SIZE},
+    exception::{Trapframe, TF_SIZE},
     mm::{
         addr::VA,
-        layout::{is_dev_va_range, is_illegal_user_va, is_illegal_user_va_range, PteFlags, KSTACKTOP, UTOP},
+        layout::{
+            is_dev_va_range, is_illegal_user_va, is_illegal_user_va_range, PteFlags, KSTACKTOP,
+            UTOP,
+        },
         page::{page_alloc, page_dealloc},
     },
     platform::{
         ioread_byte, ioread_half, ioread_word, iowrite_byte, iowrite_half, iowrite_word,
         print_char, read_char,
     },
-    pm::{env::EnvStatus, ipc::IpcStatus, schedule::schedule, ENV_MANAGER},
+    pm::{schedule, EnvStatus, IpcStatus, ENV_MANAGER},
 };
-
-use super::mempool::do_mempool_op;
+use alloc::string::String;
+use core::ptr;
+use log::info;
 
 pub fn sys_putchar(char: u32, _arg2: u32, _arg3: u32, _arg4: u32, _arg5: u32) -> u32 {
     print_char(char as u8 as char);
@@ -340,7 +340,7 @@ pub unsafe fn sys_read_dev(va: u32, pa: u32, len: u32, _arg4: u32, _arg5: u32) -
 }
 
 /// Operations on memory pools
-/// 
+///
 /// Available operations:
 /// - `0`: Create a memory pool
 ///     Parameter(s): page_count
@@ -348,7 +348,7 @@ pub unsafe fn sys_read_dev(va: u32, pa: u32, len: u32, _arg4: u32, _arg5: u32) -
 ///     Parameter(s): poolid, va, page_count
 /// - '2': Leave a memory pool
 ///     Parameter(s): poolid
-/// - '3': Destroy a memory pool 
+/// - '3': Destroy a memory pool
 ///     Parameter(s): poolid
 /// - '4': Acquire write access to a memory pool
 ///     Parameter(s): poolid
@@ -358,15 +358,15 @@ pub unsafe fn sys_read_dev(va: u32, pa: u32, len: u32, _arg4: u32, _arg5: u32) -
 ///     Parameter(s): poolid
 /// - '7': Release read access to a memory pool
 ///     Parameter(s): poolid
-/// 
+///
 /// # Parameters
-/// 
+///
 /// - `op`: The operation to be performed
 /// - `poolid`: The ID of the memory pool
 /// - `va`: The virtual address to be mapped to the pool
 /// - `page_count`: The number of pages to be allocated
-/// 
-/// 
+///
+///
 pub fn sys_mempool_op(op: u32, poolid: u32, va: u32, page_count: u32, _arg5: u32) -> u32 {
     do_mempool_op(op, poolid, va, page_count)
 }

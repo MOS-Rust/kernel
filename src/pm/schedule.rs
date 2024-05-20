@@ -1,6 +1,5 @@
+use super::ENV_MANAGER;
 use log::trace;
-
-use crate::pm::ENV_MANAGER;
 
 #[no_mangle]
 pub unsafe extern "C" fn schedule(env_yield: bool) -> ! {

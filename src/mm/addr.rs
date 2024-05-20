@@ -9,11 +9,14 @@
 //!
 //! The module also provides conversion functions between these types, as well as arithmetic operations on them.
 
-use core::cmp::{Eq, Ord, PartialEq};
-use core::ops::{Add, Sub};
-
-use super::get_pagenum;
-use super::layout::{KSEG0, PDSHIFT, PGSHIFT};
+use super::{
+    get_pagenum,
+    layout::{KSEG0, PDSHIFT, PGSHIFT},
+};
+use core::{
+    cmp::{Eq, Ord, PartialEq},
+    ops::{Add, Sub},
+};
 
 /// Physical Address
 #[repr(C)]

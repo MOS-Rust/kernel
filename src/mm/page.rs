@@ -1,17 +1,15 @@
 //! Page structure and PageAllocator for memory management
-use crate::mm::addr::VA;
+use super::{
+    addr::{PA, PPN, VA},
+    get_pagenum,
+    layout::PAGE_SIZE,
+};
 use alloc::vec::Vec;
 use core::{
     mem::size_of,
     ptr::{addr_of_mut, write_bytes},
 };
 use log::trace;
-
-use super::{
-    addr::{PA, PPN},
-    get_pagenum,
-    layout::PAGE_SIZE,
-};
 
 // log_2 (512M / PAGE_SIZE) = 17
 const ORDER: usize = 32;
@@ -388,6 +386,23 @@ pub fn page_inc_ref(page: Page) {
 #[inline]
 pub fn page_dec_ref(page: Page) {
     unsafe { PAGE_ALLOCATOR.tracker.dec_ref(page.ppn()) }
+}
+
+/// decrease the ref_count of page
+/// if page's ref_count is set to 0, deallocate the page
+pub fn try_recycle(page: Page) {
+    match page.ref_count() {
+        0 => {
+            panic!("try_recycle: page is not referenced.");
+        }
+        1 => {
+            page_dec_ref(page);
+            page_dealloc(page);
+        }
+        _ => {
+            page_dec_ref(page);
+        }
+    }
 }
 
 /// Find the previous power of 2 of x

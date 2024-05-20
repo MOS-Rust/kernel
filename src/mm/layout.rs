@@ -42,7 +42,10 @@
 //!
 //! For more information, refer to the MOS `include/mmu.h` file.
 
-use crate::{const_export_usize, platform::malta::{IDE_BASE, SERIAL_BASE}};
+use crate::{
+    const_export_usize,
+    platform::malta::{IDE_BASE, SERIAL_BASE},
+};
 
 /// Maximum number of Address Space Identifiers(ASIDs)
 pub const NASID: usize = 256;

@@ -1,13 +1,14 @@
-use core::{cmp::min, ptr::copy_nonoverlapping};
-
-use crate::{mm::layout::PteFlags, round_down};
-
+use super::env::Env;
 use crate::{
     error::MosError,
-    mm::{addr::VA, layout::PAGE_SIZE, page::page_alloc},
+    mm::{
+        addr::VA,
+        layout::{PteFlags, PAGE_SIZE},
+        page::page_alloc,
+    },
+    round_down,
 };
-
-use super::env::Env;
+use core::{cmp::min, ptr::copy_nonoverlapping};
 
 pub const EI_INDENT: usize = 16;
 
