@@ -20,7 +20,7 @@ use crate::{
         tlb::tlb_invalidate,
     },
     platform::cp0reg::{STATUS_EXL, STATUS_IE, STATUS_IM7, STATUS_UM},
-    round,
+    round, syscall::pool_remove_user_on_exit,
 };
 use alloc::{collections::VecDeque, vec::Vec};
 use core::{
@@ -327,6 +327,7 @@ impl EnvManager {
             page_dec_ref(pa.into());
             tlb_invalidate(env.asid, VA(UVPT + (i << PGSHIFT)));
         }
+        pool_remove_user_on_exit(env.id);
         page_dec_ref(env.pgdir().page);
         asid_free(env.asid);
         tlb_invalidate(env.asid, VA(UVPT + (VA(UVPT).pdx() << PGSHIFT)));

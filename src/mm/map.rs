@@ -181,25 +181,8 @@ impl PageTable {
     pub fn remove(&self, asid: usize, va: VA) {
         if let Some((pte, page)) = self.lookup(va) {
             tlb_invalidate(asid, va);
-            PageTable::try_recycle(page);
+            try_recycle(page);
             *pte = Pte::empty();
-        }
-    }
-
-    /// decrease the ref_count of page
-    /// if page's ref_count is set to 0, deallocate the page
-    pub fn try_recycle(page: Page) {
-        match page.ref_count() {
-            0 => {
-                panic!("PageTable::try_recycle: page is not referenced.");
-            }
-            1 => {
-                page_dec_ref(page);
-                page_dealloc(page);
-            }
-            _ => {
-                page_dec_ref(page);
-            }
         }
     }
 }
@@ -220,5 +203,22 @@ impl PageDirectory {
             return None;
         }
         Some(pte.addr())
+    }
+}
+
+/// decrease the ref_count of page
+/// if page's ref_count is set to 0, deallocate the page
+pub fn try_recycle(page: Page) {
+    match page.ref_count() {
+        0 => {
+            panic!("try_recycle: page is not referenced.");
+        }
+        1 => {
+            page_dec_ref(page);
+            page_dealloc(page);
+        }
+        _ => {
+            page_dec_ref(page);
+        }
     }
 }

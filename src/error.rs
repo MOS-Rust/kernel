@@ -20,7 +20,7 @@ pub enum MosError {
     NoDisk,
     /// Too many files are open
     MaxOpen,
-    /// File or block not found
+    /// File or block or pool not found
     NotFound,
     /// Bad path
     BadPath,
@@ -28,4 +28,8 @@ pub enum MosError {
     FileExists,
     /// File not a valid executable
     NotExec,
+    /// Another kind of pool operation is in progress
+    PoolBusy,
+    /// Did not gracefully release pool when leaving
+    PoolNotReleased,
 }
