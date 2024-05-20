@@ -73,7 +73,7 @@ pub fn do_mempool_op(op: u32, poolid: u32, va: u32, page_count: u32) -> u32 {
         MemPoolOp::Destroy => mempool_destroy(poolid),
         MemPoolOp::AcquireWriteLock => mempool_acquire_write_lock(poolid),
         MemPoolOp::ReleaseWriteLock => mempool_release_write_lock(poolid),
-        MemPoolOp::AcquireReadLock => mempool_achuire_read_lock(poolid),
+        MemPoolOp::AcquireReadLock => mempool_acquire_read_lock(poolid),
         MemPoolOp::ReleaseReadLock => mempool_release_read_lock(poolid),
     }
 }
@@ -218,7 +218,7 @@ fn mempool_release_write_lock(poolid: u32) -> u32 {
     }
 }
 
-fn mempool_achuire_read_lock(poolid: u32) -> u32 {
+fn mempool_acquire_read_lock(poolid: u32) -> u32 {
     let env = unsafe { crate::pm::ENV_MANAGER.curenv().unwrap() };
     if let Some(pool) = unsafe { POOL_MANAGER.pools.get_mut(&poolid) } {
         if !pool.users.contains_key(&env.id) {
