@@ -42,7 +42,7 @@
 //!
 //! For more information, refer to the MOS `include/mmu.h` file.
 
-use crate::const_export_usize;
+use crate::{const_export_usize, platform::malta::{IDE_BASE, SERIAL_BASE}};
 
 /// Maximum number of Address Space Identifiers(ASIDs)
 pub const NASID: usize = 256;
@@ -145,3 +145,24 @@ pub const USTACKTOP: usize = UTOP - 2 * PTMAP;
 pub const UTEXT: usize = PDMAP;
 pub const UCOW: usize = UTEXT - PTMAP;
 pub const UTEMP: usize = UCOW - PTMAP;
+
+#[inline]
+pub fn is_illegal_user_va(va: usize) -> bool {
+    !(UTEMP..UTOP).contains(&va)
+}
+
+#[inline]
+pub fn is_illegal_user_va_range(va: usize, len: usize) -> bool {
+    if len == 0 {
+        return false;
+    }
+    va < UTEMP || va.checked_add(len).is_none() || va.checked_add(len).unwrap() > UTOP
+}
+
+#[inline]
+pub fn is_dev_va_range(va: usize, len: usize) -> bool {
+    const CONOLE_ADDR_LEN: usize = 0x20;
+    const IDE_ADDR_LEN: usize = 0x8;
+    (va >= SERIAL_BASE && va + len <= SERIAL_BASE + CONOLE_ADDR_LEN)
+        || (va >= IDE_BASE && va + len <= IDE_BASE + IDE_ADDR_LEN)
+}

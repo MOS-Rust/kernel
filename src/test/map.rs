@@ -1,6 +1,6 @@
 use log::debug;
 
-use crate::mm::{addr::{PPN, VA}, layout::PteFlags, map::{PageTable, Pte}, page::{page_alloc, page_dealloc, Page}};
+use crate::mm::{addr::{PPN, VA}, layout::PteFlags, map::{try_recycle, PageTable, Pte}, page::{page_alloc, page_dealloc, Page}};
 
 
 pub fn alloc_test() {
@@ -96,7 +96,7 @@ pub fn mapping_test() {
     page_dealloc(page0);
 
     // Free resources
-    PageTable::try_recycle(pde.ppn().into());
-    PageTable::try_recycle(pd_page);
+    try_recycle(pde.ppn().into());
+    try_recycle(pd_page);
     debug!("Mapping test passed!");
 }

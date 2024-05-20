@@ -1,8 +1,11 @@
 mod handlers;
+mod mempool;
 
 use core::mem::size_of;
 
 use log::trace;
+
+pub use mempool::pool_remove_user_on_exit;
 
 // use log::debug;
 use crate::{error::MosError, exception::trapframe::Trapframe};
@@ -31,7 +34,7 @@ use crate::{error::MosError, exception::trapframe::Trapframe};
 
 type SyscallHandler = unsafe fn(u32, u32, u32, u32, u32) -> u32;
 
-const SYSCALL_NUM: usize = 18;
+const SYSCALL_NUM: usize = 19;
 
 const HANDLER_TABLE: [SyscallHandler; SYSCALL_NUM] = [
     /* 00 */ handlers::sys_putchar,
@@ -52,6 +55,7 @@ const HANDLER_TABLE: [SyscallHandler; SYSCALL_NUM] = [
     /* 15 */ handlers::sys_getchar,
     /* 16 */ handlers::sys_write_dev,
     /* 17 */ handlers::sys_read_dev,
+    /* 18 */ handlers::sys_mempool_op,
 ];
 
 #[no_mangle]

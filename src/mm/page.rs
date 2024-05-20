@@ -148,6 +148,7 @@ impl PageTracker {
     }
 
     fn dec_ref(&mut self, ppn: PPN) {
+        trace!("PageTracker::dec_ref: ppn = {:?}", ppn);
         assert!(ppn.0 < self.size);
         unsafe {
             let ptr = self.ppn.kaddr().as_mut_ptr::<PageRc>().add(ppn.0);

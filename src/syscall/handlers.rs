@@ -8,16 +8,17 @@ use crate::{
     exception::trapframe::{Trapframe, TF_SIZE},
     mm::{
         addr::VA,
-        layout::{PteFlags, KSTACKTOP, UTEMP, UTOP},
+        layout::{is_dev_va_range, is_illegal_user_va, is_illegal_user_va_range, PteFlags, KSTACKTOP, UTOP},
         page::{page_alloc, page_dealloc},
     },
     platform::{
         ioread_byte, ioread_half, ioread_word, iowrite_byte, iowrite_half, iowrite_word,
-        malta::{IDE_BASE, SERIAL_BASE},
         print_char, read_char,
     },
     pm::{env::EnvStatus, ipc::IpcStatus, schedule::schedule, ENV_MANAGER},
 };
+
+use super::mempool::do_mempool_op;
 
 pub fn sys_putchar(char: u32, _arg2: u32, _arg3: u32, _arg4: u32, _arg5: u32) -> u32 {
     print_char(char as u8 as char);
@@ -76,7 +77,7 @@ pub unsafe fn sys_set_tlb_mod_entry(
 }
 
 pub unsafe fn sys_mem_alloc(envid: u32, va: u32, perm: u32, _arg4: u32, _arg5: u32) -> u32 {
-    if is_illegal_va(va as usize) {
+    if is_illegal_user_va(va as usize) {
         return (-(MosError::Inval as i32)) as u32;
     }
     let env = ENV_MANAGER.env_from_id(envid as usize, true);
@@ -103,7 +104,7 @@ pub unsafe fn sys_mem_alloc(envid: u32, va: u32, perm: u32, _arg4: u32, _arg5: u
 }
 
 pub unsafe fn sys_mem_map(srcid: u32, srcva: u32, dstid: u32, dstva: u32, perm: u32) -> u32 {
-    if is_illegal_va(srcva as usize) || is_illegal_va(dstva as usize) {
+    if is_illegal_user_va(srcva as usize) || is_illegal_user_va(dstva as usize) {
         return (-(MosError::Inval as i32)) as u32;
     }
     let srcenv = ENV_MANAGER.env_from_id(srcid as usize, true);
@@ -132,7 +133,7 @@ pub unsafe fn sys_mem_map(srcid: u32, srcva: u32, dstid: u32, dstva: u32, perm: 
 }
 
 pub unsafe fn sys_mem_unmap(envid: u32, va: u32, _arg3: u32, _arg4: u32, _arg5: u32) -> u32 {
-    if is_illegal_va(va as usize) {
+    if is_illegal_user_va(va as usize) {
         return (-(MosError::Inval as i32)) as u32;
     }
     let env = ENV_MANAGER.env_from_id(envid as usize, true);
@@ -186,7 +187,7 @@ pub unsafe fn sys_set_env_status(
 }
 
 pub unsafe fn sys_set_trapframe(envid: u32, tf: u32, _arg3: u32, _arg4: u32, _arg5: u32) -> u32 {
-    if is_illegal_va_range(tf as usize, TF_SIZE) {
+    if is_illegal_user_va_range(tf as usize, TF_SIZE) {
         return (-(MosError::Inval as i32)) as u32;
     }
     let env = ENV_MANAGER.env_from_id(envid as usize, true);
@@ -214,7 +215,7 @@ pub unsafe fn sys_panic(msg: u32, _arg2: u32, _arg3: u32, _arg4: u32, _arg5: u32
     let mut i = 0;
     loop {
         let ptr = (msg as *const u8).add(i);
-        if is_illegal_va(ptr as usize) {
+        if is_illegal_user_va(ptr as usize) {
             break;
         }
         let c = *ptr;
@@ -228,7 +229,7 @@ pub unsafe fn sys_panic(msg: u32, _arg2: u32, _arg3: u32, _arg4: u32, _arg5: u32
 }
 
 pub unsafe fn sys_ipc_try_send(envid: u32, value: u32, srcva: u32, perm: u32, _arg5: u32) -> u32 {
-    if srcva != 0 && is_illegal_va(srcva as usize) {
+    if srcva != 0 && is_illegal_user_va(srcva as usize) {
         return (-(MosError::Inval as i32)) as u32;
     }
     let env = ENV_MANAGER.env_from_id(envid as usize, false);
@@ -276,7 +277,7 @@ pub unsafe fn sys_ipc_try_send(envid: u32, value: u32, srcva: u32, perm: u32, _a
 }
 
 pub unsafe fn sys_ipc_recv(dstva: u32, _arg2: u32, _arg3: u32, _arg4: u32, _arg5: u32) -> u32 {
-    if dstva != 0 && is_illegal_va(dstva as usize) {
+    if dstva != 0 && is_illegal_user_va(dstva as usize) {
         return (-(MosError::Inval as i32)) as u32;
     }
     let env = ENV_MANAGER.curenv().unwrap();
@@ -304,7 +305,7 @@ pub unsafe fn sys_write_dev(va: u32, pa: u32, len: u32, _arg4: u32, _arg5: u32) 
     if len != 1 && len != 2 && len != 4 {
         return (-(MosError::Inval as i32)) as u32;
     }
-    if is_illegal_va_range(va as usize, len as usize) {
+    if is_illegal_user_va_range(va as usize, len as usize) {
         return (-(MosError::Inval as i32)) as u32;
     }
     if !is_dev_va_range(pa as usize, len as usize) {
@@ -323,7 +324,7 @@ pub unsafe fn sys_read_dev(va: u32, pa: u32, len: u32, _arg4: u32, _arg5: u32) -
     if len != 1 && len != 2 && len != 4 {
         return (-(MosError::Inval as i32)) as u32;
     }
-    if is_illegal_va_range(va as usize, len as usize) {
+    if is_illegal_user_va_range(va as usize, len as usize) {
         return (-(MosError::Inval as i32)) as u32;
     }
     if !is_dev_va_range(pa as usize, len as usize) {
@@ -338,23 +339,34 @@ pub unsafe fn sys_read_dev(va: u32, pa: u32, len: u32, _arg4: u32, _arg5: u32) -
     0
 }
 
-#[inline]
-fn is_illegal_va(va: usize) -> bool {
-    !(UTEMP..UTOP).contains(&va)
-}
-
-#[inline]
-fn is_illegal_va_range(va: usize, len: usize) -> bool {
-    if len == 0 {
-        return false;
-    }
-    va < UTEMP || va.checked_add(len).is_none() || va.checked_add(len).unwrap() > UTOP
-}
-
-#[inline]
-fn is_dev_va_range(va: usize, len: usize) -> bool {
-    const CONOLE_ADDR_LEN: usize = 0x20;
-    const IDE_ADDR_LEN: usize = 0x8;
-    (va >= SERIAL_BASE && va + len <= SERIAL_BASE + CONOLE_ADDR_LEN)
-        || (va >= IDE_BASE && va + len <= IDE_BASE + IDE_ADDR_LEN)
+/// Operations on memory pools
+/// 
+/// Available operations:
+/// - `0`: Create a memory pool
+///     Parameter(s): page_count
+/// - '1': Join an existing memory pool
+///     Parameter(s): poolid, va, page_count
+/// - '2': Leave a memory pool
+///     Parameter(s): poolid
+/// - '3': Destroy a memory pool 
+///     Parameter(s): poolid
+/// - '4': Acquire write access to a memory pool
+///     Parameter(s): poolid
+/// - '5': Release write access to a memory pool
+///     Parameter(s): poolid
+/// - '6': Acquire read access to a memory pool
+///     Parameter(s): poolid
+/// - '7': Release read access to a memory pool
+///     Parameter(s): poolid
+/// 
+/// # Parameters
+/// 
+/// - `op`: The operation to be performed
+/// - `poolid`: The ID of the memory pool
+/// - `va`: The virtual address to be mapped to the pool
+/// - `page_count`: The number of pages to be allocated
+/// 
+/// 
+pub fn sys_mempool_op(op: u32, poolid: u32, va: u32, page_count: u32, _arg5: u32) -> u32 {
+    do_mempool_op(op, poolid, va, page_count)
 }
