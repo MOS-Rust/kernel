@@ -2,8 +2,8 @@ use core::fmt::{Display, Formatter, Result};
 
 use crate::{const_export_usize, mm::addr::VA};
 
-#[derive(Clone, Copy, Debug)]
 #[repr(C)]
+#[derive(Clone, Copy, Debug)]
 pub struct Trapframe {
     pub regs: [u32; 32],
     pub cp0_status: u32,

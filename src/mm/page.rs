@@ -18,7 +18,7 @@ const ORDER: usize = 32;
 /// Each page is tracked by its ppn,
 /// actual data is stored in page allocator
 /// This structure simply wraps ppn
-#[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Eq, Ord)]
+#[derive(Clone, Copy, Debug)]
 pub struct Page {
     ppn: PPN,
 }
@@ -370,8 +370,8 @@ pub fn page_dealloc(page: Page) {
     dealloc(page.ppn(), 1);
 }
 
-#[inline]
 #[allow(dead_code)]
+#[inline]
 pub fn page_dealloc_contiguous(page: Page, size: usize) {
     dealloc(page.ppn(), size);
 }

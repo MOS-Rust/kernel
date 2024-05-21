@@ -11,7 +11,7 @@ use super::{
 
 /// Page table entry
 #[repr(C)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Pte(pub usize);
 
 impl Pte {

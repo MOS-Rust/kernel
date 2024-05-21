@@ -1,7 +1,7 @@
 use crate::mm::addr::VA;
 
 #[repr(u32)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum IpcStatus {
     NotReceiving = 0,
     Receiving = 1,

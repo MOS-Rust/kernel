@@ -20,24 +20,24 @@ use core::{
 
 /// Physical Address
 #[repr(C)]
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct PA(pub usize);
 
 /// Virtual Address
 #[repr(C)]
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct VA(pub usize);
 
 /// Physical Page Number
-#[repr(C)]
 #[allow(clippy::upper_case_acronyms)]
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
+#[repr(C)]
+#[derive(Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Debug)]
 pub struct PPN(pub usize);
 
 /// Virtual Page Number
-#[repr(C)]
 #[allow(clippy::upper_case_acronyms)]
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
 pub struct VPN(pub usize);
 
 impl Add<usize> for PA {

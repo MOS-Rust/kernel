@@ -39,7 +39,7 @@ static mut ENVS: Envs = Envs {
 static mut ASID_BITMAP: [usize; NASID / 32] = [0; NASID / 32];
 
 #[repr(u32)]
-#[derive(Debug, PartialEq, Eq)]
+#[derive(PartialEq, Eq, Debug)]
 pub enum EnvStatus {
     Free = 0,
     Runnable = 1,
