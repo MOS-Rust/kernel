@@ -1,8 +1,4 @@
 target/
-asm/
-user/
 
 Cargo.lock
 
-*.asm
-*.b

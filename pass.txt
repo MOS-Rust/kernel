@@ -1,0 +1,334 @@
+-----------------------test6_2-----------------------
+
+> cargo run
+   Compiling kernel v0.0.1 (/home/iz0/Projects/Rust/mos/kernel)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.02s
+     Running `qemu-system-mipsel -cpu 24Kc -m 64 -nographic -serial 'mon:stdio' -M malta -drive id=ide0,file=fsimg/fs.img,if=ide,format=raw -drive id=ide1,file=fsimg/empty.img,if=ide,format=raw -no-reboot -kernel target/mipsel-unknown-none/debug/kernel`
+
+     __  __    ___     ___              ___                     _     
+    |  \/  |  / _ \   / __|     o O O  | _ \   _  _     ___    | |_   
+    | |\/| | | (_) |  \__ \    o       |   /  | +| |   (_-<    |  _|  
+    |_|__|_|  \___/   |___/   TS__[O]  |_|_\   \_,_|   /__/_   _\__|  
+    _|"""""|_|"""""|_|"""""| {======|_|"""""|_|"""""|_|"""""|_|"""""| 
+    "`-0-0-'"`-0-0-'"`-0-0-'./o--000'"`-0-0-'"`-0-0-'"`-0-0-'"`-0-0-' 
+    
+[src/main.rs:52][INFO] MOS-Rust started!
+[src/exception/mod.rs:77][INFO] Exception entry set at 0x80057000
+[src/mm/mod.rs:33][INFO] Memory size: 65536 KiB, number of pages: 16384.
+[src/mm/heap.rs:33][INFO] Initialized 1024 KiB of kernel heap.
+[src/pm/mod.rs:17][INFO] Process manager initialized.
+FS is running
+icode: open /motd
+superblock is good
+read_bitmap is good
+icode: read /motd
+This is /motd, the message of the day.
+
+Welcome to the MOS kernel, now with a file system!
+
+icode: close /motd
+icode: spawn /init
+icode: exiting
+[src/syscall/handlers.rs:50][INFO] [00000800] destroying 00000800
+[src/pm/env.rs:305][INFO] 00000800 free env 00000800
+[src/pm/env.rs:341][INFO] 00000800: I am killed ...
+init: running
+init: data seems okay
+init: bss seems okay
+init: args: 'init' 'initarg1' 'initarg2'
+init: running sh
+init: starting sh
+
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+::                                                         ::
+::                     MOS Shell 2024                      ::
+::                                                         ::
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+$ ls.b
+aaa.txt testarg.b cat.b pingpong.b testbss.b newmotd testpiperace.b testpipe.b motd init.b num.b lorem testfdsharing.b testshell.sh script ls.b echo.b sh.b halt.b testptelibrary.b 
+[src/syscall/handlers.rs:50][INFO] [00003004] destroying 00003004
+[src/pm/env.rs:305][INFO] 00003004 free env 00003004
+[src/pm/env.rs:341][INFO] 00003004: I am killed ...
+[src/syscall/handlers.rs:50][INFO] [00002803] destroying 00002803
+[src/pm/env.rs:305][INFO] 00002803 free env 00002803
+[src/pm/env.rs:341][INFO] 00002803: I am killed ...
+
+$ ls.b | cat.b
+[00003803] pipecreate 
+aaa.txt testarg.b cat.b pingpong.b testbss.b newmotd testpiperace.b testpipe.b motd init.b num.b lorem testfdsharing.b testshell.sh script ls.b echo.b sh.b halt.b testptelibrary.b 
+[src/syscall/handlers.rs:50][INFO] [00004805] destroying 00004805
+[src/pm/env.rs:305][INFO] 00004805 free env 00004805
+[src/pm/env.rs:341][INFO] 00004805: I am killed ...
+[src/syscall/handlers.rs:50][INFO] [00004004] destroying 00004004
+[src/pm/env.rs:305][INFO] 00004004 free env 00004004
+[src/pm/env.rs:341][INFO] 00004004: I am killed ...
+[src/syscall/handlers.rs:50][INFO] [00005006] destroying 00005006
+[src/pm/env.rs:305][INFO] 00005006 free env 00005006
+[src/pm/env.rs:341][INFO] 00005006: I am killed ...
+[src/syscall/handlers.rs:50][INFO] [00003803] destroying 00003803
+[src/pm/env.rs:305][INFO] 00003803 free env 00003803
+[src/pm/env.rs:341][INFO] 00003803: I am killed ...
+
+$ cat.b
+hheellllooddoorrmmoouussee!![src/syscall/handlers.rs:50][INFO] [00006006] destroying 00006006
+[src/pm/env.rs:305][INFO] 00006006 free env 00006006
+[src/pm/env.rs:341][INFO] 00006006: I am killed ...
+[src/syscall/handlers.rs:50][INFO] [00005803] destroying 00005803
+[src/pm/env.rs:305][INFO] 00005803 free env 00005803
+[src/pm/env.rs:341][INFO] 00005803: I am killed ...
+
+$ halt.b
+halt at halt.c:4: halt mos!
+[src/panic.rs:40][ERROR] Kernel Panicked: "user halt" at src/syscall/handlers.rs:228:5
+ra:    0x800b3c58  sp:  0x803ff1d8  Status: 0x00008000
+Cause: 0x00000420  EPC: 0x00400040  BadVA:  0x00404170
+envid: 00007006
+cur_pgdir: 0x80523000
+
+-----------------------TEST6_3-----------------------
+
+> cargo run
+   Compiling kernel v0.0.1 (/home/iz0/Projects/Rust/mos/kernel)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.57s
+     Running `qemu-system-mipsel -cpu 24Kc -m 64 -nographic -serial 'mon:stdio' -M malta -drive id=ide0,file=fsimg/fs.img,if=ide,format=raw -drive id=ide1,file=fsimg/empty.img,if=ide,format=raw -no-reboot -kernel target/mipsel-unknown-none/debug/kernel`
+
+              __  __    ___     ___             ___                     _     
+        o O O|  \/  |  / _ \   / __|    ___    | _ \   _  _     ___    | |_   
+       o     | |\/| | | (_) |  \__ \   |___|   |   /  | +| |   (_-<    |  _|  
+      TS__[O]|_|__|_|  \___/   |___/   _____   |_|_\   \_,_|   /__/_   _\__|  
+     {======|_|"""""|_|"""""|_|"""""|_|     |_|"""""|_|"""""|_|"""""|_|"""""| 
+    ./o--000'"`-0-0-'"`-0-0-'"`-0-0-'"`-0-0-'"`-0-0-'"`-0-0-'"`-0-0-'"`-0-0-' 
+    
+[src/main.rs:52][INFO] MOS-Rust started!
+[src/exception/mod.rs:77][INFO] Exception entry set at 0x80057000
+[src/mm/mod.rs:33][INFO] Memory size: 65536 KiB, number of pages: 16384.
+[src/mm/heap.rs:33][INFO] Initialized 1024 KiB of kernel heap.
+[src/pm/mod.rs:17][INFO] Process manager initialized.
+icode: open /motd
+FS is running
+superblock is good
+read_bitmap is good
+icode: read /motd
+This is /motd, the message of the day.
+
+Welcome to the MOS kernel, now with a file system!
+
+icode: close /motd
+icode: spawn /init
+icode: exiting
+[src/syscall/handlers.rs:50][INFO] [00000800] destroying 00000800
+[src/pm/env.rs:305][INFO] 00000800 free env 00000800
+[src/pm/env.rs:341][INFO] 00000800: I am killed ...
+init: running
+init: data seems okay
+init: bss seems okay
+init: args: 'init' 'initarg1' 'initarg2'
+init: running sh
+init: starting sh
+
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+::                                                         ::
+::                     MOS Shell 2024                      ::
+::                                                         ::
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+$ sh.b < script
+
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+::                                                         ::
+::                     MOS Shell 2024                      ::
+::                                                         ::
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+This is the end of the script
+[src/syscall/handlers.rs:50][INFO] [00004006] destroying 00004006
+[src/pm/env.rs:305][INFO] 00004006 free env 00004006
+[src/pm/env.rs:341][INFO] 00004006: I am killed ...
+[src/syscall/handlers.rs:50][INFO] [00003805] destroying 00003805
+[src/pm/env.rs:305][INFO] 00003805 free env 00003805
+[src/pm/env.rs:341][INFO] 00003805: I am killed ...
+[00004805] pipecreate 
+[src/syscall/handlers.rs:50][INFO] [00006008] destroying 00006008
+[src/pm/env.rs:305][INFO] 00006008 free env 00006008
+[src/pm/env.rs:341][INFO] 00006008: I am killed ...
+[src/syscall/handlers.rs:50][INFO] [00005006] destroying 00005006
+[src/pm/env.rs:305][INFO] 00005006 free env 00005006
+[src/pm/env.rs:341][INFO] 00005006: I am killed ...
+[src/syscall/handlers.rs:50][INFO] [00005807] destroying 00005807
+[src/pm/env.rs:305][INFO] 00005807 free env 00005807
+[src/pm/env.rs:341][INFO] 00005807: I am killed ...
+[src/syscall/handlers.rs:50][INFO] [00004805] destroying 00004805
+[src/pm/env.rs:305][INFO] 00004805 free env 00004805
+[src/pm/env.rs:341][INFO] 00004805: I am killed ...
+[src/syscall/handlers.rs:50][INFO] [00003004] destroying 00003004
+[src/pm/env.rs:305][INFO] 00003004 free env 00003004
+[src/pm/env.rs:341][INFO] 00003004: I am killed ...
+[src/syscall/handlers.rs:50][INFO] [00002803] destroying 00002803
+[src/pm/env.rs:305][INFO] 00002803 free env 00002803
+[src/pm/env.rs:341][INFO] 00002803: I am killed ...
+
+$ cat.b aaa.txt
+aaa.txt testarg.b cat.b pingpong.b testbss.b newmotd testpiperace.b testpipe.b motd init.b num.b lorem testfdsharing.b testshell.sh script ls.b echo.b sh.b halt.b testptelibrary.b 
+[src/syscall/handlers.rs:50][INFO] [00007004] destroying 00007004
+[src/pm/env.rs:305][INFO] 00007004 free env 00007004
+[src/pm/env.rs:341][INFO] 00007004: I am killed ...
+[src/syscall/handlers.rs:50][INFO] [00006803] destroying 00006803
+[src/pm/env.rs:305][INFO] 00006803 free env 00006803
+[src/pm/env.rs:341][INFO] 00006803: I am killed ...
+
+$ sh.b < testshell.sh
+
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+::                                                         ::
+::                     MOS Shell 2024                      ::
+::                                                         ::
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+Catherine wished dormouse happy birthday yesterday,
+which made it very grateful.
+Wish her happy everyday.
+[src/syscall/handlers.rs:50][INFO] [00009007] destroying 00009007
+[src/pm/env.rs:305][INFO] 00009007 free env 00009007
+[src/pm/env.rs:341][INFO] 00009007: I am killed ...
+[src/syscall/handlers.rs:50][INFO] [00008805] destroying 00008805
+[src/pm/env.rs:305][INFO] 00008805 free env 00008805
+[src/pm/env.rs:341][INFO] 00008805: I am killed ...
+[src/syscall/handlers.rs:50][INFO] [00008004] destroying 00008004
+[src/pm/env.rs:305][INFO] 00008004 free env 00008004
+[src/pm/env.rs:341][INFO] 00008004: I am killed ...
+[src/syscall/handlers.rs:50][INFO] [00007803] destroying 00007803
+[src/pm/env.rs:305][INFO] 00007803 free env 00007803
+[src/pm/env.rs:341][INFO] 00007803: I am killed ...
+
+$ cat.b motd
+This is /motd, the message of the day.
+
+Welcome to the MOS kernel, now with a file system!
+[src/syscall/handlers.rs:50][INFO] [0000a004] destroying 0000a004
+[src/pm/env.rs:305][INFO] 0000a004 free env 0000a004
+[src/pm/env.rs:341][INFO] 0000a004: I am killed ...
+[src/syscall/handlers.rs:50][INFO] [00009803] destroying 00009803
+[src/pm/env.rs:305][INFO] 00009803 free env 00009803
+[src/pm/env.rs:341][INFO] 00009803: I am killed ...
+
+$ halt.b
+halt at halt.c:4: halt mos!
+[src/panic.rs:40][ERROR] Kernel Panicked: "user halt" at src/syscall/handlers.rs:228:5
+ra:    0x800b3c58  sp:  0x803ff1d8  Status: 0x00008000
+Cause: 0x40008420  EPC: 0x00400040  BadVA:  0x00404170
+envid: 0000b004
+cur_pgdir: 0x80575000
+
+-----------------------TEST6_4-----------------------
+
+> cargo run
+   Compiling kernel v0.0.1 (/home/iz0/Projects/Rust/mos/kernel)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.41s
+     Running `qemu-system-mipsel -cpu 24Kc -m 64 -nographic -serial 'mon:stdio' -M malta -drive id=ide0,file=fsimg/fs.img,if=ide,format=raw -drive id=ide1,file=fsimg/empty.img,if=ide,format=raw -no-reboot -kernel target/mipsel-unknown-none/debug/kernel`
+
+              __  __    ___     ___             ___                     _     
+        o O O|  \/  |  / _ \   / __|    ___    | _ \   _  _     ___    | |_   
+       o     | |\/| | | (_) |  \__ \   |___|   |   /  | +| |   (_-<    |  _|  
+      TS__[O]|_|__|_|  \___/   |___/   _____   |_|_\   \_,_|   /__/_   _\__|  
+     {======|_|"""""|_|"""""|_|"""""|_|     |_|"""""|_|"""""|_|"""""|_|"""""| 
+    ./o--000'"`-0-0-'"`-0-0-'"`-0-0-'"`-0-0-'"`-0-0-'"`-0-0-'"`-0-0-'"`-0-0-' 
+    
+[src/main.rs:52][INFO] MOS-Rust started!
+[src/exception/mod.rs:77][INFO] Exception entry set at 0x80057000
+[src/mm/mod.rs:33][INFO] Memory size: 65536 KiB, number of pages: 16384.
+[src/mm/heap.rs:33][INFO] Initialized 1024 KiB of kernel heap.
+[src/pm/mod.rs:17][INFO] Process manager initialized.
+icode: open /motd
+FS is running
+superblock is good
+read_bitmap is good
+icode: read /motd
+This is /motd, the message of the day.
+
+Welcome to the MOS kernel, now with a file system!
+
+icode: close /motd
+icode: spawn /init
+icode: exiting
+[src/syscall/handlers.rs:50][INFO] [00000800] destroying 00000800
+[src/pm/env.rs:305][INFO] 00000800 free env 00000800
+[src/pm/env.rs:341][INFO] 00000800: I am killed ...
+init: running
+init: data seems okay
+init: bss seems okay
+init: args: 'init' 'initarg1' 'initarg2'
+init: running sh
+init: starting sh
+
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+::                                                         ::
+::                     MOS Shell 2024                      ::
+::                                                         ::
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+$ sh.b < testshell.sh | cat.b > motd
+[00002803] pipecreate 
+[src/syscall/handlers.rs:50][INFO] [00005008] destroying 00005008
+[src/pm/env.rs:305][INFO] 00005008 free env 00005008
+[src/pm/env.rs:341][INFO] 00005008: I am killed ...
+[src/syscall/handlers.rs:50][INFO] [00004807] destroying 00004807
+[src/pm/env.rs:305][INFO] 00004807 free env 00004807
+[src/pm/env.rs:341][INFO] 00004807: I am killed ...
+[src/syscall/handlers.rs:50][INFO] [00003805] destroying 00003805
+[src/pm/env.rs:305][INFO] 00003805 free env 00003805
+[src/pm/env.rs:341][INFO] 00003805: I am killed ...
+[src/syscall/handlers.rs:50][INFO] [00004006] destroying 00004006
+[src/pm/env.rs:305][INFO] 00004006 free env 00004006
+[src/pm/env.rs:341][INFO] 00004006: I am killed ...
+[src/syscall/handlers.rs:50][INFO] [00003004] destroying 00003004
+[src/pm/env.rs:305][INFO] 00003004 free env 00003004
+[src/pm/env.rs:341][INFO] 00003004: I am killed ...
+[src/syscall/handlers.rs:50][INFO] [00002803] destroying 00002803
+[src/pm/env.rs:305][INFO] 00002803 free env 00002803
+[src/pm/env.rs:341][INFO] 00002803: I am killed ...
+
+$ cat.b motd
+
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+::                                                         ::
+::                     MOS Shell 2024                      ::
+::                                                         ::
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+Catherine wished dormouse happy birthday yesterday,
+which made it very grateful.
+Wish her happy everyday.
+[src/syscall/handlers.rs:50][INFO] [00006004] destroying 00006004
+[src/pm/env.rs:305][INFO] 00006004 free env 00006004
+[src/pm/env.rs:341][INFO] 00006004: I am killed ...
+[src/syscall/handlers.rs:50][INFO] [00005803] destroying 00005803
+[src/pm/env.rs:305][INFO] 00005803 free env 00005803
+[src/pm/env.rs:341][INFO] 00005803: I am killed ...
+
+$ halt.b < temp/temp
+open temp/temp failed: -10
+[src/syscall/handlers.rs:50][INFO] [00006803] destroying 00006803
+[src/pm/env.rs:305][INFO] 00006803 free env 00006803
+[src/pm/env.rs:341][INFO] 00006803: I am killed ...
+
+$ halt.b > temp/temp
+open temp/temp failed: -10
+[src/syscall/handlers.rs:50][INFO] [00007003] destroying 00007003
+[src/pm/env.rs:305][INFO] 00007003 free env 00007003
+[src/pm/env.rs:341][INFO] 00007003: I am killed ...
+
+$ echo.b you-should-see-this
+you-should-see-this
+[src/syscall/handlers.rs:50][INFO] [00008004] destroying 00008004
+[src/pm/env.rs:305][INFO] 00008004 free env 00008004
+[src/pm/env.rs:341][INFO] 00008004: I am killed ...
+[src/syscall/handlers.rs:50][INFO] [00007803] destroying 00007803
+[src/pm/env.rs:305][INFO] 00007803 free env 00007803
+[src/pm/env.rs:341][INFO] 00007803: I am killed ...
+
+$ halt.b
+halt at halt.c:4: halt mos!
+[src/panic.rs:40][ERROR] Kernel Panicked: "user halt" at src/syscall/handlers.rs:228:5
+ra:    0x800b3c58  sp:  0x803ff1d8  Status: 0x00008000
+Cause: 0x40008420  EPC: 0x00400040  BadVA:  0x00404170
+envid: 00009004
+cur_pgdir: 0x80543000
+
