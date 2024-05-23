@@ -225,8 +225,6 @@ impl PageAllocator {
     ///
     /// The free list is organized as an array of vectors, where the ith vector contains all free blocks of size 2^i pages.
     fn init(&mut self, start: PPN, end: PPN) {
-        const NEW_VEC: Vec<PPN> = Vec::new();
-        self.free_list = [NEW_VEC; ORDER];
         let mut current = start;
         while current < end {
             let lowbit = 1 << current.0.trailing_zeros();
@@ -256,8 +254,8 @@ impl PageAllocator {
             if !self.free_list[i].is_empty() {
                 for j in ((order + 1)..=i).rev() {
                     if let Some(ppn) = self.free_list[j].pop() {
-                        self.free_list[j - 1].push(ppn);
                         self.free_list[j - 1].push(ppn + (1 << (j - 1)));
+                        self.free_list[j - 1].push(ppn);
                     } else {
                         return None;
                     }
