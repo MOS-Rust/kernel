@@ -20,11 +20,13 @@ use alloc::string::String;
 use core::ptr;
 use log::info;
 
+/// This function is used to print a character on screen.
 pub fn sys_putchar(char: u32, _arg2: u32, _arg3: u32, _arg4: u32, _arg5: u32) -> u32 {
     print_char(char as u8 as char);
     0
 }
 
+/// This function is used to print a string of bytes on screen.
 pub unsafe fn sys_print_console(s: u32, len: u32, _args3: u32, _args4: u32, _args5: u32) -> u32 {
     if (s + len) as usize > UTOP || s as usize >= UTOP || s.checked_add(len).is_none() {
         return (-(MosError::Inval as i32)) as u32;
@@ -34,15 +36,17 @@ pub unsafe fn sys_print_console(s: u32, len: u32, _args3: u32, _args4: u32, _arg
     0
 }
 
+/// This function provides the environment id of current process.
 pub unsafe fn sys_get_env_id(_arg1: u32, _arg2: u32, _arg3: u32, _arg4: u32, _arg5: u32) -> u32 {
     ENV_MANAGER.curenv().unwrap().id as u32
 }
 
-/// The process actively gives up it's
+/// Give up remaining CPU time slice for 'curenv'.
 pub unsafe fn sys_yield(_arg1: u32, _arg2: u32, _arg3: u32, _arg4: u32, _arg5: u32) -> u32 {
     schedule(true)
 }
 
+/// This function is used to destroy the current environment.
 pub unsafe fn sys_env_destroy(envid: u32, _arg2: u32, _arg3: u32, _arg4: u32, _arg5: u32) -> u32 {
     let env = ENV_MANAGER.env_from_id(envid as usize, true);
     match env {
@@ -59,6 +63,7 @@ pub unsafe fn sys_env_destroy(envid: u32, _arg2: u32, _arg3: u32, _arg4: u32, _a
     }
 }
 
+/// Register the entry of user space TLB Mod handler of 'envid'.
 pub unsafe fn sys_set_tlb_mod_entry(
     envid: u32,
     func: u32,
@@ -76,6 +81,10 @@ pub unsafe fn sys_set_tlb_mod_entry(
     }
 }
 
+/// Allocate a physical page and map 'va' to it with 'perm' in the address space of 'envid'.
+/// If 'va' is already mapped, that original page is sliently unmapped.
+/// 'envid2env' should be used with 'checkperm' set, like in most syscalls, to ensure the target is
+/// either the caller or its child.
 pub unsafe fn sys_mem_alloc(envid: u32, va: u32, perm: u32, _arg4: u32, _arg5: u32) -> u32 {
     if is_illegal_user_va(va as usize) {
         return (-(MosError::Inval as i32)) as u32;
@@ -103,6 +112,8 @@ pub unsafe fn sys_mem_alloc(envid: u32, va: u32, perm: u32, _arg4: u32, _arg5: u
     }
 }
 
+/// Find the physical page mapped at 'srcva' in the address space of env 'srcid', and map 'dstid''s
+/// 'dstva' to it with 'perm'.
 pub unsafe fn sys_mem_map(srcid: u32, srcva: u32, dstid: u32, dstva: u32, perm: u32) -> u32 {
     if is_illegal_user_va(srcva as usize) || is_illegal_user_va(dstva as usize) {
         return (-(MosError::Inval as i32)) as u32;
@@ -132,6 +143,8 @@ pub unsafe fn sys_mem_map(srcid: u32, srcva: u32, dstid: u32, dstva: u32, perm: 
     }
 }
 
+/// Unmap the physical page mapped at 'va' in the address space of 'envid'.
+/// If no physical page is mapped there, this function silently succeeds.
 pub unsafe fn sys_mem_unmap(envid: u32, va: u32, _arg3: u32, _arg4: u32, _arg5: u32) -> u32 {
     if is_illegal_user_va(va as usize) {
         return (-(MosError::Inval as i32)) as u32;
@@ -145,6 +158,7 @@ pub unsafe fn sys_mem_unmap(envid: u32, va: u32, _arg3: u32, _arg4: u32, _arg5: 
     0
 }
 
+/// Allocate a new env as a child of 'curenv'.
 pub unsafe fn sys_exofork(_arg1: u32, _arg2: u32, _arg3: u32, _arg4: u32, _arg5: u32) -> u32 {
     let env = ENV_MANAGER.alloc(ENV_MANAGER.curenv().unwrap().id);
     match env {
@@ -159,6 +173,7 @@ pub unsafe fn sys_exofork(_arg1: u32, _arg2: u32, _arg3: u32, _arg4: u32, _arg5:
     }
 }
 
+/// Set 'envid''s 'env_status' to 'status' and update 'env_sched_list'.
 pub unsafe fn sys_set_env_status(
     envid: u32,
     status: u32,
@@ -186,6 +201,7 @@ pub unsafe fn sys_set_env_status(
     }
 }
 
+/// Set envid's trap frame to 'tf'.
 pub unsafe fn sys_set_trapframe(envid: u32, tf: u32, _arg3: u32, _arg4: u32, _arg5: u32) -> u32 {
     if is_illegal_user_va_range(tf as usize, TF_SIZE) {
         return (-(MosError::Inval as i32)) as u32;
@@ -209,6 +225,7 @@ pub unsafe fn sys_set_trapframe(envid: u32, tf: u32, _arg3: u32, _arg4: u32, _ar
     }
 }
 
+/// Kernel panic with message `msg`.
 // TODO: There may be a more elegant way to handle this
 pub unsafe fn sys_panic(msg: u32, _arg2: u32, _arg3: u32, _arg4: u32, _arg5: u32) -> u32 {
     let mut str = String::new();
@@ -228,6 +245,7 @@ pub unsafe fn sys_panic(msg: u32, _arg2: u32, _arg3: u32, _arg4: u32, _arg5: u32
     panic!("{}", str);
 }
 
+/// Try to send a 'value' (together with a page if 'srcva' is not 0) to the target env 'envid'.
 pub unsafe fn sys_ipc_try_send(envid: u32, value: u32, srcva: u32, perm: u32, _arg5: u32) -> u32 {
     if srcva != 0 && is_illegal_user_va(srcva as usize) {
         return (-(MosError::Inval as i32)) as u32;
@@ -276,6 +294,8 @@ pub unsafe fn sys_ipc_try_send(envid: u32, value: u32, srcva: u32, perm: u32, _a
     }
 }
 
+/// Wait for a message (a value, together with a page if 'dstva' is not 0) from other envs.
+/// 'curenv' is blocked until a message is sent.
 pub unsafe fn sys_ipc_recv(dstva: u32, _arg2: u32, _arg3: u32, _arg4: u32, _arg5: u32) -> u32 {
     if dstva != 0 && is_illegal_user_va(dstva as usize) {
         return (-(MosError::Inval as i32)) as u32;
@@ -290,6 +310,7 @@ pub unsafe fn sys_ipc_recv(dstva: u32, _arg2: u32, _arg3: u32, _arg4: u32, _arg5
     schedule(true)
 }
 
+/// This function gets char from console
 pub fn sys_getchar(_arg1: u32, _arg2: u32, _arg3: u32, _arg4: u32, _arg5: u32) -> u32 {
     let mut c: char;
     loop {
@@ -301,6 +322,12 @@ pub fn sys_getchar(_arg1: u32, _arg2: u32, _arg3: u32, _arg4: u32, _arg5: u32) -
     c as u32
 }
 
+/// This function is used to write data at 'va' with length 'len' to a device physical address
+/// 'pa'. Remember to check the validity of 'va' and 'pa'.
+/// 
+/// 'va' is the starting address of source data, 'len' is the
+/// length of data (in bytes), 'pa' is the physical address of
+/// the device (maybe with a offset).
 pub unsafe fn sys_write_dev(va: u32, pa: u32, len: u32, _arg4: u32, _arg5: u32) -> u32 {
     if len != 1 && len != 2 && len != 4 {
         return (-(MosError::Inval as i32)) as u32;
@@ -320,6 +347,7 @@ pub unsafe fn sys_write_dev(va: u32, pa: u32, len: u32, _arg4: u32, _arg5: u32) 
     0
 }
 
+/// This function is used to read data from a device physical address.
 pub unsafe fn sys_read_dev(va: u32, pa: u32, len: u32, _arg4: u32, _arg5: u32) -> u32 {
     if len != 1 && len != 2 && len != 4 {
         return (-(MosError::Inval as i32)) as u32;

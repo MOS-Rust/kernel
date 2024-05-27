@@ -46,6 +46,8 @@ pub enum EnvStatus {
     NotRunnable = 2,
 }
 
+/// Struct Env as process controller block,
+/// Same as struct Env in mos
 #[repr(C)]
 #[derive(Debug)]
 pub struct Env {
@@ -72,6 +74,7 @@ pub struct Env {
 }
 
 impl Env {
+    /// Create a new empty Env block
     pub const fn new() -> Self {
         Self {
             tf: Trapframe::new(),
@@ -96,20 +99,24 @@ impl Env {
         }
     }
 
+    /// Get pos of this Env block
     pub const fn pos(&self) -> usize {
         self.id & ((1 << 10) - 1)
     }
 
+    /// Get pgdir of this Env block
     pub fn pgdir(&self) -> PageDirectory {
         PageDirectory {
             page: Page::from(PPN::from(self.pgdir.paddr())),
         }
     }
 
+    /// Get EnvTracker of this Env block, EnvTracker is created from env pos
     const fn tracker(&self) -> EnvTracker {
         EnvTracker::new(self.pos())
     }
 
+    /// Load icode from binary to this env block
     fn load_icode(&mut self, binary: &[u8]) {
         if Elf32::is_elf32_format(binary) {
             let elf = Elf32::from_bytes(binary);
@@ -133,15 +140,18 @@ impl Env {
         }
     }
 
+    /// Check if this env's status is EnvStatus::Runnable
     pub fn runnable(&self) -> bool {
         self.status == EnvStatus::Runnable
     }
 
+    /// Set user custom tlm mod exception handler from handler entry
     pub fn set_tlb_mod_entry(&mut self, entry: usize) {
         self.user_tlb_mod_entry = entry;
     }
 }
 
+/// Envs array, same as ENVS in mos
 #[repr(C, align(4096))]
 pub struct Envs {
     env_array: [Env; NENV],
@@ -158,6 +168,7 @@ impl EnvTracker {
     }
 }
 
+/// Data structure used to manage Env blocks
 pub struct EnvManager {
     base_pgdir: PageDirectory,
     free_list: RefCell<Vec<EnvTracker>>,
@@ -167,6 +178,7 @@ pub struct EnvManager {
 }
 
 impl EnvManager {
+    /// Create a new empty EnvManager
     pub const fn new() -> Self {
         Self {
             base_pgdir: PageDirectory::empty(),
@@ -177,6 +189,7 @@ impl EnvManager {
         }
     }
 
+    /// Init this EnvManager
     pub fn init(&mut self) {
         let mut free_list = Vec::with_capacity(NENV);
         for i in (0..NENV).rev() {
@@ -215,10 +228,16 @@ impl EnvManager {
         self.schedule_list = RefCell::new(VecDeque::with_capacity(NENV));
     }
 
+    /// Acquire Env block of current process
     pub fn curenv(&self) -> Option<&mut Env> {
         self.cur.map(|tracker| env_at(tracker.pos))
     }
 
+    /// Acquire a free Env block
+    /// 
+    /// # Returns
+    /// 
+    /// free Env block on success, MosError on failure
     pub fn get_free_env(&self) -> Result<&mut Env, MosError> {
         if self.free_list.borrow().is_empty() {
             return Err(MosError::NoFreeEnv);
@@ -228,6 +247,17 @@ impl EnvManager {
         Ok(env_at(tracker.pos))
     }
 
+    /// Implementation of envid2env in mos
+    /// Acquire Env block from its id
+    /// 
+    /// # Parameters
+    /// 
+    /// * id: env id to acquire
+    /// * check_perm: check for permission flags if set to true
+    /// 
+    /// # Returns
+    /// 
+    /// Env of id on success, MosError::BadEnv on failure
     pub fn env_from_id(&self, id: usize, check_perm: bool) -> Result<&mut Env, MosError> {
         if id == 0 {
             Ok(self.curenv().unwrap())
@@ -247,6 +277,12 @@ impl EnvManager {
         }
     }
 
+    /// Implementation of env_setup_vm in mos
+    /// Set up vm of new env
+    /// 
+    /// # Returns
+    /// 
+    /// Ok(()) on success, MosError on failure
     fn setup_vm(&self, env: &mut Env) -> Result<(), MosError> {
         match PageDirectory::init() {
             Ok((pgdir, page)) => {
@@ -265,6 +301,11 @@ impl EnvManager {
         }
     }
 
+    /// Allocate a new Env block, set its parent id to parent_id
+    /// 
+    /// # Returns
+    /// 
+    /// Allocated Env block on success, MosError on failure
     pub fn alloc(&self, parent_id: usize) -> Result<&mut Env, MosError> {
         if let Ok(env) = self.get_free_env() {
             self.setup_vm(env)?;
@@ -285,6 +326,7 @@ impl EnvManager {
         }
     }
 
+    /// Create a Env from binary file, and set its priority
     pub fn create(&self, binary: &[u8], priority: u32) -> &mut Env {
         let env = self.alloc(0).expect("failed to alloc env");
         env.priority = priority;
@@ -294,6 +336,7 @@ impl EnvManager {
         env
     }
 
+    /// Free a env
     pub fn env_free(&self, env: &mut Env) {
         if let Some(curenv) = self.curenv() {
             if curenv.id != env.id && curenv.id != env.parent_id {
@@ -334,6 +377,7 @@ impl EnvManager {
             .retain(|&x| x != env.tracker());
     }
 
+    /// Destroy a env
     pub unsafe fn env_destroy(&mut self, env: &mut Env) {
         self.env_free(env);
         if self.cur.is_some() && self.cur.unwrap().pos == env.pos() {
@@ -343,6 +387,7 @@ impl EnvManager {
         }
     }
 
+    /// Run a env
     pub fn env_run(&mut self, env: &mut Env) -> ! {
         assert!(env.status == EnvStatus::Runnable);
         if let Some(cur) = self.curenv() {
@@ -355,22 +400,34 @@ impl EnvManager {
         unsafe { env_pop_trapframe(&mut env.tf, env.asid as u32) }
     }
 
+    /// Get first Env of env schedule list
     pub fn get_first(&self) -> Option<&mut Env> {
         self.schedule_list.borrow().front().map(|tracker| env_at(tracker.pos))
     }
 
+    /// Insert a env to env schedule list
+    /// 
+    /// # Parameters
+    /// 
+    /// * envid: env to be inserted
     pub fn insert_to_end(&self, envid: usize) {
         self.schedule_list
             .borrow_mut()
             .push_back(env_at(envx(envid)).tracker());
     }
 
+    /// Remove a env from env schedule list
+    /// 
+    /// # Parameters
+    /// 
+    /// * envid: env to be removed
     pub fn remove_from_schedule(&self, envid: usize) {
         self.schedule_list
             .borrow_mut()
             .retain(|&x| x != env_at(envx(envid)).tracker());
     }
 
+    /// Move a env to end of the env schedule list
     pub fn move_to_end(&self, env: &Env) {
         let tracker = env.tracker();
         // tracker should be the first element (?)
@@ -378,15 +435,20 @@ impl EnvManager {
         self.schedule_list.borrow_mut().push_back(tracker);
     }
 
+    /// Acquire current page directory
     pub fn cur_pgdir(&mut self) -> &mut PageDirectory {
         &mut self.cur_pgdir
     }
 
+    /// Set current env to None
     pub fn clear_curenv(&mut self) {
         self.cur = None;
     }
 }
 
+/// Implementation of map_segment in mos
+/// Map [va, va+size) of virtual address space to physical [pa, pa+size) in the 'pgdir'. Use
+/// permission bits 'perm | PTE_V' for the entries.
 fn map_segment(pgdir: PageDirectory, asid: usize, pa: PA, va: VA, size: usize, flags: PteFlags) {
     assert!(pa.0 % PAGE_SIZE == 0);
     assert!(va.0 % PAGE_SIZE == 0);
@@ -399,6 +461,7 @@ fn map_segment(pgdir: PageDirectory, asid: usize, pa: PA, va: VA, size: usize, f
     }
 }
 
+/// Acquire a new envid
 fn mkenvid(env: &Env) -> usize {
     static mut ENV_COUNT: usize = 0;
     unsafe {
@@ -408,6 +471,7 @@ fn mkenvid(env: &Env) -> usize {
     }
 }
 
+/// Allocate an empty asid
 fn asid_alloc() -> Result<usize, MosError> {
     for i in 0..NASID {
         let index = i >> 5;
@@ -422,6 +486,7 @@ fn asid_alloc() -> Result<usize, MosError> {
     Err(MosError::NoFreeEnv)
 }
 
+/// Free an asid
 fn asid_free(asid: usize) {
     let index = asid >> 5;
     let inner = asid & 31;
@@ -430,10 +495,12 @@ fn asid_free(asid: usize) {
     }
 }
 
+/// Implementation of ENVX in mos
 pub const fn envx(id: usize) -> usize {
     id & ((1 << 10) - 1)
 }
 
+/// Acquire env at ENVS[index]
 fn env_at(index: usize) -> &'static mut Env {
     if index >= NENV {
         panic!("index out of ENVS limit")
@@ -441,6 +508,7 @@ fn env_at(index: usize) -> &'static mut Env {
     unsafe { &mut ENVS.env_array[index] }
 }
 
+/// Implementation of env_pop_tf in mos
 unsafe fn env_pop_trapframe(tf: *mut Trapframe, asid: u32) -> ! {
     extern "C" {
         fn _ret_from_exception() -> !;

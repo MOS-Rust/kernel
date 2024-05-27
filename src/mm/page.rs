@@ -39,6 +39,7 @@ impl Page {
         unsafe { PAGE_ALLOCATOR.tracker.ref_count(self.ppn).unwrap() }
     }
 
+    /// Acquire page's kernal virtual address
     pub fn kaddr(self) -> VA {
         self.ppn.kaddr()
     }
@@ -62,6 +63,7 @@ impl From<PA> for Page {
     }
 }
 
+/// Struct use to track reference count of each page
 #[derive(Debug)]
 pub struct PageTracker {
     ppn: PPN,
@@ -70,6 +72,7 @@ pub struct PageTracker {
 }
 
 impl PageTracker {
+    /// Create a new page tracker with ppn set to PPN(0)
     const fn new() -> Self {
         Self {
             ppn: PPN(0),
@@ -120,6 +123,7 @@ impl PageTracker {
         }
     }
 
+    /// Acquire page's reference count
     pub fn ref_count(&self, ppn: PPN) -> Option<u16> {
         if ppn.0 < self.size {
             unsafe {
@@ -136,6 +140,7 @@ impl PageTracker {
         }
     }
 
+    /// Increase reference count of page at ppn
     fn inc_ref(&mut self, ppn: PPN) {
         // trace!("PageTracker::inc_ref: ppn = {:?}", ppn);
         assert!(ppn.0 < self.size);
@@ -145,6 +150,7 @@ impl PageTracker {
         }
     }
 
+    /// Decrease reference count of page at ppn
     fn dec_ref(&mut self, ppn: PPN) {
         // trace!("PageTracker::dec_ref: ppn = {:?}", ppn);
         assert!(ppn.0 < self.size);
@@ -304,6 +310,11 @@ impl PageAllocator {
         }
     }
 
+    /// Get page tracker's ppn and page count
+    /// 
+    /// # Returns
+    /// 
+    /// (tracker.ppn, tracker.page_count)
     pub const fn get_tracker_info(&self) -> (PPN, usize) {
         (self.tracker.ppn, self.tracker.page_count)
     }
@@ -368,6 +379,7 @@ pub fn page_dealloc(page: Page) {
     dealloc(page.ppn(), 1);
 }
 
+/// Utility function, dealloc contiguous page of parameter size from page
 #[allow(dead_code)]
 #[inline]
 pub fn page_dealloc_contiguous(page: Page, size: usize) {
@@ -386,7 +398,7 @@ pub fn page_dec_ref(page: Page) {
     unsafe { PAGE_ALLOCATOR.tracker.dec_ref(page.ppn()) }
 }
 
-/// decrease the `ref_count` of page
+/// Decrease the `ref_count` of page
 /// if page's `ref_count` is set to 0, deallocate the page
 pub fn try_recycle(page: Page) {
     match page.ref_count() {

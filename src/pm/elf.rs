@@ -22,10 +22,12 @@ pub type Elf32Off = u32;
 // pub type Elf32Section = u16;
 // pub type Elf32Symndx = u32;
 
+/// Elf32 file in binary
 pub struct Elf32<'a> {
     binary: &'a [u8],
 }
 
+/// Struct of Elf32Ehdr
 #[repr(C)]
 #[derive(Clone, Copy, Debug)]
 pub struct Elf32Ehdr {
@@ -50,6 +52,7 @@ pub const ELFMAG1: u8 = b'E';
 pub const ELFMAG2: u8 = b'L';
 pub const ELFMAG3: u8 = b'F';
 
+/// Struct of Elf32Phdr
 #[repr(C)]
 #[derive(Clone, Copy, Debug)]
 pub struct Elf32Phdr {
@@ -84,6 +87,11 @@ pub const PF_W: u32 = 1 << 1;
 pub type ElfMapperFn = fn(&mut Env, VA, usize, PteFlags, Option<&[u8]>) -> Result<(), MosError>;
 
 impl<'a> Elf32<'a> {
+    /// check if file is elf32 format
+    /// 
+    /// # Parameters
+    /// 
+    /// * data: file to be checked
     pub const fn is_elf32_format(data: &[u8]) -> bool {
         data.len() >= 5
             && data[0] == ELFMAG0
@@ -93,14 +101,21 @@ impl<'a> Elf32<'a> {
             && data[4] == 1
     }
 
+    /// Load elf32 file from binary
+    /// 
+    /// # Returns
+    /// 
+    /// struct Elf32 with binary data
     pub const fn from_bytes(data: &'a [u8]) -> Self {
         Self { binary: data }
     }
 
+    /// Acquire Elf32Ehdr of this file
     pub const fn ehdr(&self) -> &Elf32Ehdr {
         unsafe { &*(self.binary.as_ptr() as *const Elf32Ehdr) }
     }
 
+    /// Acquire Elf32Phdr of this file
     pub fn phdr(&self, n: usize) -> &Elf32Phdr {
         let ehdr = self.ehdr();
         let ph_offset = ehdr.e_phoff as usize;
@@ -115,6 +130,12 @@ impl<'a> Elf32<'a> {
     }
 }
 
+/// Load an elf format binary file. Map all section
+/// at correct virtual address.
+/// 
+/// # Returns
+/// 
+/// Ok(()) on success, MosError on failure
 pub fn elf_load_seg(
     ph: &Elf32Phdr,
     bin: &[u8],
@@ -155,6 +176,12 @@ pub fn elf_load_seg(
     Ok(())
 }
 
+/// Load a page into the user address space of an env with permission 'perm'.
+/// If 'src' is not NULL, copy the 'len' bytes from 'src' into 'offset' at this page.
+/// 
+/// # Returns
+/// 
+/// Ok(()) on success, MosError on failure
 pub fn load_icode_mapper(
     env: &mut Env,
     va: VA,
