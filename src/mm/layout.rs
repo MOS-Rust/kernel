@@ -149,11 +149,13 @@ pub const UTEXT: usize = PDMAP;
 pub const UCOW: usize = UTEXT - PTMAP;
 pub const UTEMP: usize = UCOW - PTMAP;
 
+/// check if provided va is illegal in user space
 #[inline]
 pub fn is_illegal_user_va(va: usize) -> bool {
     !(UTEMP..UTOP).contains(&va)
 }
 
+/// check if provided va range([va, va + len]) is illegal in user space
 #[inline]
 pub fn is_illegal_user_va_range(va: usize, len: usize) -> bool {
     if len == 0 {
@@ -162,6 +164,7 @@ pub fn is_illegal_user_va_range(va: usize, len: usize) -> bool {
     va < UTEMP || va.checked_add(len).is_none() || va.checked_add(len).unwrap() > UTOP
 }
 
+// check if provided va range([va, va + len]) is illegal in kernal space
 #[inline]
 pub const fn is_dev_va_range(va: usize, len: usize) -> bool {
     const CONOLE_ADDR_LEN: usize = 0x20;

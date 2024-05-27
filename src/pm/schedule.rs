@@ -1,6 +1,8 @@
 use super::ENV_MANAGER;
 use log::trace;
 
+/// Implementation of schedule in mos
+/// Implement a round-robin scheduling to select a runnable env and schedule it using 'env_run'
 #[no_mangle]
 pub unsafe extern "C" fn schedule(env_yield: bool) -> ! {
     static mut COUNT: u32 = 0;

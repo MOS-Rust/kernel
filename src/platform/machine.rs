@@ -38,6 +38,15 @@ pub unsafe fn iowrite_byte(pa: usize, data: u8) {
     ptr.write_volatile(data);
 }
 
+/// Reads a half word to the specified address.
+///
+/// # Safety
+///
+/// This function is marked as `unsafe` because it directly writes to a memory address.
+///
+/// # Arguments
+///
+/// * `pa` - The address to read to.
 #[inline(always)]
 pub unsafe fn ioread_half(pa: usize) -> u16 {
     let pa = KSEG1 | pa;
@@ -45,6 +54,16 @@ pub unsafe fn ioread_half(pa: usize) -> u16 {
     ptr.read_volatile()
 }
 
+/// Writes a half word to the specified address.
+///
+/// # Safety
+///
+/// This function is marked as `unsafe` because it directly writes to a memory address.
+///
+/// # Arguments
+///
+/// * `pa` - The address to write to.
+/// * `data` - The half word to write.
 #[inline(always)]
 pub unsafe fn iowrite_half(pa: usize, data: u16) {
     let pa = KSEG1 | pa;
@@ -52,6 +71,15 @@ pub unsafe fn iowrite_half(pa: usize, data: u16) {
     ptr.write_volatile(data);
 }
 
+/// Reads a word to the specified address.
+///
+/// # Safety
+///
+/// This function is marked as `unsafe` because it directly writes to a memory address.
+///
+/// # Arguments
+///
+/// * `pa` - The address to read to.
 #[inline(always)]
 pub unsafe fn ioread_word(pa: usize) -> u32 {
     let pa = KSEG1 | pa;
@@ -59,6 +87,16 @@ pub unsafe fn ioread_word(pa: usize) -> u32 {
     ptr.read_volatile()
 }
 
+/// Writes a word to the specified address.
+///
+/// # Safety
+///
+/// This function is marked as `unsafe` because it directly writes to a memory address.
+///
+/// # Arguments
+///
+/// * `pa` - The address to write to.
+/// * `data` - The word to write.
 #[inline(always)]
 pub unsafe fn iowrite_word(pa: usize, data: u32) {
     let pa = KSEG1 | pa;

@@ -16,6 +16,8 @@ extern "C" {
     fn _tlb_out(entryhi: u32);
 }
 
+/// Same function with tlb_invalidate in mos
+/// Invalidate the TLB entry with specified 'asid' and virtual address 'va'
 pub fn tlb_invalidate(asid: usize, va: VA) {
     let entryhi: u32 = (VPN::from(va).0 << 12 | asid) as u32;
     unsafe {
@@ -23,6 +25,8 @@ pub fn tlb_invalidate(asid: usize, va: VA) {
     }
 }
 
+/// Same function with passive_alloc in mos
+/// alloc a page at va, insert it into pgdir
 pub fn passive_alloc(va: VA, pgdir: PageDirectory, asid: usize) {
     let va_val = va.0;
     assert!(va_val >= UTEMP, "Passive alloc: address too low.");
@@ -40,6 +44,8 @@ pub fn passive_alloc(va: VA, pgdir: PageDirectory, asid: usize) {
     pgdir.insert(asid, page, va.pte_addr(), flags).unwrap();
 }
 
+/// Same function with do_tlb_refill in mos
+/// Refill TLB
 #[no_mangle]
 pub unsafe extern "C" fn do_tlb_refill(pentrylo: *mut u32, va: u32, asid: u32) {
     let va = VA(va as usize);
@@ -60,6 +66,8 @@ pub unsafe extern "C" fn do_tlb_refill(pentrylo: *mut u32, va: u32, asid: u32) {
         .write_volatile((*pte_base.add(1)).as_entrylo());
 }
 
+/// Same function with do_tlb_mod in mos
+/// This is the kernel TLB Mod exception handler
 #[no_mangle]
 pub unsafe extern "C" fn do_tlb_mod(tf: *mut Trapframe) {
     let tmp_tf = *tf;

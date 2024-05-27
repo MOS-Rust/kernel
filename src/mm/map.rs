@@ -15,42 +15,46 @@ use super::{
 pub struct Pte(pub usize);
 
 impl Pte {
-    /// construct a page entry by page's ppn
-    /// flags are set for this entry
+    /// Construct a page entry by page's ppn
+    /// Flags are set for this entry
     pub const fn new(ppn: PPN, flags: PteFlags) -> Self {
         Self(ppn.0 << 12 | flags.bits())
     }
 
-    /// construct an empty entry
+    /// Construct an empty entry
     pub const fn empty() -> Self {
         Self(0)
     }
 
-    /// acquire ppn of this entry
+    /// Acquire ppn of this entry
     pub const fn ppn(self) -> PPN {
         PPN(self.0 >> 12)
     }
 
-    /// acquire flags of this entry
+    /// Acquire flags of this entry
     pub const fn flags(self) -> PteFlags {
         PteFlags::from_bits_truncate(self.0 & 0xFFF)
     }
 
-    /// acquire address of this entry
+    /// Acquire address of this entry
     pub fn addr(self) -> PA {
         self.ppn().into()
     }
 
-    /// set ppn and flags of this entry
+    /// Set ppn and flags of this entry
     pub fn set(&mut self, ppn: PPN, flags: PteFlags) {
         self.0 = ppn.0 << 12 | flags.bits();
     }
 
+    /// Set flag bits provided to this pte
+    /// # Arguments
+    /// * flags: Bit flags set to pte
     pub fn set_flags(&mut self, flags: PteFlags) {
         self.0 &= !0xFFF;
         self.0 |= flags.bits();
     }
 
+    /// Check if this pte is valid(contains PteFlags::V)
     pub const fn is_valid(self) -> bool {
         self.flags().contains(PteFlags::V)
     }
@@ -82,13 +86,18 @@ impl PageTable {
         })
     }
 
+    /// create an empty page table
+    /// 
+    /// # Returns
+    /// 
+    /// An empty page table with page set to PPN(0)
     pub const fn empty() -> Self {
         Self {
             page: Page::new(PPN(0)),
         }
     }
 
-    /// return pte at this page's offset
+    /// Return pte at this page's offset
     // TODO: Find a better to deal with this
     #[allow(clippy::mut_from_ref)]
     pub fn pte_at(&self, offset: usize) -> &mut Pte {
@@ -96,12 +105,12 @@ impl PageTable {
         unsafe { &mut *base_pd.add(offset) }
     }
 
-    /// return pte at va of this page table directory
-    /// return ``MosError::NoMem`` if create is set and page allocation failed
+    /// Return pte at va of this page table directory
+    /// Return ``MosError::NoMem`` if create is set and page allocation failed
     ///
-    /// # arguments
-    /// * va: virtual address for target pte
-    /// * create: create a new page if pte is not valid
+    /// # Arguments
+    /// * va: Virtual address for target pte
+    /// * create: Create a new page if pte is not valid
     ///
     pub fn walk(&self, va: VA, create: bool) -> Result<Option<&mut Pte>, MosError> {
         let pde = self.pte_at(va.pdx());

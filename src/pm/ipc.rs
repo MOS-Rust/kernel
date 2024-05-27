@@ -17,6 +17,7 @@ pub struct IpcInfo {
     pub perm: usize,
 }
 
+/// Info used in ipc
 impl IpcInfo {
     pub const fn new() -> Self {
         Self {
