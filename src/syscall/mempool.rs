@@ -162,15 +162,14 @@ fn mempool_acquire_write_lock(poolid: u32) -> u32 {
 
         if pool
             .write_mutex
-            .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
+            .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
             .is_err()
         {
-            pool.read_mutex.store(false, Ordering::Relaxed);
             return (-(MosError::PoolBusy as i32)) as u32;
         };
         if pool
             .read_mutex
-            .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
+            .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
             .is_err()
         {
             pool.write_mutex.store(false, Ordering::Relaxed);
@@ -181,7 +180,6 @@ fn mempool_acquire_write_lock(poolid: u32) -> u32 {
             pool.read_mutex.store(false, Ordering::Relaxed);
             return (-(MosError::PoolBusy as i32)) as u32;
         }
-        pool.read_mutex.store(false, Ordering::Relaxed);
         pool.write_lock = true;
         pool.writer = env.id;
         let asid = env.asid;
@@ -205,9 +203,11 @@ fn mempool_acquire_write_lock(poolid: u32) -> u32 {
         {
             pool.write_lock = false;
             pool.writer = 0;
+            pool.read_mutex.store(false, Ordering::Relaxed);
             pool.write_mutex.store(false, Ordering::Relaxed);
             return (-(MosError::NoMem as i32)) as u32;
         }
+        pool.read_mutex.store(false, Ordering::Relaxed);
         pool.write_mutex.store(false, Ordering::Relaxed);
         0
     } else {
@@ -221,13 +221,13 @@ fn mempool_release_write_lock(poolid: u32) -> u32 {
         if !pool.users.contains_key(&env.id) {
             return (-(MosError::Inval as i32)) as u32;
         }
-        match pool
+        if pool
             .write_mutex
-            .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
+            .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
+            .is_err()
         {
-            Ok(_) => (),
-            Err(_) => return (-(MosError::PoolBusy as i32)) as u32,
-        };
+            return (-(MosError::PoolBusy as i32)) as u32;
+        }
         if !pool.write_lock || pool.writer != env.id {
             pool.write_mutex.store(false, Ordering::Relaxed);
             return (-(MosError::Inval as i32)) as u32;
@@ -253,25 +253,17 @@ fn mempool_acquire_read_lock(poolid: u32) -> u32 {
             return (-(MosError::Inval as i32)) as u32;
         }
         if pool
-            .write_mutex
-            .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
-            .is_err()
-        {
-            return (-(MosError::PoolBusy as i32)) as u32;
-        }
-        if pool.write_lock {
-            pool.write_mutex.store(false, Ordering::Relaxed);
-            return (-(MosError::PoolBusy as i32)) as u32;
-        }
-        pool.write_mutex.store(false, Ordering::Relaxed);
-        if pool
             .read_mutex
-            .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
+            .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
             .is_err()
         {
             return (-(MosError::PoolBusy as i32)) as u32;
         }
 
+        if pool.write_mutex.load(Ordering::Relaxed) || pool.write_lock {
+            pool.read_mutex.store(false, Ordering::Relaxed);
+            return (-(MosError::PoolBusy as i32)) as u32;
+        }
         pool.read_lock += 1;
         pool.readers.push(env.id);
         let asid = env.asid;
@@ -311,13 +303,13 @@ fn mempool_release_read_lock(poolid: u32) -> u32 {
         if !pool.users.contains_key(&env.id) {
             return (-(MosError::Inval as i32)) as u32;
         }
-        match pool
+        if pool
             .read_mutex
-            .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
+            .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
+            .is_err()
         {
-            Ok(_) => (),
-            Err(_) => return (-(MosError::PoolBusy as i32)) as u32,
-        };
+            return (-(MosError::PoolBusy as i32)) as u32;
+        }
         if pool.read_lock == 0 || !pool.readers.contains(&env.id) {
             pool.read_mutex.store(false, Ordering::Relaxed);
             return (-(MosError::Inval as i32)) as u32;
