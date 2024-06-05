@@ -9,7 +9,6 @@ allocator = { version = "0.1.0", path = "../allocator" }
 bitflags = "2.5.0"
 lazy_static = { version = "1", features = ["spin_no_std"] }
 log = "0.4"
-spin = "0"
 
 [build-dependencies]
 preprocessor = { version = "0.1.0", path = "../tools/preprocessor" }

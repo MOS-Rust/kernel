@@ -49,7 +49,6 @@ impl<T> Mutex<T> {
         }
     }
 
-    #[allow(dead_code)]
     pub unsafe fn force_unlock(&self) {
         self.lock.store(false, Ordering::Release);
     }

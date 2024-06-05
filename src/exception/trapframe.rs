@@ -27,7 +27,7 @@ impl Trapframe {
         }
     }
 
-    pub const unsafe fn from_memory(addr: VA) -> *mut Self {
+    pub const fn from_memory(addr: VA) -> *mut Self {
         addr.0 as *mut Self
     }
 }
