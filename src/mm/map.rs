@@ -98,7 +98,6 @@ impl PageTable {
     }
 
     /// Return pte at this page's offset
-    // TODO: Find a better to deal with this
     #[allow(clippy::mut_from_ref)]
     pub fn pte_at(&self, offset: usize) -> &mut Pte {
         let base_pd: *mut Pde = self.page.kaddr().as_mut_ptr::<Pde>();

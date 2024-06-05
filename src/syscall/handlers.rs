@@ -229,7 +229,6 @@ pub unsafe fn sys_set_trapframe(envid: u32, tf: u32, _arg3: u32, _arg4: u32, _ar
 }
 
 /// Kernel panic with message `msg`.
-// TODO: There may be a more elegant way to handle this
 pub unsafe fn sys_panic(msg: u32, _arg2: u32, _arg3: u32, _arg4: u32, _arg5: u32) -> u32 {
     let mut str = String::new();
     let mut i = 0;

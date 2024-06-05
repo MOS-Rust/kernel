@@ -348,9 +348,6 @@ pub fn pool_remove_user_on_exit(env_id: usize) {
                 .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
                 .is_err()
             {
-                // TODO: find a better way to handle this
-                // cause kernel itself to hang
-                // maybe a watchdog is needed
                 while pool.write_mutex.load(Ordering::Relaxed) {
                     core::hint::spin_loop();
                 }
