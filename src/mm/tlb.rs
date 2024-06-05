@@ -30,9 +30,18 @@ pub fn tlb_invalidate(asid: usize, va: VA) {
 pub fn passive_alloc(va: VA, pgdir: PageDirectory, asid: usize) {
     let va_val = va.0;
     assert!(va_val >= UTEMP, "Passive alloc: address too low.");
-    assert!(!(USTACKTOP..USTACKTOP + PAGE_SIZE).contains(&va_val), "Passive alloc: invalid address.");
-    assert!(!(UENVS..UPAGES).contains(&va_val), "Passive alloc: envs zone.");
-    assert!(!(UPAGES..UVPT).contains(&va_val), "Passive alloc: pages zone.");
+    assert!(
+        !(USTACKTOP..USTACKTOP + PAGE_SIZE).contains(&va_val),
+        "Passive alloc: invalid address."
+    );
+    assert!(
+        !(UENVS..UPAGES).contains(&va_val),
+        "Passive alloc: envs zone."
+    );
+    assert!(
+        !(UPAGES..UVPT).contains(&va_val),
+        "Passive alloc: pages zone."
+    );
     assert!(va_val < ULIM, "Passive alloc: kernel address");
 
     let page = page_alloc(true).unwrap();
@@ -54,11 +63,11 @@ pub unsafe extern "C" fn do_tlb_refill(pentrylo: *mut u32, va: u32, asid: u32) {
 
     let pte_base: *mut Pte;
     loop {
-        if let Some((pte, _)) = ENV_MANAGER.cur_pgdir().lookup(va) {
+        if let Some((pte, _)) = ENV_MANAGER.lock().cur_pgdir().lookup(va) {
             pte_base = ((pte as *mut Pte as usize) & !0x7) as *mut Pte;
             break;
         }
-        passive_alloc(va, *ENV_MANAGER.cur_pgdir(), asid);
+        passive_alloc(va, *ENV_MANAGER.lock().cur_pgdir(), asid);
     }
     pentrylo.write_volatile((*pte_base).as_entrylo());
     pentrylo
@@ -78,12 +87,13 @@ pub unsafe extern "C" fn do_tlb_mod(tf: *mut Trapframe) {
     (*tf).regs[29] -= TF_SIZE as u32;
     *((*tf).regs[29] as *mut Trapframe) = tmp_tf;
     let _ = ENV_MANAGER
+        .lock()
         .cur_pgdir()
         .lookup(VA((*tf).cp0_badvaddr as usize));
-    if ENV_MANAGER.curenv().unwrap().user_tlb_mod_entry != 0 {
+    if ENV_MANAGER.lock().curenv().unwrap().user_tlb_mod_entry != 0 {
         (*tf).regs[4] = (*tf).regs[29];
         (*tf).regs[29] -= size_of::<u32>() as u32;
-        (*tf).cp0_epc = ENV_MANAGER.curenv().unwrap().user_tlb_mod_entry as u32;
+        (*tf).cp0_epc = ENV_MANAGER.lock().curenv().unwrap().user_tlb_mod_entry as u32;
     } else {
         panic!("do_tlb_mod: TLB Mod but no user handler registered");
     }

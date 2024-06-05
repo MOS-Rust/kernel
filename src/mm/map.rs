@@ -87,9 +87,9 @@ impl PageTable {
     }
 
     /// create an empty page table
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// An empty page table with page set to PPN(0)
     pub const fn empty() -> Self {
         Self {
@@ -147,7 +147,7 @@ impl PageTable {
                     tlb_invalidate(asid, va);
                     pte.set_flags(flags | PteFlags::V | PteFlags::Cacheable);
                     return Ok(());
-                } 
+                }
                 self.remove(asid, va);
             }
         }

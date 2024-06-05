@@ -53,17 +53,16 @@ fn panic(info: &core::panic::PanicInfo) -> ! {
         "ra:    0x{:08x}  sp:  0x{:08x}  Status: 0x{:08x}\nCause: 0x{:08x}  EPC: 0x{:08x}  BadVA:  0x{:08x}",
         ra, sp, sr, cause, epc, badva
     );
-    unsafe {
-        let envid = match crate::pm::ENV_MANAGER.curenv() {
-            Some(env) => env.id,
-            None => 0,
-        };
-        println!("envid: {:08x}", envid);
-        println!(
-            "cur_pgdir: 0x{:08x}",
-            crate::pm::ENV_MANAGER.cur_pgdir().page.kaddr().0
-        );
-    }
+    unsafe { crate::pm::ENV_MANAGER.force_unlock() };
+    let envid = match crate::pm::ENV_MANAGER.lock().curenv() {
+        Some(env) => env.id,
+        None => 0,
+    };
+    println!("envid: {:08x}", envid);
+    println!(
+        "cur_pgdir: 0x{:08x}",
+        crate::pm::ENV_MANAGER.lock().cur_pgdir().page.kaddr().0
+    );
     match option_env!("MOS_HANG_ON_PANIC") {
         Some("1") => loop {},
         _ => halt(),

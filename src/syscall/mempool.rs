@@ -1,9 +1,9 @@
 use crate::{
     error::MosError,
     mm::{
-        addr::VA,
         layout::{is_illegal_user_va_range, PteFlags, PAGE_SIZE},
         page::{page_alloc, page_inc_ref, try_recycle, Page},
+        VA,
     },
     pm::ENV_MANAGER,
 };
@@ -110,7 +110,7 @@ fn mempool_join(poolid: u32, va: u32, page_count: u32) -> u32 {
     if is_illegal_user_va_range(va as usize, page_count as usize * PAGE_SIZE) {
         return (-(MosError::Inval as i32)) as u32;
     }
-    let env = unsafe { ENV_MANAGER.curenv().unwrap() };
+    let env = ENV_MANAGER.lock().curenv().unwrap();
     if let Some(pool) = unsafe { POOL_MANAGER.pools.get_mut(&poolid) } {
         if pool.page_count != page_count || pool.users.contains_key(&env.id) {
             return (-(MosError::Inval as i32)) as u32;
@@ -123,7 +123,7 @@ fn mempool_join(poolid: u32, va: u32, page_count: u32) -> u32 {
 }
 
 fn mempool_leave(poolid: u32) -> u32 {
-    let env = unsafe { ENV_MANAGER.curenv().unwrap() };
+    let env = ENV_MANAGER.lock().curenv().unwrap();
     if let Some(pool) = unsafe { POOL_MANAGER.pools.get_mut(&poolid) } {
         if !pool.users.contains_key(&env.id) {
             return (-(MosError::Inval as i32)) as u32;
@@ -154,7 +154,7 @@ fn mempool_destroy(poolid: u32) -> u32 {
 }
 
 fn mempool_acquire_write_lock(poolid: u32) -> u32 {
-    let env = unsafe { ENV_MANAGER.curenv().unwrap() };
+    let env = ENV_MANAGER.lock().curenv().unwrap();
     if let Some(pool) = unsafe { POOL_MANAGER.pools.get_mut(&poolid) } {
         if !pool.users.contains_key(&env.id) {
             return (-(MosError::Inval as i32)) as u32;
@@ -216,7 +216,7 @@ fn mempool_acquire_write_lock(poolid: u32) -> u32 {
 }
 
 fn mempool_release_write_lock(poolid: u32) -> u32 {
-    let env = unsafe { ENV_MANAGER.curenv().unwrap() };
+    let env = ENV_MANAGER.lock().curenv().unwrap();
     if let Some(pool) = unsafe { POOL_MANAGER.pools.get_mut(&poolid) } {
         if !pool.users.contains_key(&env.id) {
             return (-(MosError::Inval as i32)) as u32;
@@ -247,7 +247,7 @@ fn mempool_release_write_lock(poolid: u32) -> u32 {
 }
 
 fn mempool_acquire_read_lock(poolid: u32) -> u32 {
-    let env = unsafe { ENV_MANAGER.curenv().unwrap() };
+    let env = ENV_MANAGER.lock().curenv().unwrap();
     if let Some(pool) = unsafe { POOL_MANAGER.pools.get_mut(&poolid) } {
         if !pool.users.contains_key(&env.id) {
             return (-(MosError::Inval as i32)) as u32;
@@ -298,7 +298,7 @@ fn mempool_acquire_read_lock(poolid: u32) -> u32 {
 }
 
 fn mempool_release_read_lock(poolid: u32) -> u32 {
-    let env = unsafe { ENV_MANAGER.curenv().unwrap() };
+    let env = ENV_MANAGER.lock().curenv().unwrap();
     if let Some(pool) = unsafe { POOL_MANAGER.pools.get_mut(&poolid) } {
         if !pool.users.contains_key(&env.id) {
             return (-(MosError::Inval as i32)) as u32;

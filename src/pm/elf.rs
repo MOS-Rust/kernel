@@ -2,9 +2,9 @@ use super::env::Env;
 use crate::{
     error::MosError,
     mm::{
-        addr::VA,
         layout::{PteFlags, PAGE_SIZE},
         page::page_alloc,
+        VA,
     },
     round_down,
 };
@@ -88,9 +88,9 @@ pub type ElfMapperFn = fn(&mut Env, VA, usize, PteFlags, Option<&[u8]>) -> Resul
 
 impl<'a> Elf32<'a> {
     /// check if file is elf32 format
-    /// 
+    ///
     /// # Parameters
-    /// 
+    ///
     /// * data: file to be checked
     pub const fn is_elf32_format(data: &[u8]) -> bool {
         data.len() >= 5
@@ -102,9 +102,9 @@ impl<'a> Elf32<'a> {
     }
 
     /// Load elf32 file from binary
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// struct Elf32 with binary data
     pub const fn from_bytes(data: &'a [u8]) -> Self {
         Self { binary: data }
@@ -132,9 +132,9 @@ impl<'a> Elf32<'a> {
 
 /// Load an elf format binary file. Map all section
 /// at correct virtual address.
-/// 
+///
 /// # Returns
-/// 
+///
 /// Ok(()) on success, MosError on failure
 pub fn elf_load_seg(
     ph: &Elf32Phdr,
@@ -178,9 +178,9 @@ pub fn elf_load_seg(
 
 /// Load a page into the user address space of an env with permission 'perm'.
 /// If 'src' is not NULL, copy the 'len' bytes from 'src' into 'offset' at this page.
-/// 
+///
 /// # Returns
-/// 
+///
 /// Ok(()) on success, MosError on failure
 pub fn load_icode_mapper(
     env: &mut Env,

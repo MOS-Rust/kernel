@@ -9,26 +9,26 @@ pub use mempool::pool_remove_user_on_exit;
 
 #[derive(Debug)]
 enum Syscall {
-    Putchar        = 0,
-    PrintConsole   = 1,
-    GetEnvId       = 2,
-    Yield          = 3,
-    EnvDestroy     = 4,
+    Putchar = 0,
+    PrintConsole = 1,
+    GetEnvId = 2,
+    Yield = 3,
+    EnvDestroy = 4,
     SetTlbModEntry = 5,
-    MemAlloc       = 6,
-    MemMap         = 7,
-    MemUnmap       = 8,
-    Exofork        = 9,
-    SetEnvStatus   = 10,
-    SetTrapframe   = 11,
-    Panic          = 12,
-    IpcTrySend     = 13,
-    IpcRecv        = 14,
-    Getchar        = 15,
-    WriteDev       = 16,
-    ReadDev        = 17,
-    MempoolOp      = 18,
-    Unhandled      = 19,
+    MemAlloc = 6,
+    MemMap = 7,
+    MemUnmap = 8,
+    Exofork = 9,
+    SetEnvStatus = 10,
+    SetTrapframe = 11,
+    Panic = 12,
+    IpcTrySend = 13,
+    IpcRecv = 14,
+    Getchar = 15,
+    WriteDev = 16,
+    ReadDev = 17,
+    MempoolOp = 18,
+    Unhandled = 19,
 }
 
 impl Syscall {
@@ -100,7 +100,12 @@ pub unsafe extern "C" fn do_syscall(tf: *mut Trapframe) {
     let arg4: u32 = *(sp as *const u32).add(4);
     let arg5: u32 = *(sp as *const u32).add(5);
 
-    trace!("Env: {:08x}, Syscall: {} \"{:?}\"", ENV_MANAGER.curenv().unwrap().id, syscall_num, Syscall::from_u32(syscall_num));
+    trace!(
+        "Env: {:08x}, Syscall: {} \"{:?}\"",
+        ENV_MANAGER.lock().curenv().unwrap().id,
+        syscall_num,
+        Syscall::from_u32(syscall_num)
+    );
     trace!(
         "Args: {:08x} {:08x} {:08x} {:08x} {:08x}",
         arg1,

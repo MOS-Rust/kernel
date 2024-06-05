@@ -1,6 +1,6 @@
 use core::fmt::{Display, Formatter, Result};
 
-use crate::{const_export_usize, mm::addr::VA};
+use crate::{const_export_usize, mm::VA};
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug)]
