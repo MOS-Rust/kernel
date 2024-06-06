@@ -1,4 +1,4 @@
-use crate::mm::addr::VA;
+use crate::mm::VA;
 
 #[repr(u32)]
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]

@@ -1,6 +1,6 @@
 use core::fmt::{Display, Formatter, Result};
 
-use crate::{const_export_usize, mm::addr::VA};
+use crate::{const_export_usize, mm::VA};
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug)]
@@ -27,7 +27,7 @@ impl Trapframe {
         }
     }
 
-    pub const unsafe fn from_memory(addr: VA) -> *mut Self {
+    pub const fn from_memory(addr: VA) -> *mut Self {
         addr.0 as *mut Self
     }
 }

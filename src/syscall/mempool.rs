@@ -1,20 +1,24 @@
 use crate::{
     error::MosError,
     mm::{
-        addr::VA,
         layout::{is_illegal_user_va_range, PteFlags, PAGE_SIZE},
         page::{page_alloc, page_inc_ref, try_recycle, Page},
+        VA,
     },
+    mutex::Mutex,
     pm::ENV_MANAGER,
 };
 use alloc::{collections::BTreeMap, vec::Vec};
 use core::sync::atomic::{AtomicBool, Ordering};
+use lazy_static::lazy_static;
 use log::warn;
 
-static mut POOL_MANAGER: MemPoolManager = MemPoolManager {
-    current_id: 1,
-    pools: BTreeMap::new(),
-};
+lazy_static! {
+    static ref POOL_MANAGER: Mutex<MemPoolManager> = Mutex::new(MemPoolManager {
+        current_id: 1,
+        pools: BTreeMap::new(),
+    });
+}
 
 struct MemPoolManager {
     current_id: u32,
@@ -78,7 +82,7 @@ pub fn do_mempool_op(op: u32, poolid: u32, va: u32, page_count: u32) -> u32 {
 }
 
 fn mempool_create(page_count: u32) -> u32 {
-    let id = unsafe { POOL_MANAGER.current_id };
+    let id = POOL_MANAGER.lock().current_id;
     let mut pool = MemPool {
         id,
         page_count,
@@ -99,10 +103,8 @@ fn mempool_create(page_count: u32) -> u32 {
         page_inc_ref(page);
         pool.pages.push(page);
     }
-    unsafe {
-        POOL_MANAGER.pools.insert(id, pool);
-        POOL_MANAGER.current_id += 1;
-    }
+    POOL_MANAGER.lock().pools.insert(id, pool);
+    POOL_MANAGER.lock().current_id += 1;
     id
 }
 
@@ -110,8 +112,8 @@ fn mempool_join(poolid: u32, va: u32, page_count: u32) -> u32 {
     if is_illegal_user_va_range(va as usize, page_count as usize * PAGE_SIZE) {
         return (-(MosError::Inval as i32)) as u32;
     }
-    let env = unsafe { ENV_MANAGER.curenv().unwrap() };
-    if let Some(pool) = unsafe { POOL_MANAGER.pools.get_mut(&poolid) } {
+    let env = ENV_MANAGER.lock().curenv().unwrap();
+    if let Some(pool) = POOL_MANAGER.lock().pools.get_mut(&poolid) {
         if pool.page_count != page_count || pool.users.contains_key(&env.id) {
             return (-(MosError::Inval as i32)) as u32;
         }
@@ -123,8 +125,8 @@ fn mempool_join(poolid: u32, va: u32, page_count: u32) -> u32 {
 }
 
 fn mempool_leave(poolid: u32) -> u32 {
-    let env = unsafe { ENV_MANAGER.curenv().unwrap() };
-    if let Some(pool) = unsafe { POOL_MANAGER.pools.get_mut(&poolid) } {
+    let env = ENV_MANAGER.lock().curenv().unwrap();
+    if let Some(pool) = POOL_MANAGER.lock().pools.get_mut(&poolid) {
         if !pool.users.contains_key(&env.id) {
             return (-(MosError::Inval as i32)) as u32;
         }
@@ -142,20 +144,20 @@ fn mempool_leave(poolid: u32) -> u32 {
 }
 
 fn mempool_destroy(poolid: u32) -> u32 {
-    if let Some(pool) = unsafe { POOL_MANAGER.pools.get_mut(&poolid) } {
+    if let Some(pool) = POOL_MANAGER.lock().pools.get_mut(&poolid) {
         if !pool.users.is_empty() {
             return (-(MosError::PoolBusy as i32)) as u32;
         }
-        free_pool(poolid);
-        0
     } else {
-        (-(MosError::NotFound as i32)) as u32
+        return (-(MosError::NotFound as i32)) as u32
     }
+    free_pool(poolid);
+    0
 }
 
 fn mempool_acquire_write_lock(poolid: u32) -> u32 {
-    let env = unsafe { ENV_MANAGER.curenv().unwrap() };
-    if let Some(pool) = unsafe { POOL_MANAGER.pools.get_mut(&poolid) } {
+    let env = ENV_MANAGER.lock().curenv().unwrap();
+    if let Some(pool) = POOL_MANAGER.lock().pools.get_mut(&poolid) {
         if !pool.users.contains_key(&env.id) {
             return (-(MosError::Inval as i32)) as u32;
         }
@@ -216,8 +218,8 @@ fn mempool_acquire_write_lock(poolid: u32) -> u32 {
 }
 
 fn mempool_release_write_lock(poolid: u32) -> u32 {
-    let env = unsafe { ENV_MANAGER.curenv().unwrap() };
-    if let Some(pool) = unsafe { POOL_MANAGER.pools.get_mut(&poolid) } {
+    let env = ENV_MANAGER.lock().curenv().unwrap();
+    if let Some(pool) = POOL_MANAGER.lock().pools.get_mut(&poolid) {
         if !pool.users.contains_key(&env.id) {
             return (-(MosError::Inval as i32)) as u32;
         }
@@ -247,8 +249,8 @@ fn mempool_release_write_lock(poolid: u32) -> u32 {
 }
 
 fn mempool_acquire_read_lock(poolid: u32) -> u32 {
-    let env = unsafe { ENV_MANAGER.curenv().unwrap() };
-    if let Some(pool) = unsafe { POOL_MANAGER.pools.get_mut(&poolid) } {
+    let env = ENV_MANAGER.lock().curenv().unwrap();
+    if let Some(pool) = POOL_MANAGER.lock().pools.get_mut(&poolid) {
         if !pool.users.contains_key(&env.id) {
             return (-(MosError::Inval as i32)) as u32;
         }
@@ -298,8 +300,8 @@ fn mempool_acquire_read_lock(poolid: u32) -> u32 {
 }
 
 fn mempool_release_read_lock(poolid: u32) -> u32 {
-    let env = unsafe { ENV_MANAGER.curenv().unwrap() };
-    if let Some(pool) = unsafe { POOL_MANAGER.pools.get_mut(&poolid) } {
+    let env = ENV_MANAGER.lock().curenv().unwrap();
+    if let Some(pool) = POOL_MANAGER.lock().pools.get_mut(&poolid) {
         if !pool.users.contains_key(&env.id) {
             return (-(MosError::Inval as i32)) as u32;
         }
@@ -329,17 +331,16 @@ fn mempool_release_read_lock(poolid: u32) -> u32 {
 }
 
 fn free_pool(poolid: u32) {
-    assert!(unsafe { POOL_MANAGER.pools.contains_key(&poolid) });
-    let pool = unsafe { POOL_MANAGER.pools.get_mut(&poolid).unwrap() };
+    let mut pool_man = POOL_MANAGER.lock();
+    assert!(pool_man.pools.contains_key(&poolid));
+    let pool = pool_man.pools.get_mut(&poolid).unwrap();
     assert!(pool.users.is_empty());
     pool.pages.iter().for_each(|&page| try_recycle(page));
-    unsafe {
-        POOL_MANAGER.pools.remove(&poolid);
-    }
+    pool_man.pools.remove(&poolid);
 }
 
 pub fn pool_remove_user_on_exit(env_id: usize) {
-    for pool in unsafe { POOL_MANAGER.pools.values_mut() } {
+    for pool in POOL_MANAGER.lock().pools.values_mut() {
         if pool.users.contains_key(&env_id) {
             pool.users.remove(&env_id);
             if pool
@@ -347,9 +348,6 @@ pub fn pool_remove_user_on_exit(env_id: usize) {
                 .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
                 .is_err()
             {
-                // TODO: find a better way to handle this
-                // cause kernel itself to hang
-                // maybe a watchdog is needed
                 while pool.write_mutex.load(Ordering::Relaxed) {
                     core::hint::spin_loop();
                 }

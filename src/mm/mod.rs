@@ -4,13 +4,14 @@
 //!
 //! It includes functions for initializing memory, managing the heap and handling page allocation and mapping.
 
-pub mod addr;
+mod addr;
 mod heap;
 pub mod layout;
 pub mod map;
 pub mod page;
 mod tlb;
 
+pub use addr::*;
 pub use tlb::tlb_invalidate;
 
 use log::info;

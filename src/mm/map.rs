@@ -87,9 +87,9 @@ impl PageTable {
     }
 
     /// create an empty page table
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// An empty page table with page set to PPN(0)
     pub const fn empty() -> Self {
         Self {
@@ -98,7 +98,6 @@ impl PageTable {
     }
 
     /// Return pte at this page's offset
-    // TODO: Find a better to deal with this
     #[allow(clippy::mut_from_ref)]
     pub fn pte_at(&self, offset: usize) -> &mut Pte {
         let base_pd: *mut Pde = self.page.kaddr().as_mut_ptr::<Pde>();
@@ -147,7 +146,7 @@ impl PageTable {
                     tlb_invalidate(asid, va);
                     pte.set_flags(flags | PteFlags::V | PteFlags::Cacheable);
                     return Ok(());
-                } 
+                }
                 self.remove(asid, va);
             }
         }
