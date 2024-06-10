@@ -6,6 +6,7 @@ use super::{
 };
 use crate::{
     exception::{Trapframe, TF_SIZE},
+    mutex::Mutex,
     pm::ENV_MANAGER,
 };
 use core::{arch::global_asm, mem::size_of};
@@ -86,10 +87,6 @@ pub unsafe extern "C" fn do_tlb_mod(tf: *mut Trapframe) {
     }
     (*tf).regs[29] -= TF_SIZE as u32;
     *((*tf).regs[29] as *mut Trapframe) = tmp_tf;
-    let _ = ENV_MANAGER
-        .lock()
-        .cur_pgdir()
-        .lookup(VA((*tf).cp0_badvaddr as usize));
     if ENV_MANAGER.lock().curenv().unwrap().user_tlb_mod_entry != 0 {
         (*tf).regs[4] = (*tf).regs[29];
         (*tf).regs[29] -= size_of::<u32>() as u32;

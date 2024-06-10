@@ -1,6 +1,7 @@
 use log::warn;
 
 use crate::pm::{env_destroy, schedule, ENV_MANAGER};
+use crate::mutex::Mutex;
 
 use super::trapframe::Trapframe;
 

@@ -1,3 +1,4 @@
+use crate::mutex::Mutex;
 use crate::{
     error::MosError,
     mm::{
@@ -5,7 +6,7 @@ use crate::{
         page::{page_alloc, page_inc_ref, try_recycle, Page},
         VA,
     },
-    mutex::Mutex,
+    mutex::FakeLock,
     pm::ENV_MANAGER,
 };
 use alloc::{collections::BTreeMap, vec::Vec};
@@ -14,7 +15,7 @@ use lazy_static::lazy_static;
 use log::warn;
 
 lazy_static! {
-    static ref POOL_MANAGER: Mutex<MemPoolManager> = Mutex::new(MemPoolManager {
+    static ref POOL_MANAGER: FakeLock<MemPoolManager> = FakeLock::new(MemPoolManager {
         current_id: 1,
         pools: BTreeMap::new(),
     });
@@ -149,7 +150,7 @@ fn mempool_destroy(poolid: u32) -> u32 {
             return (-(MosError::PoolBusy as i32)) as u32;
         }
     } else {
-        return (-(MosError::NotFound as i32)) as u32
+        return (-(MosError::NotFound as i32)) as u32;
     }
     free_pool(poolid);
     0
@@ -174,12 +175,12 @@ fn mempool_acquire_write_lock(poolid: u32) -> u32 {
             .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
             .is_err()
         {
-            pool.write_mutex.store(false, Ordering::Relaxed);
+            pool.write_mutex.store(false, Ordering::Release);
             return (-(MosError::PoolBusy as i32)) as u32;
         };
         if pool.write_lock || pool.read_lock > 0 {
-            pool.write_mutex.store(false, Ordering::Relaxed);
-            pool.read_mutex.store(false, Ordering::Relaxed);
+            pool.write_mutex.store(false, Ordering::Release);
+            pool.read_mutex.store(false, Ordering::Release);
             return (-(MosError::PoolBusy as i32)) as u32;
         }
         pool.write_lock = true;
@@ -205,12 +206,12 @@ fn mempool_acquire_write_lock(poolid: u32) -> u32 {
         {
             pool.write_lock = false;
             pool.writer = 0;
-            pool.read_mutex.store(false, Ordering::Relaxed);
-            pool.write_mutex.store(false, Ordering::Relaxed);
+            pool.read_mutex.store(false, Ordering::Release);
+            pool.write_mutex.store(false, Ordering::Release);
             return (-(MosError::NoMem as i32)) as u32;
         }
-        pool.read_mutex.store(false, Ordering::Relaxed);
-        pool.write_mutex.store(false, Ordering::Relaxed);
+        pool.read_mutex.store(false, Ordering::Release);
+        pool.write_mutex.store(false, Ordering::Release);
         0
     } else {
         (-(MosError::NotFound as i32)) as u32
@@ -231,7 +232,7 @@ fn mempool_release_write_lock(poolid: u32) -> u32 {
             return (-(MosError::PoolBusy as i32)) as u32;
         }
         if !pool.write_lock || pool.writer != env.id {
-            pool.write_mutex.store(false, Ordering::Relaxed);
+            pool.write_mutex.store(false, Ordering::Release);
             return (-(MosError::Inval as i32)) as u32;
         }
         let asid = env.asid;
@@ -241,7 +242,7 @@ fn mempool_release_write_lock(poolid: u32) -> u32 {
             .for_each(|va| env.pgdir().remove(asid, VA(va)));
         pool.write_lock = false;
         pool.writer = 0;
-        pool.write_mutex.store(false, Ordering::Relaxed);
+        pool.write_mutex.store(false, Ordering::Release);
         0
     } else {
         (-(MosError::NotFound as i32)) as u32
@@ -263,7 +264,7 @@ fn mempool_acquire_read_lock(poolid: u32) -> u32 {
         }
 
         if pool.write_mutex.load(Ordering::Relaxed) || pool.write_lock {
-            pool.read_mutex.store(false, Ordering::Relaxed);
+            pool.read_mutex.store(false, Ordering::Release);
             return (-(MosError::PoolBusy as i32)) as u32;
         }
         pool.read_lock += 1;
@@ -289,10 +290,10 @@ fn mempool_acquire_read_lock(poolid: u32) -> u32 {
         {
             pool.read_lock -= 1;
             pool.readers.retain(|&reader| reader != env.id);
-            pool.read_mutex.store(false, Ordering::Relaxed);
+            pool.read_mutex.store(false, Ordering::Release);
             return (-(MosError::NoMem as i32)) as u32;
         }
-        pool.read_mutex.store(false, Ordering::Relaxed);
+        pool.read_mutex.store(false, Ordering::Release);
         0
     } else {
         (-(MosError::NotFound as i32)) as u32
@@ -313,7 +314,7 @@ fn mempool_release_read_lock(poolid: u32) -> u32 {
             return (-(MosError::PoolBusy as i32)) as u32;
         }
         if pool.read_lock == 0 || !pool.readers.contains(&env.id) {
-            pool.read_mutex.store(false, Ordering::Relaxed);
+            pool.read_mutex.store(false, Ordering::Release);
             return (-(MosError::Inval as i32)) as u32;
         }
         let asid = env.asid;
@@ -323,7 +324,7 @@ fn mempool_release_read_lock(poolid: u32) -> u32 {
             .for_each(|va| env.pgdir().remove(asid, VA(va)));
         pool.read_lock -= 1;
         pool.readers.retain(|&reader| reader != env.id);
-        pool.read_mutex.store(false, Ordering::Relaxed);
+        pool.read_mutex.store(false, Ordering::Release);
         0
     } else {
         (-(MosError::NotFound as i32)) as u32
@@ -345,7 +346,7 @@ pub fn pool_remove_user_on_exit(env_id: usize) {
             pool.users.remove(&env_id);
             if pool
                 .write_mutex
-                .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
+                .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
                 .is_err()
             {
                 while pool.write_mutex.load(Ordering::Relaxed) {
@@ -357,11 +358,11 @@ pub fn pool_remove_user_on_exit(env_id: usize) {
                 pool.write_lock = false;
                 pool.writer = 0;
             }
-            pool.write_mutex.store(false, Ordering::Relaxed);
+            pool.write_mutex.store(false, Ordering::Release);
 
             if pool
                 .read_mutex
-                .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
+                .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
                 .is_err()
             {
                 while pool.read_mutex.load(Ordering::Relaxed) {
@@ -373,7 +374,7 @@ pub fn pool_remove_user_on_exit(env_id: usize) {
                 pool.read_lock -= 1;
                 pool.readers.retain(|&reader| reader != env_id);
             }
-            pool.read_mutex.store(false, Ordering::Relaxed);
+            pool.read_mutex.store(false, Ordering::Release);
 
             // if the last user exits unexpectedly, free the pool
             if pool.users.is_empty() {

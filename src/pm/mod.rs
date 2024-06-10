@@ -3,7 +3,7 @@ mod env;
 mod ipc;
 mod schedule;
 
-use crate::mutex::Mutex;
+use crate::mutex::{FakeLock, Mutex};
 use lazy_static::lazy_static;
 use log::info;
 
@@ -14,7 +14,7 @@ pub use ipc::IpcStatus;
 pub use schedule::schedule;
 
 lazy_static! {
-    pub static ref ENV_MANAGER: Mutex<EnvManager> = Mutex::new(EnvManager::new());
+    pub static ref ENV_MANAGER: FakeLock<EnvManager> = FakeLock::new(EnvManager::new());
 }
 
 pub fn init() {

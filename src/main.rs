@@ -25,6 +25,7 @@ mod platform;
 mod pm;
 mod syscall;
 
+use crate::mutex::Mutex;
 use core::{
     arch::global_asm,
     include_str,

@@ -1,5 +1,6 @@
 use core::sync::atomic::{AtomicU32, Ordering};
 
+use crate::mutex::Mutex;
 use crate::pm::env::env_run;
 
 use super::ENV_MANAGER;

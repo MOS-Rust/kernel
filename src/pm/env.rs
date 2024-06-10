@@ -15,6 +15,7 @@ use crate::{
         page::{page_dec_ref, Page, PAGE_ALLOCATOR},
         tlb_invalidate, PA, PPN, VA,
     },
+    mutex::Mutex,
     platform::cp0reg::{STATUS_EXL, STATUS_IE, STATUS_IM7, STATUS_UM},
     pm::ENV_MANAGER,
     round,

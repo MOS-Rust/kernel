@@ -1,5 +1,5 @@
 //! Page structure and `PageAllocator` for memory management
-use crate::mutex::Mutex;
+use crate::mutex::{FakeLock, Mutex};
 
 use super::{
     addr::{PA, PPN, VA},
@@ -333,7 +333,7 @@ fn clear_page(ppn: PPN) {
 
 lazy_static! {
     /// Page allocator instance for memory management
-    pub static ref PAGE_ALLOCATOR: Mutex<PageAllocator> = Mutex::new(PageAllocator::new());
+    pub static ref PAGE_ALLOCATOR: FakeLock<PageAllocator> = FakeLock::new(PageAllocator::new());
 }
 
 /// Detect used and unused memory limit

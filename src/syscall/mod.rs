@@ -1,7 +1,7 @@
 mod handlers;
 mod mempool;
 
-use crate::{error::MosError, exception::Trapframe, pm::ENV_MANAGER};
+use crate::{error::MosError, exception::Trapframe, mutex::Mutex, pm::ENV_MANAGER};
 use core::mem::size_of;
 use log::trace;
 

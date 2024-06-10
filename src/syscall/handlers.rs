@@ -1,4 +1,5 @@
 use super::mempool::do_mempool_op;
+use crate::mutex::Mutex;
 use crate::{
     error::MosError,
     exception::{Trapframe, TF_SIZE},
@@ -64,13 +65,7 @@ pub fn sys_env_destroy(envid: u32, _arg2: u32, _arg3: u32, _arg4: u32, _arg5: u3
 }
 
 /// Register the entry of user space TLB Mod handler of 'envid'.
-pub fn sys_set_tlb_mod_entry(
-    envid: u32,
-    func: u32,
-    _arg3: u32,
-    _arg4: u32,
-    _arg5: u32,
-) -> u32 {
+pub fn sys_set_tlb_mod_entry(envid: u32, func: u32, _arg3: u32, _arg4: u32, _arg5: u32) -> u32 {
     let env = ENV_MANAGER.lock().env_from_id(envid as usize, false);
     match env {
         Ok(env) => {
@@ -161,9 +156,7 @@ pub fn sys_mem_unmap(envid: u32, va: u32, _arg3: u32, _arg4: u32, _arg5: u32) ->
 /// Allocate a new env as a child of 'curenv'.
 pub unsafe fn sys_exofork(_arg1: u32, _arg2: u32, _arg3: u32, _arg4: u32, _arg5: u32) -> u32 {
     let curenv = ENV_MANAGER.lock().curenv().unwrap();
-    let env = ENV_MANAGER
-        .lock()
-        .alloc(curenv.id);
+    let env = ENV_MANAGER.lock().alloc(curenv.id);
     match env {
         Ok(env) => {
             env.tf = *Trapframe::from_memory(VA(KSTACKTOP - TF_SIZE));
@@ -177,13 +170,7 @@ pub unsafe fn sys_exofork(_arg1: u32, _arg2: u32, _arg3: u32, _arg4: u32, _arg5:
 }
 
 /// Set 'envid''s 'env_status' to 'status' and update 'env_sched_list'.
-pub fn sys_set_env_status(
-    envid: u32,
-    status: u32,
-    _arg3: u32,
-    _arg4: u32,
-    _arg5: u32,
-) -> u32 {
+pub fn sys_set_env_status(envid: u32, status: u32, _arg3: u32, _arg4: u32, _arg5: u32) -> u32 {
     let status = match status {
         0 => EnvStatus::NotRunnable,
         1 => EnvStatus::Runnable,
@@ -310,7 +297,9 @@ pub fn sys_ipc_recv(dstva: u32, _arg2: u32, _arg3: u32, _arg4: u32, _arg5: u32) 
     ipc_info.dstva = VA(dstva as usize);
     env.status = EnvStatus::NotRunnable;
     ENV_MANAGER.lock().remove_from_schedule(env.id);
-    unsafe{ (*Trapframe::from_memory(VA(KSTACKTOP - TF_SIZE))).regs[2] = 0; }
+    unsafe {
+        (*Trapframe::from_memory(VA(KSTACKTOP - TF_SIZE))).regs[2] = 0;
+    }
     schedule(true)
 }
 
