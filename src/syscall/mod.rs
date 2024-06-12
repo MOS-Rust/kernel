@@ -88,7 +88,7 @@ const HANDLER_TABLE: [SyscallHandler; SYSCALL_NUM] = [
 pub unsafe extern "C" fn do_syscall(tf: *mut Trapframe) {
     let syscall_num: u32 = (*tf).regs[4];
     if !(0..SYSCALL_NUM as i32).contains(&(syscall_num as i32)) {
-        (*tf).regs[2] = (-(MosError::NoSys as i32)) as u32;
+        (*tf).regs[2] = MosError::NoSys.into();
         return;
     }
     (*tf).cp0_epc += size_of::<usize>() as u32;

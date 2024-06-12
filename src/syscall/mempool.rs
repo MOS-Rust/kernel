@@ -68,7 +68,7 @@ impl MemPoolOp {
 
 pub fn do_mempool_op(op: u32, poolid: u32, va: u32, page_count: u32) -> u32 {
     let Some(op) = MemPoolOp::from_u32(op) else {
-        return (-(MosError::Inval as i32)) as u32;
+        return MosError::Inval.into();
     };
     match op {
         MemPoolOp::Create => mempool_create(page_count),
@@ -99,7 +99,7 @@ fn mempool_create(page_count: u32) -> u32 {
     for _ in 0..page_count {
         let Some(page) = page_alloc(true) else {
             pool.pages.iter().for_each(|&page| try_recycle(page));
-            return (-(MosError::NoMem as i32)) as u32;
+            return MosError::NoMem.into();
         };
         page_inc_ref(page);
         pool.pages.push(page);
@@ -111,17 +111,17 @@ fn mempool_create(page_count: u32) -> u32 {
 
 fn mempool_join(poolid: u32, va: u32, page_count: u32) -> u32 {
     if is_illegal_user_va_range(va as usize, page_count as usize * PAGE_SIZE) {
-        return (-(MosError::Inval as i32)) as u32;
+        return MosError::Inval.into();
     }
     let env = ENV_MANAGER.lock().curenv().unwrap();
     if let Some(pool) = POOL_MANAGER.lock().pools.get_mut(&poolid) {
         if pool.page_count != page_count || pool.users.contains_key(&env.id) {
-            return (-(MosError::Inval as i32)) as u32;
+            return MosError::Inval.into();
         }
         pool.users.insert(env.id, VA(va as usize));
         0
     } else {
-        (-(MosError::NotFound as i32)) as u32
+        MosError::NotFound.into()
     }
 }
 
@@ -129,28 +129,28 @@ fn mempool_leave(poolid: u32) -> u32 {
     let env = ENV_MANAGER.lock().curenv().unwrap();
     if let Some(pool) = POOL_MANAGER.lock().pools.get_mut(&poolid) {
         if !pool.users.contains_key(&env.id) {
-            return (-(MosError::Inval as i32)) as u32;
+            return MosError::Inval.into();
         }
         if (pool.write_lock && pool.writer == env.id)
             || (pool.read_lock > 0 && pool.readers.contains(&env.id))
         {
-            return (-(MosError::PoolNotReleased as i32)) as u32;
+            return MosError::PoolNotReleased.into();
         }
         pool.users.remove(&env.id);
         // don't free the pool if the last user gracefully leaves
         0
     } else {
-        (-(MosError::NotFound as i32)) as u32
+        MosError::NotFound.into()
     }
 }
 
 fn mempool_destroy(poolid: u32) -> u32 {
     if let Some(pool) = POOL_MANAGER.lock().pools.get_mut(&poolid) {
         if !pool.users.is_empty() {
-            return (-(MosError::PoolBusy as i32)) as u32;
+            return MosError::PoolBusy.into();
         }
     } else {
-        return (-(MosError::NotFound as i32)) as u32;
+        return MosError::NotFound.into();
     }
     free_pool(poolid);
     0
@@ -160,7 +160,7 @@ fn mempool_acquire_write_lock(poolid: u32) -> u32 {
     let env = ENV_MANAGER.lock().curenv().unwrap();
     if let Some(pool) = POOL_MANAGER.lock().pools.get_mut(&poolid) {
         if !pool.users.contains_key(&env.id) {
-            return (-(MosError::Inval as i32)) as u32;
+            return MosError::Inval.into();
         }
 
         if pool
@@ -168,7 +168,7 @@ fn mempool_acquire_write_lock(poolid: u32) -> u32 {
             .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
             .is_err()
         {
-            return (-(MosError::PoolBusy as i32)) as u32;
+            return MosError::PoolBusy.into();
         };
         if pool
             .read_mutex
@@ -176,12 +176,12 @@ fn mempool_acquire_write_lock(poolid: u32) -> u32 {
             .is_err()
         {
             pool.write_mutex.store(false, Ordering::Release);
-            return (-(MosError::PoolBusy as i32)) as u32;
+            return MosError::PoolBusy.into();
         };
         if pool.write_lock || pool.read_lock > 0 {
             pool.write_mutex.store(false, Ordering::Release);
             pool.read_mutex.store(false, Ordering::Release);
-            return (-(MosError::PoolBusy as i32)) as u32;
+            return MosError::PoolBusy.into();
         }
         pool.write_lock = true;
         pool.writer = env.id;
@@ -208,13 +208,13 @@ fn mempool_acquire_write_lock(poolid: u32) -> u32 {
             pool.writer = 0;
             pool.read_mutex.store(false, Ordering::Release);
             pool.write_mutex.store(false, Ordering::Release);
-            return (-(MosError::NoMem as i32)) as u32;
+            return MosError::NoMem.into();
         }
         pool.read_mutex.store(false, Ordering::Release);
         pool.write_mutex.store(false, Ordering::Release);
         0
     } else {
-        (-(MosError::NotFound as i32)) as u32
+        MosError::NotFound.into()
     }
 }
 
@@ -222,18 +222,18 @@ fn mempool_release_write_lock(poolid: u32) -> u32 {
     let env = ENV_MANAGER.lock().curenv().unwrap();
     if let Some(pool) = POOL_MANAGER.lock().pools.get_mut(&poolid) {
         if !pool.users.contains_key(&env.id) {
-            return (-(MosError::Inval as i32)) as u32;
+            return MosError::Inval.into();
         }
         if pool
             .write_mutex
             .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
             .is_err()
         {
-            return (-(MosError::PoolBusy as i32)) as u32;
+            return MosError::PoolBusy.into();
         }
         if !pool.write_lock || pool.writer != env.id {
             pool.write_mutex.store(false, Ordering::Release);
-            return (-(MosError::Inval as i32)) as u32;
+            return MosError::Inval.into();
         }
         let asid = env.asid;
         let va = pool.users.get(&env.id).unwrap();
@@ -245,7 +245,7 @@ fn mempool_release_write_lock(poolid: u32) -> u32 {
         pool.write_mutex.store(false, Ordering::Release);
         0
     } else {
-        (-(MosError::NotFound as i32)) as u32
+        MosError::NotFound.into()
     }
 }
 
@@ -253,19 +253,19 @@ fn mempool_acquire_read_lock(poolid: u32) -> u32 {
     let env = ENV_MANAGER.lock().curenv().unwrap();
     if let Some(pool) = POOL_MANAGER.lock().pools.get_mut(&poolid) {
         if !pool.users.contains_key(&env.id) {
-            return (-(MosError::Inval as i32)) as u32;
+            return MosError::Inval.into();
         }
         if pool
             .read_mutex
             .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
             .is_err()
         {
-            return (-(MosError::PoolBusy as i32)) as u32;
+            return MosError::PoolBusy.into();
         }
 
         if pool.write_mutex.load(Ordering::Relaxed) || pool.write_lock {
             pool.read_mutex.store(false, Ordering::Release);
-            return (-(MosError::PoolBusy as i32)) as u32;
+            return MosError::PoolBusy.into();
         }
         pool.read_lock += 1;
         pool.readers.push(env.id);
@@ -291,12 +291,12 @@ fn mempool_acquire_read_lock(poolid: u32) -> u32 {
             pool.read_lock -= 1;
             pool.readers.retain(|&reader| reader != env.id);
             pool.read_mutex.store(false, Ordering::Release);
-            return (-(MosError::NoMem as i32)) as u32;
+            return MosError::NoMem.into();
         }
         pool.read_mutex.store(false, Ordering::Release);
         0
     } else {
-        (-(MosError::NotFound as i32)) as u32
+        MosError::NotFound.into()
     }
 }
 
@@ -304,18 +304,18 @@ fn mempool_release_read_lock(poolid: u32) -> u32 {
     let env = ENV_MANAGER.lock().curenv().unwrap();
     if let Some(pool) = POOL_MANAGER.lock().pools.get_mut(&poolid) {
         if !pool.users.contains_key(&env.id) {
-            return (-(MosError::Inval as i32)) as u32;
+            return MosError::Inval.into();
         }
         if pool
             .read_mutex
             .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
             .is_err()
         {
-            return (-(MosError::PoolBusy as i32)) as u32;
+            return MosError::PoolBusy.into();
         }
         if pool.read_lock == 0 || !pool.readers.contains(&env.id) {
             pool.read_mutex.store(false, Ordering::Release);
-            return (-(MosError::Inval as i32)) as u32;
+            return MosError::Inval.into();
         }
         let asid = env.asid;
         let va = pool.users.get(&env.id).unwrap();
@@ -327,7 +327,7 @@ fn mempool_release_read_lock(poolid: u32) -> u32 {
         pool.read_mutex.store(false, Ordering::Release);
         0
     } else {
-        (-(MosError::NotFound as i32)) as u32
+        MosError::NotFound.into()
     }
 }
 
