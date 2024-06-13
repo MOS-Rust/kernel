@@ -10,8 +10,10 @@ pub use env::EnvStatus;
 pub use ipc::IpcStatus;
 pub use schedule::schedule;
 
+/// EnvManager instance used in kernel
 pub static mut ENV_MANAGER: EnvManager = EnvManager::new();
 
+/// Init EnvManager
 pub fn init() {
     unsafe { ENV_MANAGER.init() };
     info!("Process manager initialized.");

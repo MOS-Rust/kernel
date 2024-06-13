@@ -2,6 +2,7 @@ use core::arch::asm;
 
 const TIMER_INTERVAL: u32 = 500_000;
 
+/// reset clock with inline asm
 #[inline(always)]
 pub unsafe fn reset_kclock() {
     asm!(

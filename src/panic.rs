@@ -13,6 +13,7 @@ use log::error;
 
 use crate::{mm::layout::{KSEG0, KSEG1}, platform::halt, println};
 
+/// Panic
 #[panic_handler]
 fn panic(info: &core::panic::PanicInfo) -> ! {
     let sp: u32;

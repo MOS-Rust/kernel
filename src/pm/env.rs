@@ -38,6 +38,7 @@ static mut ENVS: Envs = Envs {
 };
 static mut ASID_BITMAP: [usize; NASID / 32] = [0; NASID / 32];
 
+/// Implementation of env->env_status of original mos
 #[repr(u32)]
 #[derive(PartialEq, Eq, Debug)]
 pub enum EnvStatus {

@@ -84,6 +84,7 @@ const HANDLER_TABLE: [SyscallHandler; SYSCALL_NUM] = [
     /* 18 */ handlers::sys_mempool_op,
 ];
 
+/// Implementation of do_syscall in original mos
 #[no_mangle]
 pub unsafe extern "C" fn do_syscall(tf: *mut Trapframe) {
     let syscall_num: u32 = (*tf).regs[4];

@@ -2,6 +2,7 @@ use core::fmt::{Display, Formatter, Result};
 
 use crate::{const_export_usize, mm::addr::VA};
 
+/// Trapframe implementation
 #[repr(C)]
 #[derive(Clone, Copy, Debug)]
 pub struct Trapframe {
@@ -15,6 +16,7 @@ pub struct Trapframe {
 }
 
 impl Trapframe {
+    /// Create a new empty trapframe
     pub const fn new() -> Self {
         Self {
             regs: [0; 32],
@@ -27,6 +29,7 @@ impl Trapframe {
         }
     }
 
+    /// Acquire trapframe from certain memory address(VA)
     pub const unsafe fn from_memory(addr: VA) -> *mut Self {
         addr.0 as *mut Self
     }
