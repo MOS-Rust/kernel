@@ -3,19 +3,24 @@ mod env;
 mod ipc;
 mod schedule;
 
+use crate::mutex::{FakeLock, Mutex};
+use lazy_static::lazy_static;
 use log::info;
 
+pub use env::env_destroy;
 use env::EnvManager;
 pub use env::EnvStatus;
 pub use ipc::IpcStatus;
 pub use schedule::schedule;
 
 /// EnvManager instance used in kernel
-pub static mut ENV_MANAGER: EnvManager = EnvManager::new();
+lazy_static! {
+    pub static ref ENV_MANAGER: FakeLock<EnvManager> = FakeLock::new(EnvManager::new());
+}
 
 /// Init EnvManager
 pub fn init() {
-    unsafe { ENV_MANAGER.init() };
+    ENV_MANAGER.lock().init();
     info!("Process manager initialized.");
 }
 
@@ -24,15 +29,11 @@ pub fn init() {
 macro_rules! env_create {
     ($name: ident, $path: expr) => {
         let $name = include_bytes_align_as!(usize, $path);
-        unsafe {
-            $crate::pm::ENV_MANAGER.create($name, 1);
-        }
+        $crate::pm::ENV_MANAGER.lock().create($name, 1);
     };
-    
+
     ($name: ident, $path: expr, $priority: expr) => {
         let $name = include_bytes_align_as!(usize, $path);
-        unsafe {
-            $crate::pm::ENV_MANAGER.create($name, $priority);
-        }
+        $crate::pm::ENV_MANAGER.lock().create($name, $priority);
     };
 }

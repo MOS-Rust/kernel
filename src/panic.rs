@@ -11,7 +11,10 @@ use core::{arch::asm, mem::size_of};
 use alloc::{format, string::String};
 use log::error;
 
-use crate::{mm::layout::{KSEG0, KSEG1}, platform::halt, println};
+use crate::mutex::Mutex;
+use crate::{
+    mm::layout::{KSEG0, KSEG1}, platform::halt, pm::ENV_MANAGER, println
+};
 
 /// Panic
 #[panic_handler]
@@ -50,17 +53,16 @@ fn panic(info: &core::panic::PanicInfo) -> ! {
         "ra:    0x{:08x}  sp:  0x{:08x}  Status: 0x{:08x}\nCause: 0x{:08x}  EPC: 0x{:08x}  BadVA:  0x{:08x}",
         ra, sp, sr, cause, epc, badva
     );
-    unsafe {
-        let envid = match crate::pm::ENV_MANAGER.curenv() {
-            Some(env) => env.id,
-            None => 0,
-        };
-        println!("envid: {:08x}", envid);
-        println!(
-            "cur_pgdir: 0x{:08x}",
-            crate::pm::ENV_MANAGER.cur_pgdir().page.kaddr().0
-        );
-    }
+    unsafe { ENV_MANAGER.force_unlock() };
+    let envid = match ENV_MANAGER.lock().curenv() {
+        Some(env) => env.id,
+        None => 0,
+    };
+    println!("envid: {:08x}", envid);
+    println!(
+        "cur_pgdir: 0x{:08x}",
+        ENV_MANAGER.lock().cur_pgdir().page.kaddr().0
+    );
     match option_env!("MOS_HANG_ON_PANIC") {
         Some("1") => loop {},
         _ => halt(),
@@ -92,7 +94,7 @@ fn backtrace() -> String {
         const JR_RA_INST: usize = 0x03e00008;
         const SW_RA_INST: usize = 0xafbf0000;
 
-        result.push_str("\nBacktrace:\n");
+        result.push_str("Backtrace:\n");
 
         let mut current_addr = backtrace as *const () as usize;
 
@@ -111,7 +113,7 @@ fn backtrace() -> String {
         // only track backtrace within kernel space
         while (KSEG0..KSEG1).contains(&current_ra) {
             result.push_str(&format!(
-                "  {:02}: RA:0x{:08x} SP:0x{:08x}\n",
+                "  {:02}: RA:0x{:08x} SP:0x{:08x}",
                 depth, current_ra, current_sp
             ));
             depth += 1;
@@ -121,7 +123,8 @@ fn backtrace() -> String {
             while stack_size == 0 || ra_offset == 0 {
                 let inst = *(current_addr as *const usize);
                 if (inst & INST_OP_MASK) == ADDIU_SP_INST {
-                    stack_size = ((inst & 0xffff) as i16).unsigned_abs() as usize; // Bytes
+                    stack_size = ((inst & 0xffff) as i16).unsigned_abs() as usize;
+                    // Bytes
                 } else if (inst & INST_OP_MASK) == SW_RA_INST {
                     ra_offset = inst & 0xffff; // Bytes
                     stack_size = 0; // Stack size is always set BEFORE ra_offset,
@@ -134,6 +137,10 @@ fn backtrace() -> String {
 
             current_ra = *((current_sp + ra_offset) as *const usize);
             current_sp += stack_size;
+            result.push_str(&format!(
+                " Subroutine:0x{:08x}\n",
+                current_addr + size_of::<usize>()
+            ));
         }
     }
     result

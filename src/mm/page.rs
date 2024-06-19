@@ -1,4 +1,6 @@
 //! Page structure and `PageAllocator` for memory management
+use crate::mutex::{FakeLock, Mutex};
+
 use super::{
     addr::{PA, PPN, VA},
     get_pagenum,
@@ -9,6 +11,7 @@ use core::{
     mem::size_of,
     ptr::{addr_of_mut, write_bytes},
 };
+use lazy_static::lazy_static;
 use log::trace;
 
 // log_2 (512M / PAGE_SIZE) = 17
@@ -38,7 +41,7 @@ impl Page {
 
     /// Acquire page's `ref_count`
     pub fn ref_count(self) -> u16 {
-        unsafe { PAGE_ALLOCATOR.tracker.ref_count(self.ppn).unwrap() }
+        PAGE_ALLOCATOR.lock().tracker.ref_count(self.ppn).unwrap()
     }
 
     /// Acquire page's kernal virtual address
@@ -80,48 +83,6 @@ impl PageTracker {
             ppn: PPN(0),
             size: 0,
             page_count: 0,
-        }
-    }
-
-    fn init(&mut self, start: PPN, end: PPN) {
-        const RC_PER_PAGE: usize = PAGE_SIZE / size_of::<PageRc>();
-        let actual_size = (end.0 + RC_PER_PAGE - 1) / RC_PER_PAGE;
-        let alloc_count = actual_size.next_power_of_two();
-        trace!(
-            "PageTracker::init: current = {:?}, end = {:?}, alloc_count = {}, actual_size = {}",
-            start,
-            end,
-            alloc_count,
-            ((end.0 + RC_PER_PAGE - 1) / RC_PER_PAGE)
-        );
-        if let Some(page) = page_alloc_contiguous(true, alloc_count) {
-            self.ppn = page.ppn();
-            self.size = end.0;
-            self.page_count = actual_size;
-            for i in 0..start.0 {
-                unsafe {
-                    let ptr = self.ppn.kaddr().as_mut_ptr::<PageRc>().add(i);
-                    *ptr = PageRc::new();
-                    (*ptr).inc_ref();
-                }
-            }
-            for i in start.0..end.0 {
-                unsafe {
-                    let ptr = self.ppn.kaddr().as_mut_ptr::<PageRc>().add(i);
-                    *ptr = PageRc::new();
-                }
-            }
-            for i in page.ppn().0..actual_size {
-                unsafe {
-                    let ptr = self.ppn.kaddr().as_mut_ptr::<PageRc>().add(i);
-                    (*ptr).inc_ref();
-                }
-            }
-            for i in actual_size..alloc_count {
-                dealloc(self.ppn + i, 1);
-            }
-        } else {
-            panic!("PageTracker::init: failed to allocate pages for PageRc");
         }
     }
 
@@ -241,7 +202,49 @@ impl PageAllocator {
             self.free_list[order].push(current);
             current = current + size;
         }
-        self.tracker.init(start, end);
+        self.init_tracker(start, end);
+    }
+
+    fn init_tracker(&mut self, start: PPN, end: PPN) {
+        const RC_PER_PAGE: usize = PAGE_SIZE / size_of::<PageRc>();
+        let actual_size = (end.0 + RC_PER_PAGE - 1) / RC_PER_PAGE;
+        let alloc_count = actual_size.next_power_of_two();
+        trace!(
+            "PageAllocator::init_tracker: current = {:?}, end = {:?}, alloc_count = {}, actual_size = {}",
+            start,
+            end,
+            alloc_count,
+            ((end.0 + RC_PER_PAGE - 1) / RC_PER_PAGE)
+        );
+        if let Some(ppn) = self.alloc(true, alloc_count) {
+            self.tracker.ppn = ppn;
+            self.tracker.size = end.0;
+            self.tracker.page_count = actual_size;
+            for i in 0..start.0 {
+                unsafe {
+                    let ptr = self.tracker.ppn.kaddr().as_mut_ptr::<PageRc>().add(i);
+                    *ptr = PageRc::new();
+                    (*ptr).inc_ref();
+                }
+            }
+            for i in start.0..end.0 {
+                unsafe {
+                    let ptr = self.tracker.ppn.kaddr().as_mut_ptr::<PageRc>().add(i);
+                    *ptr = PageRc::new();
+                }
+            }
+            for i in ppn.0..actual_size {
+                unsafe {
+                    let ptr = self.tracker.ppn.kaddr().as_mut_ptr::<PageRc>().add(i);
+                    (*ptr).inc_ref();
+                }
+            }
+            for i in actual_size..alloc_count {
+                self.dealloc(self.tracker.ppn + i, 1);
+            }
+        } else {
+            panic!("PageTracker::init: failed to allocate pages for PageRc");
+        }
     }
 
     /// Allocate a contiguous block of physical pages.
@@ -313,9 +316,9 @@ impl PageAllocator {
     }
 
     /// Get page tracker's ppn and page count
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// (tracker.ppn, tracker.page_count)
     pub const fn get_tracker_info(&self) -> (PPN, usize) {
         (self.tracker.ppn, self.tracker.page_count)
@@ -330,8 +333,10 @@ fn clear_page(ppn: PPN) {
     }
 }
 
-/// Page allocator instance for memory management
-pub static mut PAGE_ALLOCATOR: PageAllocator = PageAllocator::new();
+lazy_static! {
+    /// Page allocator instance for memory management
+    pub static ref PAGE_ALLOCATOR: FakeLock<PageAllocator> = FakeLock::new(PageAllocator::new());
+}
 
 /// Detect used and unused memory limit
 /// Init page allocator
@@ -341,7 +346,7 @@ pub fn init() {
     }
     let start = PPN::from(VA(unsafe { addr_of_mut!(__end_kernel) as usize }).paddr());
     let end = PPN(get_pagenum());
-    unsafe { PAGE_ALLOCATOR.init(start, end) }
+    PAGE_ALLOCATOR.lock().init(start, end)
 }
 
 /// You should use `page_alloc` instead
@@ -350,7 +355,7 @@ pub fn init() {
 /// clear page if argument clear is set
 #[inline]
 fn alloc(clear: bool, size: usize) -> Option<PPN> {
-    unsafe { PAGE_ALLOCATOR.alloc(clear, size) }
+    PAGE_ALLOCATOR.lock().alloc(clear, size)
 }
 
 /// Utility function, alloc a page and return it,
@@ -362,6 +367,7 @@ pub fn page_alloc(clear: bool) -> Option<Page> {
 }
 
 /// Contiguously allocate pages
+#[allow(dead_code)]
 #[inline]
 pub fn page_alloc_contiguous(clear: bool, size: usize) -> Option<Page> {
     alloc(clear, size).map(Page::new)
@@ -372,7 +378,7 @@ pub fn page_alloc_contiguous(clear: bool, size: usize) -> Option<Page> {
 /// panic if its `ref_count` is not 0
 #[inline]
 fn dealloc(ppn: PPN, size: usize) {
-    unsafe { PAGE_ALLOCATOR.dealloc(ppn, size) }
+    PAGE_ALLOCATOR.lock().dealloc(ppn, size)
 }
 
 /// Utility function, dealloc a page,
@@ -392,13 +398,13 @@ pub fn page_dealloc_contiguous(page: Page, size: usize) {
 /// Increase page's `ref_count`
 #[inline]
 pub fn page_inc_ref(page: Page) {
-    unsafe { PAGE_ALLOCATOR.tracker.inc_ref(page.ppn()) }
+    PAGE_ALLOCATOR.lock().tracker.inc_ref(page.ppn())
 }
 
 /// Decrease page's `ref_count`
 #[inline]
 pub fn page_dec_ref(page: Page) {
-    unsafe { PAGE_ALLOCATOR.tracker.dec_ref(page.ppn()) }
+    PAGE_ALLOCATOR.lock().tracker.dec_ref(page.ppn())
 }
 
 /// Decrease the `ref_count` of page

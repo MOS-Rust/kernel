@@ -19,11 +19,13 @@ mod exception;
 mod logging;
 mod macros;
 mod mm;
+mod mutex;
 mod panic;
 mod platform;
 mod pm;
 mod syscall;
 
+use crate::mutex::Mutex;
 use core::{
     arch::global_asm,
     include_str,
@@ -53,13 +55,12 @@ pub extern "C" fn kernel_init(
     exception::init();
     mm::init(ram_size);
     pm::init();
-    
+
     // test6_1 pipe tasks
     // env_create!(testptelibrary, "../mos_exec/testptelibrary.b");
     // env_create!(fs_serv, "../mos_exec/serv.b");
     // env_create!(testpipe, "../mos_exec/testpipe.b");
     // env_create!(testpiperace, "../mos_exec/testpiperace.b");
-
 
     // test6_2 shell tasks
     env_create!(icode, "../mos_exec/icode.b");
@@ -67,10 +68,8 @@ pub extern "C" fn kernel_init(
 
     // memory pool task
     //env_create!(pool_test, "../mos_exec/pool_test.b");
-    
-    unsafe {
-        schedule(true);
-    }
+
+    schedule(true);
 }
 
 /// Clear the .bss section

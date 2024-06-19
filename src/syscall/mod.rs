@@ -1,7 +1,7 @@
 mod handlers;
 mod mempool;
 
-use crate::{error::MosError, exception::Trapframe, pm::ENV_MANAGER};
+use crate::{error::MosError, exception::Trapframe, mutex::Mutex, pm::ENV_MANAGER};
 use core::mem::size_of;
 use log::trace;
 
@@ -9,26 +9,26 @@ pub use mempool::pool_remove_user_on_exit;
 
 #[derive(Debug)]
 enum Syscall {
-    Putchar        = 0,
-    PrintConsole   = 1,
-    GetEnvId       = 2,
-    Yield          = 3,
-    EnvDestroy     = 4,
+    Putchar = 0,
+    PrintConsole = 1,
+    GetEnvId = 2,
+    Yield = 3,
+    EnvDestroy = 4,
     SetTlbModEntry = 5,
-    MemAlloc       = 6,
-    MemMap         = 7,
-    MemUnmap       = 8,
-    Exofork        = 9,
-    SetEnvStatus   = 10,
-    SetTrapframe   = 11,
-    Panic          = 12,
-    IpcTrySend     = 13,
-    IpcRecv        = 14,
-    Getchar        = 15,
-    WriteDev       = 16,
-    ReadDev        = 17,
-    MempoolOp      = 18,
-    Unhandled      = 19,
+    MemAlloc = 6,
+    MemMap = 7,
+    MemUnmap = 8,
+    Exofork = 9,
+    SetEnvStatus = 10,
+    SetTrapframe = 11,
+    Panic = 12,
+    IpcTrySend = 13,
+    IpcRecv = 14,
+    Getchar = 15,
+    WriteDev = 16,
+    ReadDev = 17,
+    MempoolOp = 18,
+    Unhandled = 19,
 }
 
 impl Syscall {
@@ -89,7 +89,7 @@ const HANDLER_TABLE: [SyscallHandler; SYSCALL_NUM] = [
 pub unsafe extern "C" fn do_syscall(tf: *mut Trapframe) {
     let syscall_num: u32 = (*tf).regs[4];
     if !(0..SYSCALL_NUM as i32).contains(&(syscall_num as i32)) {
-        (*tf).regs[2] = (-(MosError::NoSys as i32)) as u32;
+        (*tf).regs[2] = MosError::NoSys.into();
         return;
     }
     (*tf).cp0_epc += size_of::<usize>() as u32;
@@ -101,7 +101,12 @@ pub unsafe extern "C" fn do_syscall(tf: *mut Trapframe) {
     let arg4: u32 = *(sp as *const u32).add(4);
     let arg5: u32 = *(sp as *const u32).add(5);
 
-    trace!("Env: {:08x}, Syscall: {} \"{:?}\"", ENV_MANAGER.curenv().unwrap().id, syscall_num, Syscall::from_u32(syscall_num));
+    trace!(
+        "Env: {:08x}, Syscall: {} \"{:?}\"",
+        ENV_MANAGER.lock().curenv().unwrap().id,
+        syscall_num,
+        Syscall::from_u32(syscall_num)
+    );
     trace!(
         "Args: {:08x} {:08x} {:08x} {:08x} {:08x}",
         arg1,

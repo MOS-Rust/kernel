@@ -1,4 +1,4 @@
-use crate::mm::addr::VA;
+use crate::mm::VA;
 
 /// IpcStatus enum for Ipc feature
 #[repr(u32)]

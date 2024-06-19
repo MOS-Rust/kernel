@@ -33,3 +33,9 @@ pub enum MosError {
     /// Did not gracefully release pool when leaving
     PoolNotReleased,
 }
+
+impl From<MosError> for u32 {
+    fn from(e: MosError) -> u32 {
+        (-(e as i32)) as u32
+    }
+}

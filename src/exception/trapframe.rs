@@ -1,6 +1,6 @@
 use core::fmt::{Display, Formatter, Result};
 
-use crate::{const_export_usize, mm::addr::VA};
+use crate::{const_export_usize, mm::VA};
 
 /// Trapframe implementation of Mos
 #[repr(C)]
@@ -28,7 +28,7 @@ impl Trapframe {
             cp0_epc: 0,
         }
     }
-
+  
     /// Get trapframe from given va address
     pub const fn from_memory(addr: VA) -> *mut Self {
         addr.0 as *mut Self
