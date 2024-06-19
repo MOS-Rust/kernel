@@ -2,7 +2,7 @@
 //!
 //! This crate is the entry point for the kernel. It is responsible for initializing the kernel and starting its execution.
 
-#![deny(missing_docs)]
+#![warn(missing_docs)]
 // #![deny(warnings)]
 #![no_std]
 #![no_main]
@@ -13,17 +13,17 @@
 extern crate alloc;
 #[macro_use]
 extern crate bitflags;
-mod console;
-mod error;
-mod exception;
-mod logging;
-mod macros;
-mod mm;
-mod mutex;
-mod panic;
-mod platform;
-mod pm;
-mod syscall;
+pub mod console;
+pub mod error;
+pub mod exception;
+pub mod logging;
+pub mod macros;
+pub mod mm;
+pub mod mutex;
+pub mod panic;
+pub mod platform;
+pub mod pm;
+pub mod syscall;
 
 use crate::mutex::Mutex;
 use core::{

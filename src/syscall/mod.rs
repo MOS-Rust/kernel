@@ -1,3 +1,5 @@
+//! Syscall module
+
 mod handlers;
 mod mempool;
 

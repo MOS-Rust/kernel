@@ -1,3 +1,5 @@
+//! Process management module
+
 mod elf;
 mod env;
 mod ipc;
@@ -13,8 +15,8 @@ pub use env::EnvStatus;
 pub use ipc::IpcStatus;
 pub use schedule::schedule;
 
-/// EnvManager instance used in kernel
 lazy_static! {
+    /// EnvManager instance used in kernel
     pub static ref ENV_MANAGER: FakeLock<EnvManager> = FakeLock::new(EnvManager::new());
 }
 

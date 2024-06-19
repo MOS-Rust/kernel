@@ -41,8 +41,11 @@ static mut ASID_BITMAP: [usize; NASID / 32] = [0; NASID / 32];
 #[repr(u32)]
 #[derive(PartialEq, Eq, Debug)]
 pub enum EnvStatus {
+    /// Indicating env is free
     Free = 0,
+    /// Indicating env is runnable
     Runnable = 1,
+    /// Indicating env is not runnable
     NotRunnable = 2,
 }
 
