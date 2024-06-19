@@ -1,3 +1,5 @@
+//! Macros
+
 mod bitops {
     /// Round up `a` to the nearest multiple of `n`.
     #[macro_export]
@@ -29,6 +31,7 @@ mod export {
     macro_rules! const_export_usize {
         ($name:ident, $value:expr) => {
             #[allow(dead_code)]
+            /// return value
             pub const $name: usize = $value;
         };
     }
@@ -38,15 +41,20 @@ mod export {
     macro_rules! const_export_str {
         ($name:ident, $value:expr) => {
             #[allow(dead_code)]
+            /// return value
             pub const $name: &str = $value;
         };
     }
 }
 
+/// Include bytes
 pub mod include_bytes {
+    /// Align struct
     #[repr(C)]
     pub struct AlignedAs<Align, Bytes: ?Sized> {
+        /// Align value
         pub _align: [Align; 0],
+        /// Align bytes
         pub bytes: Bytes,
     }
 

@@ -10,15 +10,21 @@ const FPGA_BASE: usize = 0x1f000000;
 /*
  * 16550 Serial UART device definitions.
  */
+/// Serial base
 pub const SERIAL_BASE: usize = PCIIO_BASE + 0x3f8;
+/// Serial data
 pub const SERIAL_DATA: usize = SERIAL_BASE;
+/// Serial lsr
 pub const SERIAL_LSR: usize = SERIAL_BASE + 0x5;
+/// Serial data ready
 pub const SERIAL_DATA_READY: u8 = 0x1;
+/// Serial thr empty
 pub const SERIAL_THR_EMPTY: u8 = 0x20;
 
 /*
  * Intel PIIX4 IDE Controller device definitions.
  */
+/// IDE base
 pub const IDE_BASE: usize = PCIIO_BASE + 0x01f0;
 // pub const IDE_DATA: usize = IDE_BASE;
 // pub const IDE_ERR: usize = IDE_BASE + 0x01;
@@ -36,4 +42,5 @@ pub const IDE_BASE: usize = PCIIO_BASE + 0x01f0;
 /*
  * MALTA Power Management device definitions.
  */
+/// FPGA halt
 pub const FPGA_HALT: usize = FPGA_BASE + 0x500;

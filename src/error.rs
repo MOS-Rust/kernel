@@ -1,8 +1,10 @@
 //! OS Error Codes
 
+/// Error type enum
 #[allow(dead_code)]
 #[derive(Debug)]
 pub enum MosError {
+    /// Unspecified error
     Unspecified = 1,
     /// Environment doesn't exist or otherwise cannot be used in requested action
     BadEnv,

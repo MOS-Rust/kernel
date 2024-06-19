@@ -1,3 +1,5 @@
+//! Console IO module
+
 use crate::platform::print_char;
 use core::fmt::{self, Write};
 

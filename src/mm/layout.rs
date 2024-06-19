@@ -63,6 +63,7 @@ pub const PDSHIFT: usize = 22;
 pub const PTE_HARDFLAG_SHIFT: usize = 6;
 
 bitflags! {
+    /// Pte flag definations
     #[derive(Clone, Copy, Debug)]
     pub struct PteFlags: usize {
         /// The 6 bits below are those stored in cp0.entry_lo
@@ -129,24 +130,36 @@ bitflags! {
 */
 
 // pub const KUSEG: usize = 0x0000_0000;
+/// KSEG0 address
 pub const KSEG0: usize = 0x8000_0000;
+/// KSEG1 address
 pub const KSEG1: usize = 0xa000_0000;
 // pub const KSEG2: usize = 0xc000_0000;
 
 const_export_usize!(KSTACKTOP, 0x80400000);
 // pub const KERNBASE: usize = 0x8002_0000;
+/// ULIM address
 pub const ULIM: usize = 0x8000_0000;
 
+/// UVPT address
 pub const UVPT: usize = ULIM - PDMAP;
+/// UPAGES address
 pub const UPAGES: usize = UVPT - PDMAP;
+/// UENVS address
 pub const UENVS: usize = UPAGES - PDMAP;
 
+/// UTOP address
 pub const UTOP: usize = UENVS;
+/// UXSTACKTOP address
 pub const UXSTACKTOP: usize = UTOP;
 
+/// USTACKTOP address
 pub const USTACKTOP: usize = UTOP - 2 * PTMAP;
+/// UTEXT address
 pub const UTEXT: usize = PDMAP;
+/// UCOW address
 pub const UCOW: usize = UTEXT - PTMAP;
+/// UTEMP address
 pub const UTEMP: usize = UCOW - PTMAP;
 
 /// Check if provided va is illegal in user space
@@ -164,7 +177,7 @@ pub fn is_illegal_user_va_range(va: usize, len: usize) -> bool {
     va < UTEMP || va.checked_add(len).is_none() || va.checked_add(len).unwrap() > UTOP
 }
 
-// Check if provided va range([va, va + len]) is illegal in kernal space
+/// Check if provided va range([va, va + len]) is illegal in kernal space
 #[inline]
 pub const fn is_dev_va_range(va: usize, len: usize) -> bool {
     const CONOLE_ADDR_LEN: usize = 0x20;

@@ -45,7 +45,7 @@ fn panic(info: &core::panic::PanicInfo) -> ! {
     let backtrace = backtrace();
     error!(
         "Kernel Panicked: \"{}\" at {}\n{}",
-        info.message().unwrap(),
+        info.message(),
         info.location().unwrap(),
         backtrace
     );

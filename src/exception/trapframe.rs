@@ -6,12 +6,19 @@ use crate::{const_export_usize, mm::VA};
 #[repr(C)]
 #[derive(Clone, Copy, Debug)]
 pub struct Trapframe {
+    /// Registers
     pub regs: [u32; 32],
+    /// CP0 status register
     pub cp0_status: u32,
+    /// CP0 hi register
     pub hi: u32,
+    /// CP0 lo register
     pub lo: u32,
+    /// CP0 badvaddr register
     pub cp0_badvaddr: u32,
+    /// CP0 cause register
     pub cp0_cause: u32,
+    /// CP0 epc register
     pub cp0_epc: u32,
 }
 
