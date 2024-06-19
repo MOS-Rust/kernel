@@ -27,6 +27,7 @@ extern "C" {
     fn _handle_ade();
 }
 
+/// Exception handler vector
 #[no_mangle]
 pub static exception_handlers: [Vector; 32] = [
     Vector(_handle_int),       // 00: Int
@@ -63,6 +64,7 @@ pub static exception_handlers: [Vector; 32] = [
     Vector(_handle_unhandled), // 31
 ];
 
+/// Init exception handling feature
 pub fn init() {
     extern "C" {
         static mut _tlb_refill_entry: u8;

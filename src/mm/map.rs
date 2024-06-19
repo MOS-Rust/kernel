@@ -59,6 +59,7 @@ impl Pte {
         self.flags().contains(PteFlags::V)
     }
 
+    /// Get entry LO of this Pte
     pub const fn as_entrylo(self) -> u32 {
         self.0 as u32 >> PTE_HARDFLAG_SHIFT
     }
@@ -182,7 +183,7 @@ impl PageTable {
         None
     }
 
-    /// unmap the page at virtual address va
+    /// Unmap the page at virtual address va
     pub fn remove(self, asid: usize, va: VA) {
         if let Some((pte, page)) = self.lookup(va) {
             tlb_invalidate(asid, va);

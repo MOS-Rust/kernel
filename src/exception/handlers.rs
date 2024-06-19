@@ -5,6 +5,7 @@ use crate::mutex::Mutex;
 
 use super::trapframe::Trapframe;
 
+/// Execute when address error occurs
 #[no_mangle]
 pub unsafe extern "C" fn do_address_error(tf: *mut Trapframe) {
     // Kill the process
@@ -24,6 +25,7 @@ pub unsafe extern "C" fn do_address_error(tf: *mut Trapframe) {
     }
 }
 
+/// Execute when undefined error occurs
 #[no_mangle]
 pub extern "C" fn do_unhandled(tf: *mut Trapframe) {
     let tf = unsafe { &*tf };

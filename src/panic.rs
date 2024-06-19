@@ -16,6 +16,7 @@ use crate::{
     mm::layout::{KSEG0, KSEG1}, platform::halt, pm::ENV_MANAGER, println
 };
 
+/// Panic
 #[panic_handler]
 fn panic(info: &core::panic::PanicInfo) -> ! {
     let sp: u32;

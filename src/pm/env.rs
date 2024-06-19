@@ -37,6 +37,7 @@ static mut ENVS: Envs = Envs {
 };
 static mut ASID_BITMAP: [usize; NASID / 32] = [0; NASID / 32];
 
+/// Implementation of env->env_status of original mos
 #[repr(u32)]
 #[derive(PartialEq, Eq, Debug)]
 pub enum EnvStatus {
@@ -483,7 +484,7 @@ pub fn env_run(env: &mut Env) -> ! {
     unsafe { env_pop_trapframe(&mut env.tf, env.asid as u32) }
 }
 
-// /// Destroy a env
+/// Destroy a env
 pub fn env_destroy(env: &mut Env) {
     let mut env_man = ENV_MANAGER.lock();
     env_man.env_free(env);

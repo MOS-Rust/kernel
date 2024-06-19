@@ -1,5 +1,6 @@
 use crate::mm::VA;
 
+/// IpcStatus enum for Ipc feature
 #[repr(u32)]
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum IpcStatus {
@@ -7,6 +8,7 @@ pub enum IpcStatus {
     Receiving = 1,
 }
 
+/// IpcInfo enum, wraping env->env_ipc_* in original mos
 #[repr(C)]
 #[derive(Debug)]
 pub struct IpcInfo {
@@ -19,6 +21,7 @@ pub struct IpcInfo {
 
 /// Info used in ipc
 impl IpcInfo {
+    /// Create a new empty IpcInfo struct, recving set to IpcStatus::NotReceiving
     pub const fn new() -> Self {
         Self {
             value: 0,

@@ -13,10 +13,12 @@ pub use env::EnvStatus;
 pub use ipc::IpcStatus;
 pub use schedule::schedule;
 
+/// EnvManager instance used in kernel
 lazy_static! {
     pub static ref ENV_MANAGER: FakeLock<EnvManager> = FakeLock::new(EnvManager::new());
 }
 
+/// Init EnvManager
 pub fn init() {
     ENV_MANAGER.lock().init();
     info!("Process manager initialized.");
