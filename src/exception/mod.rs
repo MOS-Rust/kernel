@@ -1,3 +1,5 @@
+//! Exception handling module
+
 mod clock;
 mod handlers;
 mod trapframe;
@@ -15,6 +17,7 @@ pub use trapframe::{Trapframe, TF_SIZE};
 global_asm!(include_str!("../../asm/exception/exception_entry.S"));
 global_asm!(include_str!("../../asm/exception/handlers.S"));
 
+/// Vector for exception vector
 #[repr(C)]
 pub struct Vector(unsafe extern "C" fn());
 

@@ -65,11 +65,13 @@ impl Pte {
     }
 }
 
+/// Page directory entry defination
 pub type Pde = Pte;
 
 /// Page directory
 #[derive(Clone, Copy, Debug)]
 pub struct PageTable {
+    /// Actual page of page table
     pub page: Page,
 }
 
@@ -193,4 +195,5 @@ impl PageTable {
     }
 }
 
+/// Page directory defination
 pub type PageDirectory = PageTable;

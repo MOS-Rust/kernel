@@ -1,3 +1,5 @@
+//! Platform constants
+
 pub mod cp0reg;
 mod machine;
 pub mod malta;

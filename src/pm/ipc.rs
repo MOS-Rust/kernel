@@ -4,7 +4,9 @@ use crate::mm::VA;
 #[repr(u32)]
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum IpcStatus {
+    /// Indicating env is not receiving ipc info
     NotReceiving = 0,
+    /// Indicating env is receiving ipc info
     Receiving = 1,
 }
 
