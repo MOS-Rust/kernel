@@ -20,13 +20,13 @@ use alloc::string::String;
 use core::ptr;
 use log::info;
 
-/// This function is used to print a character on screen.
+/// Print a character on screen.
 pub fn sys_putchar(char: u32, _arg2: u32, _arg3: u32, _arg4: u32, _arg5: u32) -> u32 {
     print_char(char as u8 as char);
     0
 }
 
-/// This function is used to print a string of bytes on screen.
+/// Print a string of bytes on screen.
 pub unsafe fn sys_print_console(s: u32, len: u32, _args3: u32, _args4: u32, _args5: u32) -> u32 {
     if (s + len) as usize > UTOP || s as usize >= UTOP || s.checked_add(len).is_none() {
         return (-(MosError::Inval as i32)) as u32;
@@ -36,9 +36,9 @@ pub unsafe fn sys_print_console(s: u32, len: u32, _args3: u32, _args4: u32, _arg
     0
 }
 
-/// This function provides the environment id of current process.
-pub unsafe fn sys_get_env_id(_arg1: u32, _arg2: u32, _arg3: u32, _arg4: u32, _arg5: u32) -> u32 {
-    ENV_MANAGER.curenv().unwrap().id as u32
+/// Provides the environment id of current process.
+pub fn sys_get_env_id(_arg1: u32, _arg2: u32, _arg3: u32, _arg4: u32, _arg5: u32) -> u32 {
+    ENV_MANAGER.lock().curenv().unwrap().id as u32
 }
 
 /// Give up remaining CPU time slice for 'curenv'.
@@ -46,9 +46,9 @@ pub unsafe fn sys_yield(_arg1: u32, _arg2: u32, _arg3: u32, _arg4: u32, _arg5: u
     schedule(true)
 }
 
-/// This function is used to destroy the current environment.
-pub unsafe fn sys_env_destroy(envid: u32, _arg2: u32, _arg3: u32, _arg4: u32, _arg5: u32) -> u32 {
-    let env = ENV_MANAGER.env_from_id(envid as usize, true);
+/// Destroy the current environment.
+pub fn sys_env_destroy(envid: u32, _arg2: u32, _arg3: u32, _arg4: u32, _arg5: u32) -> u32 {
+    let env = ENV_MANAGER.lock().env_from_id(envid as usize, true);
     match env {
         Ok(env) => {
             info!(
@@ -310,7 +310,7 @@ pub unsafe fn sys_ipc_recv(dstva: u32, _arg2: u32, _arg3: u32, _arg4: u32, _arg5
     schedule(true)
 }
 
-/// This function gets char from console
+/// Gets char from console
 pub fn sys_getchar(_arg1: u32, _arg2: u32, _arg3: u32, _arg4: u32, _arg5: u32) -> u32 {
     let mut c: char;
     loop {
@@ -322,7 +322,7 @@ pub fn sys_getchar(_arg1: u32, _arg2: u32, _arg3: u32, _arg4: u32, _arg5: u32) -
     c as u32
 }
 
-/// This function is used to write data at 'va' with length 'len' to a device physical address
+/// Used to write data at 'va' with length 'len' to a device physical address
 /// 'pa'. Remember to check the validity of 'va' and 'pa'.
 /// 
 /// 'va' is the starting address of source data, 'len' is the
@@ -347,7 +347,7 @@ pub unsafe fn sys_write_dev(va: u32, pa: u32, len: u32, _arg4: u32, _arg5: u32) 
     0
 }
 
-/// This function is used to read data from a device physical address.
+/// Used to read data from a device physical address.
 pub unsafe fn sys_read_dev(va: u32, pa: u32, len: u32, _arg4: u32, _arg5: u32) -> u32 {
     if len != 1 && len != 2 && len != 4 {
         return (-(MosError::Inval as i32)) as u32;

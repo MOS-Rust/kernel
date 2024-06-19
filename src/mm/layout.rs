@@ -65,7 +65,7 @@ pub const PTE_HARDFLAG_SHIFT: usize = 6;
 bitflags! {
     #[derive(Clone, Copy, Debug)]
     pub struct PteFlags: usize {
-        /// the 6 bits below are those stored in cp0.entry_lo
+        /// The 6 bits below are those stored in cp0.entry_lo
         const G = 1 << 0 << PTE_HARDFLAG_SHIFT;
         const V = 1 << 1 << PTE_HARDFLAG_SHIFT;
         const D = 1 << 2 << PTE_HARDFLAG_SHIFT;
@@ -78,7 +78,7 @@ bitflags! {
         const Cacheable = PteFlags::C0.bits() | PteFlags::C1.bits();
         const Uncached = PteFlags::C0.bits() & !PteFlags::C1.bits();
 
-        /// the bits below are controlled by software
+        /// The bits below are controlled by software
         const COW = 0x1;
         const SHARED = 0x2;
     }
@@ -149,13 +149,13 @@ pub const UTEXT: usize = PDMAP;
 pub const UCOW: usize = UTEXT - PTMAP;
 pub const UTEMP: usize = UCOW - PTMAP;
 
-/// check if provided va is illegal in user space
+/// Check if provided va is illegal in user space
 #[inline]
 pub fn is_illegal_user_va(va: usize) -> bool {
     !(UTEMP..UTOP).contains(&va)
 }
 
-/// check if provided va range([va, va + len]) is illegal in user space
+/// Check if provided va range([va, va + len]) is illegal in user space
 #[inline]
 pub fn is_illegal_user_va_range(va: usize, len: usize) -> bool {
     if len == 0 {
@@ -164,7 +164,7 @@ pub fn is_illegal_user_va_range(va: usize, len: usize) -> bool {
     va < UTEMP || va.checked_add(len).is_none() || va.checked_add(len).unwrap() > UTOP
 }
 
-// check if provided va range([va, va + len]) is illegal in kernal space
+// Check if provided va range([va, va + len]) is illegal in kernal space
 #[inline]
 pub const fn is_dev_va_range(va: usize, len: usize) -> bool {
     const CONOLE_ADDR_LEN: usize = 0x20;

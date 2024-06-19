@@ -509,6 +509,33 @@ fn env_at(index: usize) -> &'static mut Env {
     unsafe { &mut ENVS.env_array[index] }
 }
 
+/// Run a env
+pub fn env_run(env: &mut Env) -> ! {
+    assert!(env.status == EnvStatus::Runnable);
+    let mut env_man = ENV_MANAGER.lock();
+    if let Some(cur) = env_man.curenv() {
+        cur.tf = unsafe { *Trapframe::from_memory(VA(KSTACKTOP - TF_SIZE)) };
+    }
+    env_man.cur = Some(env.tracker());
+    env.runs += 1;
+
+    env_man.cur_pgdir = env.pgdir();
+    drop(env_man);
+    unsafe { env_pop_trapframe(&mut env.tf, env.asid as u32) }
+}
+
+/// Destroy a env
+pub fn env_destroy(env: &mut Env) {
+    let mut env_man = ENV_MANAGER.lock();
+    env_man.env_free(env);
+    if env_man.cur.is_some() && env_man.cur.unwrap().pos == env.pos() {
+        env_man.cur = None;
+        info!("{:08x}: I am killed ...", env.id);
+        drop(env_man);
+        schedule(true);
+    }
+}
+
 /// Implementation of env_pop_tf in mos
 unsafe fn env_pop_trapframe(tf: *mut Trapframe, asid: u32) -> ! {
     extern "C" {

@@ -15,8 +15,10 @@ use log::trace;
 const ORDER: usize = 32;
 
 /// Page structure for paging memory management
+/// 
 /// Each page is tracked by its ppn,
 /// actual data is stored in page allocator
+/// 
 /// This structure simply wraps ppn
 #[derive(Clone, Copy, Debug)]
 pub struct Page {
@@ -359,6 +361,7 @@ pub fn page_alloc(clear: bool) -> Option<Page> {
     alloc(clear, 1).map(Page::new)
 }
 
+/// Contiguously allocate pages
 #[inline]
 pub fn page_alloc_contiguous(clear: bool, size: usize) -> Option<Page> {
     alloc(clear, size).map(Page::new)
