@@ -1,3 +1,5 @@
+//! Implementation of process manager
+
 use super::{
     elf::{elf_load_seg, load_icode_mapper, Elf32, PT_LOAD},
     ipc::IpcInfo,
@@ -56,6 +58,8 @@ pub enum EnvStatus {
 pub struct Env {
     pub tf: Trapframe,
 
+    // the two placeholders exist to keep compatibility with the original mos, 
+    // which uses linked list to manage envs
     __placeholder_1: [usize; 2], // env_link
 
     pub id: usize,
@@ -74,6 +78,12 @@ pub struct Env {
     pub user_tlb_mod_entry: usize,
 
     pub runs: u32,
+}
+
+impl Default for Env {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Env {
@@ -179,6 +189,12 @@ pub struct EnvManager {
     schedule_list: RefCell<VecDeque<EnvTracker>>,
     cur: Option<EnvTracker>,
     cur_pgdir: PageDirectory,
+}
+
+impl Default for EnvManager {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl EnvManager {

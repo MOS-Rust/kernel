@@ -1,3 +1,4 @@
+//! Some of the exception handlers
 use log::warn;
 
 use crate::pm::{env_destroy, schedule, ENV_MANAGER};

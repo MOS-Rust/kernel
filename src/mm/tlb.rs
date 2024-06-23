@@ -1,3 +1,5 @@
+//! TLB management
+
 use super::{
     addr::{VA, VPN},
     layout::{PteFlags, PAGE_SIZE, UENVS, ULIM, UPAGES, USTACKTOP, UTEMP, UVPT, UXSTACKTOP},

@@ -1,4 +1,7 @@
 //! Exception handling module
+//!
+//! This module provides exception handling functionality for the kernel. It defines the exception
+//! handler vector and initializes the exception handling feature.
 
 mod clock;
 mod handlers;
@@ -67,7 +70,9 @@ pub static exception_handlers: [Vector; 32] = [
     Vector(_handle_unhandled), // 31
 ];
 
-/// Init exception handling feature
+/// Init exception handling
+///
+/// This function sets the exception entry point in the CP0 EBase register.
 pub fn init() {
     extern "C" {
         static mut _tlb_refill_entry: u8;

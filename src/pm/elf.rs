@@ -1,3 +1,4 @@
+//! ELF32 file parser
 use super::env::Env;
 use crate::{
     error::MosError,

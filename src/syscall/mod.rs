@@ -87,6 +87,10 @@ const HANDLER_TABLE: [SyscallHandler; SYSCALL_NUM] = [
 ];
 
 /// Implementation of do_syscall in original mos
+/// 
+/// # Safety
+/// 
+/// This function is unsafe because it dereferences raw pointers and calls unsafe functions.
 #[no_mangle]
 pub unsafe extern "C" fn do_syscall(tf: *mut Trapframe) {
     let syscall_num: u32 = (*tf).regs[4];

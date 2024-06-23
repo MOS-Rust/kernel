@@ -66,21 +66,32 @@ bitflags! {
     /// Pte flag definations
     #[derive(Clone, Copy, Debug)]
     pub struct PteFlags: usize {
-        /// The 6 bits below are those stored in cp0.entry_lo
+        // The 6 bits below are those stored in cp0.entry_lo
+        /// Global bit
         const G = 1 << 0 << PTE_HARDFLAG_SHIFT;
+        /// Valid bit
         const V = 1 << 1 << PTE_HARDFLAG_SHIFT;
+        /// Dirty bit
         const D = 1 << 2 << PTE_HARDFLAG_SHIFT;
 
         // Only used internally
+
+        /// C0
         const C0 = 1 << 3 << PTE_HARDFLAG_SHIFT;
+        /// C1
         const C1 = 1 << 4 << PTE_HARDFLAG_SHIFT;
+        /// C2
         const C2 = 1 << 5 << PTE_HARDFLAG_SHIFT;
 
+        /// Cacheable, noncoherent, write-back, write allocate
         const Cacheable = PteFlags::C0.bits() | PteFlags::C1.bits();
-        const Uncached = PteFlags::C0.bits() & !PteFlags::C1.bits();
+        /// Uncached
+        const Uncached = PteFlags::C1.bits() & !PteFlags::C0.bits();
 
-        /// The bits below are controlled by software
+        // The bits below are controlled by software
+        /// Copy-on-write bit
         const COW = 0x1;
+        /// Read-only bit
         const SHARED = 0x2;
     }
 }

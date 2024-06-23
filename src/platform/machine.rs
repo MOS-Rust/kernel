@@ -1,3 +1,5 @@
+//! Machine-specific functions.
+
 use super::malta::{FPGA_HALT, SERIAL_DATA, SERIAL_DATA_READY, SERIAL_LSR, SERIAL_THR_EMPTY};
 use crate::mm::layout::KSEG1;
 

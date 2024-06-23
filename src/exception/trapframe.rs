@@ -1,8 +1,9 @@
+//! Trapframe implementation
 use core::fmt::{Display, Formatter, Result};
 
 use crate::{const_export_usize, mm::VA};
 
-/// Trapframe implementation of Mos
+/// Trapframe implementation of MOS
 #[repr(C)]
 #[derive(Clone, Copy, Debug)]
 pub struct Trapframe {
@@ -10,9 +11,9 @@ pub struct Trapframe {
     pub regs: [u32; 32],
     /// CP0 status register
     pub cp0_status: u32,
-    /// CP0 hi register
+    /// hi register
     pub hi: u32,
-    /// CP0 lo register
+    /// lo register
     pub lo: u32,
     /// CP0 badvaddr register
     pub cp0_badvaddr: u32,
@@ -20,6 +21,12 @@ pub struct Trapframe {
     pub cp0_cause: u32,
     /// CP0 epc register
     pub cp0_epc: u32,
+}
+
+impl Default for Trapframe {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Trapframe {

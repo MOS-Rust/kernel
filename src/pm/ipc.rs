@@ -1,3 +1,5 @@
+// IPC struct definitions
+
 use crate::mm::VA;
 
 /// IpcStatus enum for Ipc feature
@@ -21,6 +23,11 @@ pub struct IpcInfo {
     pub perm: usize,
 }
 
+impl Default for IpcInfo {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 /// Info used in ipc
 impl IpcInfo {
     /// Create a new empty IpcInfo struct, recving set to IpcStatus::NotReceiving

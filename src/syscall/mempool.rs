@@ -340,6 +340,7 @@ fn free_pool(poolid: u32) {
     pool_man.pools.remove(&poolid);
 }
 
+/// Remove the user from all memory pools on exit, in case the user exits unexpectedly and causes memory leaks or deadlocks.
 pub fn pool_remove_user_on_exit(env_id: usize) {
     for pool in POOL_MANAGER.lock().pools.values_mut() {
         if pool.users.contains_key(&env_id) {

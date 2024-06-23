@@ -1,8 +1,13 @@
+//! Clock module for handling timer interrupt.
 use core::arch::asm;
 
 const TIMER_INTERVAL: u32 = 500_000;
 
-/// reset clock with inline asm
+/// Reset the CP0 Count and Compare registers for timer interrupt.
+/// 
+/// # Safety
+/// 
+/// This function is unsafe because it uses inline assembly.
 #[inline(always)]
 pub unsafe fn reset_kclock() {
     asm!(

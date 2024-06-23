@@ -2,8 +2,8 @@
 //!
 //! This crate is the entry point for the kernel. It is responsible for initializing the kernel and starting its execution.
 
-#![warn(missing_docs)]
-// #![deny(warnings)]
+#![deny(missing_docs)]
+#![deny(warnings)]
 #![no_std]
 #![no_main]
 #![feature(panic_info_message)]
@@ -13,17 +13,17 @@
 extern crate alloc;
 #[macro_use]
 extern crate bitflags;
-pub mod console;
-pub mod error;
-pub mod exception;
-pub mod logging;
-pub mod macros;
-pub mod mm;
-pub mod mutex;
-pub mod panic;
-pub mod platform;
-pub mod pm;
-pub mod syscall;
+mod console;
+mod error;
+mod exception;
+mod logging;
+mod macros;
+mod mm;
+mod mutex;
+mod panic;
+mod platform;
+mod pm;
+mod syscall;
 
 use crate::mutex::Mutex;
 use core::{
@@ -67,7 +67,7 @@ pub extern "C" fn kernel_init(
     env_create!(fs_serv, "../mos_exec/serv.b");
 
     // memory pool task
-    //env_create!(pool_test, "../mos_exec/pool_test.b");
+    // env_create!(pool_test, "../mos_exec/pool_test.b");
 
     schedule(true);
 }
